@@ -45,9 +45,9 @@ export default function Stories() {
             >
               <span style={{ width: 48, height: 48, flexShrink: 0, borderRadius: 14, background: "var(--ground)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                 {a.mediaType === "video" ? (
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#1f2b22" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#f3eee3" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
                 ) : (
-                  <Mic color="#1f2b22" />
+                  <Mic color="#f3eee3" />
                 )}
               </span>
               <span className="stack" style={{ gap: 3 }}>

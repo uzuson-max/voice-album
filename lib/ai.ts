@@ -71,6 +71,18 @@ export async function digestAnswer(input: {
   };
 }
 
+// 자녀가 직접 쓴 질문을 부모님께 보내기 좋은 말투로
+export async function polishQuestion(input: { honorific: string; childName: string; text: string }): Promise<string> {
+  const out = await chatJSON(
+    TONE +
+      `\n자녀가 쓴 질문의 뜻은 그대로 두고, 부모님이 받았을 때 편하게 답할 수 있는 한 문장으로 다듬어라.
+부모님은 "${input.honorific}", 자녀는 "${input.childName}"라고 부른다.
+JSON: {"text":"다듬은 질문"}`,
+    input.text.slice(0, 300)
+  );
+  return String(out.text || input.text).trim();
+}
+
 export async function transcribe(buf: ArrayBuffer, mime: string): Promise<string> {
   const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : "webm";
   const form = new FormData();

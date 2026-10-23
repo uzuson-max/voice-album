@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/supabaseBrowser";
 import { WEEKDAYS } from "@/lib/time";
 
-type P = { id: string; text: string; format: "audio" | "video"; source: string; status: string; reminder_count: number };
+type P = { id: string; text: string; format: "audio" | "video"; source: string; status: string; reminder_count: number; masked?: boolean };
 
 const SRC: Record<string, string> = { followup: "지난 대답에서 이어진 질문", ai: "맞춤 질문", library: "", custom: "직접 쓴 질문" };
 
 export default function Questions() {
   const router = useRouter();
-  const [d, setD] = useState<{ queued: P[]; sent: P[]; storyteller: any } | null>(null);
+  const [d, setD] = useState<{ queued: P[]; sent: P[]; storyteller: any; insight: any } | null>(null);
+  const [polishing, setPolishing] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
   const [adding, setAdding] = useState(false);
@@ -43,6 +44,15 @@ export default function Questions() {
     await api("/api/me/prompts", { method: "POST", body: JSON.stringify({ items: [{ text: newText, format: newFmt, source: "custom" }] }) });
     setNewText(""); setAdding(false); load();
   }
+  async function polish(text: string, set: (t: string) => void) {
+    if (!text.trim()) return;
+    setPolishing(true);
+    try {
+      const r = await api("/api/me/polish", { method: "POST", body: JSON.stringify({ text }) });
+      set(r.text);
+    } catch {}
+    setPolishing(false);
+  }
   async function sendNow() {
     if (!confirm(`다음 질문을 지금 ${d?.storyteller.label}에게 문자로 보낼까요?`)) return;
     setMsg("");
@@ -62,6 +72,23 @@ export default function Questions() {
     <main className="screen with-tabs">
       <div className="stack">
         <h1 className="h1" style={{ margin: "0 4px" }}>질문함</h1>
+        {d.insight && (
+          <div className="card insight stack" style={{ gap: 6 }}>
+            <span className="chip" style={{ color: "var(--accent)" }}>AI 한 줄</span>
+            {d.insight.kind === "open" ? (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{st.label}가 &lsquo;{d.insight.title}&rsquo; 이야기를 들려주셨어요</div>
+                <div className="small muted" style={{ lineHeight: 1.6 }}>{d.insight.summary}</div>
+                <div className="tiny muted">이어서 물어볼 질문을 다음 차례에 넣어뒀어요.</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{st.label}가 새 이야기를 봉해두셨어요</div>
+                <div className="small muted">내용은 열리는 날까지 비밀. 대신 이어지는 질문은 미리 준비해뒀어요.</div>
+              </>
+            )}
+          </div>
+        )}
         <div className="card">
           <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
             매주 {WEEKDAYS[st.send_weekday]}요일 {st.send_hour}시에 {st.label}에게 보내요
@@ -82,6 +109,9 @@ export default function Questions() {
             <div className="row">
               <FormatToggle value={newFmt} onChange={setNewFmt} />
               <div className="grow" />
+              <button className="textbtn" style={{ color: "var(--accent)" }} disabled={polishing} onClick={() => polish(newText, setNewText)}>
+                {polishing ? "다듬는 중…" : "AI로 다듬기"}
+              </button>
               <button className="btn sm" onClick={add}>추가</button>
             </div>
           </div>
@@ -98,19 +128,22 @@ export default function Questions() {
                 <div className="row">
                   <FormatToggle value={p.format} onChange={(f) => act({ id: p.id, format: f })} />
                   <div className="grow" />
+                  <button className="textbtn" style={{ color: "var(--accent)" }} disabled={polishing} onClick={() => polish(draft, setDraft)}>
+                    {polishing ? "다듬는 중…" : "AI로 다듬기"}
+                  </button>
                   <button className="textbtn" onClick={() => setEdit(null)} style={{ color: "var(--muted)" }}>취소</button>
                   <button className="btn sm" onClick={() => act({ id: p.id, text: draft })}>저장</button>
                 </div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 16, lineHeight: 1.55 }}>{p.text}</div>
+                <div style={{ fontSize: 16, lineHeight: 1.55, ...(p.masked ? { color: "var(--muted)", fontStyle: "italic" } : {}) }}>{p.text}</div>
                 <div className="row tiny muted">
                   {i === 0 && <span style={{ color: "var(--primary)", fontWeight: 700 }}>다음 차례</span>}
                   <div className="grow" />
                   <button className="textbtn" aria-label="위로" onClick={() => act({ id: p.id, move: "up" })}>↑</button>
                   <button className="textbtn" aria-label="아래로" onClick={() => act({ id: p.id, move: "down" })}>↓</button>
-                  <button className="textbtn" onClick={() => { setEdit(p.id); setDraft(p.text); }}>수정</button>
+                  {!p.masked && <button className="textbtn" onClick={() => { setEdit(p.id); setDraft(p.text); }}>수정</button>}
                   <button className="textbtn" style={{ color: "var(--muted)" }} onClick={() => remove(p.id)}>삭제</button>
                 </div>
               </>

@@ -65,7 +65,8 @@ export default function Family() {
           <Field label="내가 부르는 호칭"><input className="input" required value={f.label} onChange={set("label")} /></Field>
           <Field label="질문 속 호칭"><input className="input" required value={f.honorific} onChange={set("honorific")} /></Field>
         </div>
-        <Field label="부모님 휴대폰 번호">
+        <Field label="부모님 휴대폰 번호" hint="첫 문자가 오면 그 번호를 부모님 폰에 '우리집 레코드'로 저장해 주세요. 그래야 링크가 바로 눌려요.">
+
           <input className="input" required inputMode="tel" value={f.phone} onChange={set("phone")} placeholder="010-0000-0000" />
         </Field>
         <div className="row">

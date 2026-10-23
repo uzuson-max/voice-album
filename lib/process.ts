@@ -1,5 +1,6 @@
 import { admin, BUCKET } from "./supabaseAdmin";
 import { digestAnswer, transcribe } from "./ai";
+import { isOpen } from "./time";
 
 // 대답이 들어온 뒤 뒤에서: 받아쓰기 → 제목·요약 → 이어서 물을 질문 추가
 export async function processAnswer(answerId: string) {
@@ -55,6 +56,9 @@ export async function processAnswer(answerId: string) {
       format: "audio",
       source: "followup",
       position: (first?.position ?? 0) - 1,
+      from_answer_id: a.id,
+      // 봉인된 대답에서 나온 질문은 자녀에게 내용을 숨긴다 (열리는 날의 설렘을 지키기 위해)
+      masked: !isOpen(a.unseal_at),
     });
   }
 }

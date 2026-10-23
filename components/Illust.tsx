@@ -1,6 +1,7 @@
 // 시안의 선 일러스트. 출시 전 정식 일러스트로 교체할 자리.
-const S = { fill: "none", stroke: "#1f2b22", strokeWidth: 3, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-const INK = "#1f2b22", G = "#dde6d4", C = "#ebf0e5", A = "#f29b7c";
+// 진한 바탕 위 크림색 선
+const S = { fill: "none", stroke: "#f3eee3", strokeWidth: 3, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+const INK = "#f3eee3", G = "#12231f", C = "#1b302a", A = "#f29b7c";
 
 export function MomOnSofa() {
   return (
@@ -28,8 +29,8 @@ export function Baby() {
       <circle cx="60" cy="34" r="18" fill={C} />
       <path d="M42 32 Q42 14 60 15 Q78 14 78 32 Q71 22 60 23 Q49 22 42 32Z" fill={INK} />
       <path d="M53 40 Q60 45 67 40" strokeWidth={2.5} />
-      <path d="M36 86 Q60 100 84 86 Q78 72 60 74 Q42 72 36 86Z" fill="#f7f9f3" />
-      <circle cx="70" cy="80" r="7" fill="#f7f9f3" />
+      <path d="M36 86 Q60 100 84 86 Q78 72 60 74 Q42 72 36 86Z" fill={A} />
+      <circle cx="70" cy="80" r="7" fill={A} />
     </svg>
   );
 }
@@ -72,7 +73,22 @@ export function RecordTea() {
   );
 }
 
-export const Mic = ({ color = "#f7f9f3", size = 22 }: { color?: string; size?: number }) => (
+// LP 로고 (웰컴·첫 화면)
+export function LP({ className, size = 132 }: { className?: string; size?: number }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 100 100" aria-hidden="true">
+      <circle cx="50" cy="50" r="48" fill="#0b1714" />
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#2c4a42" strokeWidth="1" />
+      <circle cx="50" cy="50" r="32" fill="none" stroke="#2c4a42" strokeWidth="1" />
+      <circle cx="50" cy="50" r="24" fill="none" stroke="#2c4a42" strokeWidth="1" />
+      <path d="M22 30 A34 34 0 0 1 40 17" fill="none" stroke="#3f6359" strokeWidth="2" strokeLinecap="round" />
+      <circle cx="50" cy="50" r="15" fill={A} />
+      <circle cx="50" cy="50" r="2.5" fill="#0b1714" />
+    </svg>
+  );
+}
+
+export const Mic = ({ color = "#1d140f", size = 22 }: { color?: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><path d="M12 18v3" />
   </svg>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { admin } from "@/lib/supabaseAdmin";
 import { bad, loadFamily, unauthorized, userIdFrom } from "@/lib/auth";
+import { isOpen } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -14,14 +15,36 @@ async function mine(req: Request) {
 export async function GET(req: Request) {
   const m = await mine(req);
   if (!m) return unauthorized();
-  const { data } = await admin()
+  const db = admin();
+  const { data } = await db
     .from("vf_prompts")
-    .select("id, text, format, source, status, position, sent_at, reminder_count, unseal_at")
+    .select("id, text, format, source, status, position, sent_at, reminder_count, unseal_at, masked")
     .eq("storyteller_id", m.storyteller.id)
     .order("position")
     .order("created_at");
-  const all = data || [];
+  // 봉인된 대답에서 나온 질문은 문장을 숨긴다
+  const all = (data || []).map((p) =>
+    p.masked ? { ...p, text: "봉인된 이야기에서 이어진 질문이에요. 열리는 날 함께 공개돼요." } : p
+  );
+
+  // AI 한 줄: 가장 최근에 열린 이야기 요약
+  const { data: recent } = await db
+    .from("vf_answers")
+    .select("title, summary, unseal_at, created_at")
+    .eq("storyteller_id", m.storyteller.id)
+    .not("summary", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(5);
+  const opened = (recent || []).find((r) => isOpen(r.unseal_at));
+  const sealedCount = (recent || []).filter((r) => !isOpen(r.unseal_at)).length;
+  const insight = opened
+    ? { kind: "open", title: opened.title, summary: opened.summary }
+    : sealedCount
+    ? { kind: "sealed" }
+    : null;
+
   return NextResponse.json({
+    insight,
     queued: all.filter((p) => p.status === "queued"),
     sent: all
       .filter((p) => p.status !== "queued")
@@ -93,7 +116,7 @@ export async function PATCH(req: Request) {
     }
   } else {
     const patch: any = {};
-    if (typeof b.text === "string" && b.text.trim()) patch.text = b.text.trim().slice(0, 200);
+    if (typeof b.text === "string" && b.text.trim() && !p.masked) patch.text = b.text.trim().slice(0, 200);
     if (b.format === "audio" || b.format === "video") patch.format = b.format;
     await db.from("vf_prompts").update(patch).eq("id", p.id);
   }
