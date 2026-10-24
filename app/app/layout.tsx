@@ -24,13 +24,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       else setTimeout(async () => {
         const again = await sb.auth.getSession();
         if (again.data.session) setReady(true);
-        else router.replace("/login");
+        else {
+          // 만료된 로그인 흔적을 지워야 / ↔ /app 사이를 맴돌지 않는다
+          try { localStorage.removeItem("vf-auth"); } catch {}
+          router.replace("/login");
+        }
       }, 1200);
     });
     return () => sub.subscription.unsubscribe();
   }, [router]);
 
-  if (!ready) return <main className="screen center"><p className="muted">잠시만요…</p></main>;
+  if (!ready) return <main className="screen" />;
   const hideTabs = path === "/app/pick";
   return (
     <>
