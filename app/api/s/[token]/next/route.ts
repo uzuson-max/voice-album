@@ -12,7 +12,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
   const db = admin();
   const { data: p } = await db
     .from("vf_prompts")
-    .select("id, text, vf_storytellers(honorific, vf_families(child_name))")
+    .select("id, text, ask, vf_storytellers(honorific, vf_families(child_name))")
     .eq("token", params.token)
     .maybeSingle();
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
@@ -35,7 +35,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
     const r = await hostTurn({
       honorific: st?.honorific || "부모님",
       childName: st?.vf_families?.child_name || "",
-      question: a.turn === 0 ? p.text : a.asked || p.text,
+      question: a.turn === 0 ? p.ask || p.text : a.asked || p.text,
       transcript: a.transcript,
       turn: a.turn,
       videoDone: (videos || 0) > 0,

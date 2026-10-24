@@ -111,3 +111,7 @@ input[type="date"].input { color-scheme: dark; }
 .card.redpen { border-left: 3px solid var(--accent); background: var(--card2); padding: 14px 16px; }
 .hand { font-family: "Nanum Pen Script", "Noto Serif KR", cursive; font-size: 20px; color: #ffb8a0; line-height: 1.4; }
 textarea.hand { font-size: 20px; }
+
+/* 시간여행 빌드업: 한 줄씩 천천히 */
+.lead p { margin: 0 0 10px; font-size: 18px; line-height: 1.7; color: var(--muted); opacity: 0; animation: rise 1s ease forwards; }
+.q.reveal { opacity: 0; animation: rise 1s ease forwards; }

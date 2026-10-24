@@ -80,14 +80,14 @@ export async function finishPrompt(promptId: string) {
     .order("created_at");
   const turns = (answers || [])
     .filter((a) => a.transcript && a.transcript.trim().length > 5)
-    .map((a) => ({ asked: a.turn === 0 ? p.text : a.asked || "", transcript: a.transcript as string }));
+    .map((a) => ({ asked: a.turn === 0 ? p.ask || p.text : a.asked || "", transcript: a.transcript as string }));
   if (!turns.length) return;
 
   try {
     const art = await writeArticle({
       honorific: st?.honorific || "부모님",
       childName: st?.vf_families?.child_name || "",
-      question: p.text,
+      question: p.ask || p.text,
       turns,
     });
     await db.from("vf_prompts").update({ article_title: art.title || null, article: art.body || null }).eq("id", promptId);

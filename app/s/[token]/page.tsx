@@ -8,6 +8,7 @@ import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
 type Reaction = { about: string; text: string | null; audioUrl: string | null };
 type Info = {
   text: string;
+  lead: string | null;
   format: Kind;
   answered: boolean;
   honorific: string;
@@ -19,7 +20,11 @@ type Info = {
 };
 type Phase = "loading" | "error" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
-const MAX_TURNS = 2; // 첫 대답 뒤 이어 말하기 최대 2번
+const MAX_TURNS = 2;
+
+function splitLead(lead: string) {
+  return lead.replace(/([.?!요])\s+/g, "$1\n").split("\n").map((x) => x.trim()).filter(Boolean);
+} // 첫 대답 뒤 이어 말하기 최대 2번
 
 export default function ParentPage({ params }: { params: { token: string } }) {
   const [info, setInfo] = useState<Info | null>(null);
@@ -30,6 +35,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [kind, setKind] = useState<Kind>("audio");
   const [asked, setAsked] = useState("");
   const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean } | null>(null);
+  const [ready, setReady] = useState(false);
   const r = useRecorder();
   const live = useRef<HTMLVideoElement | null>(null);
 
@@ -43,6 +49,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         setKind(j.format);
         setAsked(j.text);
         setPhase(j.answered ? "done" : "ask");
+        // 빌드업을 한 줄씩 천천히 보여준 뒤 질문과 버튼이 나온다 (시간여행)
+        const n = j.lead ? splitLead(j.lead).length : 0;
+        setTimeout(() => setReady(true), n ? n * 1700 + 1400 : 0);
       })
       .catch((e) => {
         setErr(e.message || "링크를 열 수 없어요");
@@ -120,6 +129,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   }
 
   function continueTalk() {
+    setReady(true);
     if (!host?.followup) return;
     setAsked(host.followup);
     setKind(host.video ? "video" : "audio");
@@ -250,16 +260,29 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <div style={{ marginTop: isVideo ? 20 : 32 }}>{isVideo ? <Baby /> : <MomOnSofa />}</div>
       )}
 
-      <h1 className="serif q" style={{ marginTop: 28 }}>{asked}</h1>
+      {first && info.lead && phase === "ask" && !r.recording && (
+        <div className="lead" style={{ marginTop: 26 }}>
+          {splitLead(info.lead).map((line, i) => (
+            <p key={i} style={{ animationDelay: `${0.3 + i * 1.7}s` }}>{line}</p>
+          ))}
+        </div>
+      )}
 
-      {first && info.childAudioUrl && phase === "ask" && !r.recording && (
+      <h1
+        className={`serif q${first && info.lead && phase === "ask" && !r.recording ? " reveal" : ""}`}
+        style={{ marginTop: 22, animationDelay: info.lead ? `${0.3 + splitLead(info.lead).length * 1.7}s` : "0s" }}
+      >
+        {asked}
+      </h1>
+
+      {first && ready && info.childAudioUrl && phase === "ask" && !r.recording && (
         <div style={{ width: "100%", marginTop: 16 }}>
           <p className="small muted" style={{ margin: "0 0 6px" }}>{c}가 직접 물어봤어요</p>
           <audio src={info.childAudioUrl} controls />
         </div>
       )}
 
-      {phase === "ask" && !r.recording && (
+      {phase === "ask" && ready && !r.recording && !(first && info.lead) && (
         <p className="muted" style={{ margin: "12px 0 0", fontSize: 16, lineHeight: 1.6 }}>
           {isVideo ? "얼굴을 보며 들려주세요. 가족만 볼 수 있어요." : "생각나는 대로, 편하게 말씀해 주세요."}
         </p>
@@ -268,7 +291,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       <div className="grow" style={{ minHeight: 28 }} />
       {err && <p className="err">{err}</p>}
 
-      {phase === "ask" && !r.recording && (
+      {phase === "ask" && !r.recording && !ready && (
+        <button className="link" onClick={() => setReady(true)}>바로 대답할게요</button>
+      )}
+
+      {phase === "ask" && ready && !r.recording && (
         <>
           <button className="btn" onClick={start}>
             {isVideo ? <span className="rec-dot" /> : <Mic />}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { admin, BUCKET } from "@/lib/supabaseAdmin";
+import { ensureLead } from "@/lib/lead";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,7 @@ export async function GET(_req: Request, { params }: { params: { token: string }
     .maybeSingle();
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
   const st: any = (p as any).vf_storytellers;
+  const t = await ensureLead(p.id);
 
   // 지난 이야기에 자녀가 남긴 반응 (이 링크에서 처음 보여준 것만, 다시 열어도 같은 것)
   const { data: fresh } = await db
@@ -46,7 +48,8 @@ export async function GET(_req: Request, { params }: { params: { token: string }
   );
 
   return NextResponse.json({
-    text: p.text,
+    text: t.ask || p.text,
+    lead: t.lead,
     format: p.format,
     answered: p.status === "answered",
     honorific: st?.honorific,

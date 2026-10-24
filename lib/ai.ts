@@ -28,29 +28,66 @@ const TONE = `너는 자녀가 부모님께 보내는 인생 질문을 쓰는 �
 - 유언·죽음·이별을 떠올리게 하는 표현 금지. 미래의 자녀를 위한 말로 표현한다.
 - "녹음", "기록", "인터뷰" 같은 단어 금지.`;
 
+// 모든 질문은 '그때'를 짚는다 — 지금 이야기로 오해할 여지가 없게
+const MOMENT = `- 질문마다 인생의 한 순간을 꼭 짚는다: 나이·학년 + 계절·상황. 예) "중학교 1학년 여름방학", "스무 살 첫 겨울", "결혼 전 마지막 봄".
+- "그때", "그 시절" 시제를 분명히. "자주 가던 맛집은?"처럼 지금 얘기로 들릴 수 있는 질문 금지 → "고등학생 때 친구들이랑 하교길에 자주 들르던 곳은 어디였어요?"`;
+
+function profileText(profile: Record<string, string>) {
+  return Object.entries(profile || {})
+    .filter(([, v]) => String(v || "").trim())
+    .map(([k, v]) => `${k}: ${v}`)
+    .join("\n");
+}
+
 export type Q = { text: string; format: "audio" | "video" };
 
-// 자녀가 적은 부모님 정보로 맞춤 질문 10개
+// 자녀가 적은 부모님 정보로 맞춤 질문 10개 — 어린 시절부터 지금까지 시간 순서로 떠나는 여행
 export async function recommendQuestions(input: {
   honorific: string;
   childName: string;
   profile: Record<string, string>;
 }): Promise<Q[]> {
-  const profile = Object.entries(input.profile)
-    .filter(([, v]) => v?.trim())
-    .map(([k, v]) => `${k}: ${v}`)
-    .join("\n");
   const out = await chatJSON(
     TONE +
-      `\n- 앞쪽은 가벼운 사실 질문(audio), 뒤로 갈수록 마음이 뭉클해지는 질문. 뭉클한 질문 3개는 format을 video로.
-- 무거운 주제(힘들었던 때)는 6번째 이후에만.
+      "\n" +
+      MOMENT +
+      `
+- 10개는 시간 순서: 어린 시절 → 중학생 → 고등학생 → 스무 살 무렵 → 첫 일·연애 → 결혼·${input.childName}가 태어났을 때 → 지금.
+- 부모님 정보(학교, 고향, 했던 일)가 있으면 그 이름을 질문에 넣어 그 시절로 바로 데려간다. 예) "경희대 국문과 입학하던 그해 봄"
+- 그 시절의 ${input.honorific}가 품었던 꿈, 잘했던 것, 스스로 자랑스러웠던 순간을 떠올리게 하는 질문을 2개 이상 넣는다.
+- 앞쪽은 가벼운 장면 질문(audio), 뒤로 갈수록 마음이 뭉클해지는 질문. 뭉클한 질문 3개는 format을 video로.
 - JSON: {"questions":[{"text":"...","format":"audio"|"video"}]} 정확히 10개.`,
-    `부모님 호칭: ${input.honorific}\n자녀 이름: ${input.childName}\n부모님 정보:\n${profile || "(없음)"}`
+    `부모님 호칭: ${input.honorific}\n자녀 이름: ${input.childName}\n부모님 정보:\n${profileText(input.profile) || "(없음)"}`
   );
   return (out.questions || []).slice(0, 10).map((q: any) => ({
     text: String(q.text).trim(),
     format: q.format === "video" ? "video" : "audio",
   }));
+}
+
+// 질문 하나 → 부모님이 듣는 버전: 그 시절로 데려가는 빌드업(lead) + 그때를 짚은 질문(ask)
+export async function timeTravel(input: {
+  honorific: string;
+  childName: string;
+  profile: Record<string, string>;
+  question: string;
+}): Promise<{ lead: string; ask: string }> {
+  const out = await chatJSON(
+    `너는 ${input.childName}가 ${input.honorific}께 묻는 질문을, ${input.honorific}가 그 시절로 천천히 돌아갈 수 있게 다듬는 사람이다.
+JSON: {"lead":"...","ask":"..."}
+lead (2~3문장, 문장마다 25자 안팎):
+ 1) 질문이 가리키는 한 순간을 정해서 불러준다. 나이·학년 + 계절·상황. 태어난 해를 알면 연도도. 예) "${input.honorific}가 중학교 1학년이던 1975년 여름방학이에요."
+ 2) 그 순간을 눈앞에 그려보게 한다. 누구에게나 있던 것만 쓴다 (그때 살던 집, 같이 다니던 친구 얼굴, 교복, 그 계절 날씨). 알지 못하는 사실을 지어내지 않는다.
+ 3) 여유를 준다. 예) "생각이 잘 안 나면 천천히 떠올려 보셔도 돼요."
+ask (한 문장, 45자 이내): 그 순간 안에서 묻는 구체적인 질문. "그때" 시제를 분명히. 원래 질문의 뜻은 유지.
+규칙: 존댓말. 부모님 정보에 학교·고향이 있으면 그 이름으로 장면을 구체화. "녹음", "기록", "AI", 죽음·이별 표현 금지.`,
+    `원래 질문: ${input.question}\n부모님 정보:\n${profileText(input.profile) || "(없음)"}`,
+    0.6
+  );
+  return {
+    lead: String(out.lead || "").trim().slice(0, 300),
+    ask: String(out.ask || input.question).trim().slice(0, 140),
+  };
 }
 
 // 대답 하나 → 제목, 한 줄 요약
@@ -91,6 +128,7 @@ export async function hostTurn(input: {
 - 맞장구는 재진술하지 않는다. 대답에 없는 감정을 지어내지 않는다. 과장된 감탄 금지.
 - 대답이 아주 짧으면 고르기 쉬운 선택지를 넣어 묻는다. 예: "친구랑이었어요, 혼자였어요?"
 - 대답에 울컥하거나 무거운 기색(돌아가신 분, 힘들었던 일)이 있으면 react는 "천천히 하셔도 돼요" 같은 말로 하고, followup은 가볍게 하거나 null.
+- 이어 묻는 질문은 처음 질문의 그 시절 안에 머문다. 지금 이야기로 건너뛰지 않는다. 예) "그 친구랑은 그 여름에 주로 어디서 만났어요?"
 - 이야기가 충분히 마무리됐거나 더 묻는 게 실례 같으면 followup은 null.
 - moving: 대답이 자녀에게 꼭 얼굴로 남기고 싶을 만큼 마음이 담긴 내용이면 true.
 - "녹음", "기록", "AI" 같은 단어 금지.`,
@@ -132,6 +170,8 @@ export async function writeArticle(input: {
 export async function polishQuestion(input: { honorific: string; childName: string; text: string }): Promise<string> {
   const out = await chatJSON(
     TONE +
+      "\n" +
+      MOMENT +
       `\n자녀가 쓴 질문의 뜻은 그대로 두고, 부모님이 받았을 때 편하게 답할 수 있는 한 문장으로 다듬어라.
 부모님은 "${input.honorific}", 자녀는 "${input.childName}"라고 부른다.
 JSON: {"text":"다듬은 질문"}`,

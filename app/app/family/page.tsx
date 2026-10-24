@@ -7,7 +7,7 @@ import { WEEKDAYS } from "@/lib/time";
 const empty = {
   childName: "", label: "엄마", honorific: "어머니", phone: "",
   sendWeekday: 3, sendHour: 9, unsealAt: "",
-  hometown: "", job: "", likes: "",
+  born: "", school: "", hometown: "", job: "", likes: "",
 };
 
 export default function Family() {
@@ -25,7 +25,7 @@ export default function Family() {
       setF({
         childName: family.child_name, label: storyteller.label, honorific: storyteller.honorific, phone: storyteller.phone,
         sendWeekday: storyteller.send_weekday, sendHour: storyteller.send_hour, unsealAt: storyteller.unseal_at || "",
-        hometown: storyteller.profile?.고향 || "", job: storyteller.profile?.["했던 일"] || "", likes: storyteller.profile?.["좋아하는 것"] || "",
+        born: storyteller.profile?.["태어난 해"] || "", school: storyteller.profile?.["학교·전공"] || "", hometown: storyteller.profile?.고향 || "", job: storyteller.profile?.["했던 일"] || "", likes: storyteller.profile?.["좋아하는 것"] || "",
       });
     });
   }, []);
@@ -41,7 +41,7 @@ export default function Family() {
         body: JSON.stringify({
           ...f,
           sendWeekday: Number(f.sendWeekday), sendHour: Number(f.sendHour), unsealAt: f.unsealAt || null,
-          profile: { 고향: f.hometown, "했던 일": f.job, "좋아하는 것": f.likes },
+          profile: { "태어난 해": f.born, "학교·전공": f.school, 고향: f.hometown, "했던 일": f.job, "좋아하는 것": f.likes },
         }),
       });
       if (isNew) router.replace("/app/pick");
@@ -86,6 +86,8 @@ export default function Family() {
         </Field>
 
         <div className="section" style={{ marginTop: 18 }}>부모님에 대해 조금만 (맞춤 질문에 써요)</div>
+        <Field label="태어난 해" hint="질문 속 '그때'를 정확히 짚는 데 써요"><input className="input" inputMode="numeric" value={f.born} onChange={set("born")} placeholder="예: 1962" /></Field>
+        <Field label="다니신 학교·전공 (아시면)"><input className="input" value={f.school} onChange={set("school")} placeholder="예: 순천여고, 경희대 국문과" /></Field>
         <Field label="고향"><input className="input" value={f.hometown} onChange={set("hometown")} placeholder="예: 전남 순천" /></Field>
         <Field label="젊을 때 하셨던 일"><input className="input" value={f.job} onChange={set("job")} placeholder="예: 섬유공장, 미용실" /></Field>
         <Field label="좋아하시는 것"><input className="input" value={f.likes} onChange={set("likes")} placeholder="예: 트로트, 등산, 화초" /></Field>

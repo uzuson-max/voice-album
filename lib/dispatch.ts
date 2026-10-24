@@ -4,6 +4,7 @@ import { sendText } from "./sms";
 import { kstParts, WEEKDAYS } from "./time";
 import { APP_NAME, appUrl } from "./brand";
 import { finishPrompt } from "./process";
+import { ensureLead } from "./lead";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -38,6 +39,10 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .not("reaction_at", "is", null)
     .is("reaction_shown_on", null);
 
+  // 그 시절로 데려가는 빌드업을 미리 만들어 둔다 (문자에는 다듬은 질문만)
+  const t = await ensureLead(next.id);
+  const q = t.ask || next.text;
+
   const token = crypto.randomBytes(16).toString("base64url");
   const h = storyteller.honorific || "";
   let text: string;
@@ -46,12 +51,12 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
       `[${APP_NAME}] ${childName}가 ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
       `앞으로 매주 ${WEEKDAYS[storyteller.send_weekday]}요일에 ${childName}의 질문이 하나씩 와요. ` +
       `생각나는 만큼만 편하게 들려주시면 돼요.\n\n` +
-      `첫 번째 질문이에요.\n"${next.text}"\n\n${link(token)}`;
+      `첫 번째 질문이에요.\n"${q}"\n\n${link(token)}`;
   } else {
     text =
       `[${APP_NAME}] ${childName}가 이번 주 질문을 보냈어요.\n` +
       (reactions ? `지난번 이야기에 ${childName}가 남긴 말도 함께 있어요.\n` : "") +
-      `\n"${next.text}"\n\n` +
+      `\n"${q}"\n\n` +
       `아래 링크를 누르고 편하게 말씀해 주세요.\n${link(token)}`;
   }
   await sendText(storyteller.phone, text, `${childName}가 보낸 질문`);
@@ -64,7 +69,7 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
 
 async function remind(prompt: any, storyteller: any) {
   const text =
-    `[${APP_NAME}] 지난번 질문, 편하실 때 들려주세요.\n\n"${prompt.text}"\n${link(prompt.token)}`;
+    `[${APP_NAME}] 지난번 질문, 편하실 때 들려주세요.\n\n"${prompt.ask || prompt.text}"\n${link(prompt.token)}`;
   await sendText(storyteller.phone, text, "지난번 질문");
   await admin()
     .from("vf_prompts")

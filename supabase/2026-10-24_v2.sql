@@ -19,3 +19,7 @@ alter table vf_answers add column if not exists react text;                    -
 alter table vf_answers add column if not exists followup text;                 -- AI가 이어서 물은 질문
 
 create index if not exists vf_answers_prompt_idx on vf_answers(prompt_id, turn);
+
+-- v2.1 시간여행 질문: 부모님이 듣는 버전 (빌드업 + 그때를 짚은 질문)
+alter table vf_prompts add column if not exists lead text;   -- 그 시절로 데려가는 빌드업 2~3문장
+alter table vf_prompts add column if not exists ask text;    -- 시점을 넣어 다듬은 질문
