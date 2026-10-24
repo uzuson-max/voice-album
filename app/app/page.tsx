@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/supabaseBrowser";
+import { api, cached, remember } from "@/lib/supabaseBrowser";
+import Loader from "@/components/Loader";
 import { WEEKDAYS } from "@/lib/time";
 import { PhotoButton, VoiceButton } from "@/components/ChildMedia";
 
@@ -23,12 +24,14 @@ export default function Questions() {
 
   const load = useCallback(async () => {
     try {
-      setD(await api("/api/me/prompts"));
+      const r: any = await api("/api/me/prompts");
+      remember("prompts", r);
+      setD(r);
     } catch {
       router.replace("/app/family");
     }
   }, [router]);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { const c = cached("prompts"); if (c) setD(c); load(); }, [load]);
 
   async function act(body: any) {
     await api("/api/me/prompts", { method: "PATCH", body: JSON.stringify(body) });
@@ -66,7 +69,7 @@ export default function Questions() {
     }
   }
 
-  if (!d) return <main className="screen center"><p className="muted">잠시만요…</p></main>;
+  if (!d) return <Loader label="질문함을 여는 중" />;
   const st = d.storyteller;
 
   return (

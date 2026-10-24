@@ -28,3 +28,11 @@ export async function api<T = any>(path: string, init: RequestInit = {}): Promis
   if (!res.ok) throw new Error(json.error || "요청 실패");
   return json as T;
 }
+
+// 탭 이동이 바로 뜨게: 마지막으로 받은 화면 데이터를 이 세션 동안 기억해 두고 먼저 보여준다
+export function cached<T = any>(key: string): T | null {
+  try { const v = sessionStorage.getItem("wr-c:" + key); return v ? JSON.parse(v) : null; } catch { return null; }
+}
+export function remember(key: string, v: any) {
+  try { sessionStorage.setItem("wr-c:" + key, JSON.stringify(v)); } catch {}
+}

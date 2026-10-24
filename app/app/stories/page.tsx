@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { api } from "@/lib/supabaseBrowser";
+import { api, cached, remember } from "@/lib/supabaseBrowser";
+import Loader from "@/components/Loader";
 import { GiftBox } from "@/components/Illust";
 import { VoiceButton } from "@/components/ChildMedia";
 import { koDate } from "@/lib/time";
@@ -13,9 +14,12 @@ type Article = {
 
 export default function Stories() {
   const [d, setD] = useState<any>(null);
-  const load = () => api("/api/me/stories").then(setD).catch(() => setD({ articles: [], sealed: [] }));
-  useEffect(() => { load(); }, []);
-  if (!d) return <main className="screen center"><p className="muted">잠시만요…</p></main>;
+  const load = () =>
+    api("/api/me/stories")
+      .then((r) => { remember("stories", r); setD(r); })
+      .catch(() => setD((v: any) => v || { articles: [], sealed: [] }));
+  useEffect(() => { const c = cached("stories"); if (c) setD(c); load(); }, []);
+  if (!d) return <Loader label="이야기를 펼치는 중" />;
   const label = d.storyteller?.label || "부모님";
   const total = d.articles.length;
 

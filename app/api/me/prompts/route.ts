@@ -16,12 +16,21 @@ export async function GET(req: Request) {
   const m = await mine(req);
   if (!m) return unauthorized();
   const db = admin();
-  const { data } = await db
+  const [{ data }, { data: recent }] = await Promise.all([
+    db
     .from("vf_prompts")
     .select("id, text, format, source, status, position, sent_at, reminder_count, unseal_at, masked, child_audio_path, photo_path")
     .eq("storyteller_id", m.storyteller.id)
     .order("position")
-    .order("created_at");
+    .order("created_at"),
+    db
+    .from("vf_answers")
+    .select("title, summary, unseal_at, created_at")
+    .eq("storyteller_id", m.storyteller.id)
+    .not("summary", "is", null)
+    .order("created_at", { ascending: false })
+    .limit(5),
+  ]);
   // 봉인된 대답에서 나온 질문은 문장을 숨긴다
   const all = (data || []).map(({ child_audio_path, photo_path, ...p }) => ({
     ...p,
@@ -31,13 +40,6 @@ export async function GET(req: Request) {
   }));
 
   // AI 한 줄: 가장 최근에 열린 이야기 요약
-  const { data: recent } = await db
-    .from("vf_answers")
-    .select("title, summary, unseal_at, created_at")
-    .eq("storyteller_id", m.storyteller.id)
-    .not("summary", "is", null)
-    .order("created_at", { ascending: false })
-    .limit(5);
   const opened = (recent || []).find((r) => isOpen(r.unseal_at));
   const sealedCount = (recent || []).filter((r) => !isOpen(r.unseal_at)).length;
   const insight = opened
