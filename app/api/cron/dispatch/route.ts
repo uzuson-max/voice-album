@@ -1,3 +1,4 @@
+import { setOriginFrom } from "@/lib/brand";
 import { NextResponse } from "next/server";
 import { runDispatch } from "@/lib/dispatch";
 
@@ -5,6 +6,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 async function handle(req: Request) {
+  setOriginFrom(req);
   if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

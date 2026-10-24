@@ -1,3 +1,4 @@
+import { setOriginFrom } from "@/lib/brand";
 import { NextResponse } from "next/server";
 import { bad, loadFamily, unauthorized, userIdFrom } from "@/lib/auth";
 import { sendNextPrompt } from "@/lib/dispatch";
@@ -6,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 // "지금 바로 보내기" — 다음 질문을 즉시 문자로 (첫 질문, 테스트용)
 export async function POST(req: Request) {
+  setOriginFrom(req);
   const uid = await userIdFrom(req);
   if (!uid) return unauthorized();
   const { family, storyteller } = await loadFamily(uid);
