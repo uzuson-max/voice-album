@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { admin } from "./supabaseAdmin";
 import { sendText } from "./sms";
-import { kstParts } from "./time";
+import { kstParts, WEEKDAYS } from "./time";
 import { APP_NAME, appUrl } from "./brand";
+import { finishPrompt } from "./process";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -24,11 +25,35 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .maybeSingle();
   if (!next) return { sent: false, reason: "보낼 질문이 없어요" };
 
+  // 처음 보내는 질문인지, 아직 못 전한 자녀 반응이 있는지
+  const { count: sentBefore } = await db
+    .from("vf_prompts")
+    .select("id", { count: "exact", head: true })
+    .eq("storyteller_id", storyteller.id)
+    .neq("status", "queued");
+  const { count: reactions } = await db
+    .from("vf_prompts")
+    .select("id", { count: "exact", head: true })
+    .eq("storyteller_id", storyteller.id)
+    .not("reaction_at", "is", null)
+    .is("reaction_shown_on", null);
+
   const token = crypto.randomBytes(16).toString("base64url");
-  const text =
-    `[${APP_NAME}] ${childName}가 이번 주 질문을 보냈어요.\n\n` +
-    `"${next.text}"\n\n` +
-    `아래 링크를 누르고 편하게 말씀해 주세요.\n${link(token)}`;
+  const h = storyteller.honorific || "";
+  let text: string;
+  if (!sentBefore) {
+    text =
+      `[${APP_NAME}] ${childName}가 ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
+      `앞으로 매주 ${WEEKDAYS[storyteller.send_weekday]}요일에 ${childName}의 질문이 하나씩 와요. ` +
+      `생각나는 만큼만 편하게 들려주시면 돼요.\n\n` +
+      `첫 번째 질문이에요.\n"${next.text}"\n\n${link(token)}`;
+  } else {
+    text =
+      `[${APP_NAME}] ${childName}가 이번 주 질문을 보냈어요.\n` +
+      (reactions ? `지난번 이야기에 ${childName}가 남긴 말도 함께 있어요.\n` : "") +
+      `\n"${next.text}"\n\n` +
+      `아래 링크를 누르고 편하게 말씀해 주세요.\n${link(token)}`;
+  }
   await sendText(storyteller.phone, text, `${childName}가 보낸 질문`);
   await db
     .from("vf_prompts")
@@ -56,6 +81,27 @@ export async function runDispatch(now = new Date()) {
   const db = admin();
   const { weekday, hour } = kstParts(now);
   const log: any[] = [];
+
+  // 0) 이어 말하기 도중 창을 닫은 이야기는 30분 뒤 기사로 마무리
+  const { data: open } = await db
+    .from("vf_prompts")
+    .select("id")
+    .eq("status", "answered")
+    .is("finished_at", null)
+    .limit(20);
+  for (const p of open || []) {
+    const { data: last } = await db
+      .from("vf_answers")
+      .select("created_at")
+      .eq("prompt_id", p.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (last && now.getTime() - new Date(last.created_at).getTime() > 30 * 60 * 1000) {
+      await finishPrompt(p.id).catch(() => {});
+      log.push({ finished: p.id });
+    }
+  }
 
   const { data: tellers } = await db
     .from("vf_storytellers")

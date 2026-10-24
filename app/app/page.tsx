@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/supabaseBrowser";
 import { WEEKDAYS } from "@/lib/time";
+import { PhotoButton, VoiceButton } from "@/components/ChildMedia";
 
-type P = { id: string; text: string; format: "audio" | "video"; source: string; status: string; reminder_count: number; masked?: boolean };
+type P = { id: string; text: string; format: "audio" | "video"; source: string; status: string; reminder_count: number; masked?: boolean; hasVoice?: boolean; hasPhoto?: boolean };
 
 const SRC: Record<string, string> = { followup: "지난 대답에서 이어진 질문", ai: "맞춤 질문", library: "", custom: "직접 쓴 질문" };
 
 export default function Questions() {
   const router = useRouter();
-  const [d, setD] = useState<{ queued: P[]; sent: P[]; storyteller: any; insight: any } | null>(null);
+  const [d, setD] = useState<{ queued: P[]; sent: P[]; storyteller: any; family?: any; insight: any } | null>(null);
   const [polishing, setPolishing] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -117,6 +118,12 @@ export default function Questions() {
           </div>
         )}
 
+        {d.queued.length > 0 && (
+          <p className="tiny muted" style={{ margin: "-6px 4px 0", lineHeight: 1.6 }}>
+            질문을 내 목소리로 남겨두면 {st.label}가 링크를 열 때 {d.family?.child_name || "내"} 목소리로 먼저 들어요. 사진은 있을 때만요.
+          </p>
+        )}
+
         {d.queued.length === 0 && <p className="muted small" style={{ margin: "0 4px" }}>보낼 질문이 없어요. 아래에서 추천받아 보세요.</p>}
 
         {d.queued.map((p, i) => (
@@ -138,6 +145,12 @@ export default function Questions() {
             ) : (
               <>
                 <div style={{ fontSize: 16, lineHeight: 1.55, ...(p.masked ? { color: "var(--muted)", fontStyle: "italic" } : {}) }}>{p.text}</div>
+                {!p.masked && (
+                  <div className="row" style={{ gap: 14, flexWrap: "wrap" }}>
+                    <VoiceButton promptId={p.id} target="question" has={!!p.hasVoice} label="내 목소리로 묻기" />
+                    <PhotoButton promptId={p.id} has={!!p.hasPhoto} />
+                  </div>
+                )}
                 <div className="row tiny muted">
                   {i === 0 && <span style={{ color: "var(--primary)", fontWeight: 700 }}>다음 차례</span>}
                   <div className="grow" />

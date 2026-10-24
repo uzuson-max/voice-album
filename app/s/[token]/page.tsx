@@ -3,109 +3,78 @@ import { useEffect, useRef, useState } from "react";
 import { browserClient } from "@/lib/supabaseBrowser";
 import { Baby, Envelope, Mic, MomOnSofa } from "@/components/Illust";
 import { koDate } from "@/lib/time";
+import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
 
-type Info = { text: string; format: "audio" | "video"; answered: boolean; honorific: string; childName: string; unsealAt: string | null };
-type Phase = "loading" | "error" | "ask" | "recording" | "review" | "sending" | "done" | "later";
+type Reaction = { about: string; text: string | null; audioUrl: string | null };
+type Info = {
+  text: string;
+  format: Kind;
+  answered: boolean;
+  honorific: string;
+  childName: string;
+  unsealAt: string | null;
+  childAudioUrl: string | null;
+  photoUrl: string | null;
+  reactions: Reaction[];
+};
+type Phase = "loading" | "error" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
-const LIMIT = { audio: 15 * 60, video: 3 * 60 };
-
-function pickMime(kind: "audio" | "video") {
-  const list =
-    kind === "video"
-      ? ["video/mp4", "video/webm;codecs=vp8,opus", "video/webm"]
-      : ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"];
-  if (typeof MediaRecorder === "undefined") return "";
-  return list.find((m) => MediaRecorder.isTypeSupported(m)) || "";
-}
-
-const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const MAX_TURNS = 2; // 첫 대답 뒤 이어 말하기 최대 2번
 
 export default function ParentPage({ params }: { params: { token: string } }) {
   const [info, setInfo] = useState<Info | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [err, setErr] = useState("");
-  const [sec, setSec] = useState(0);
-  const [blob, setBlob] = useState<Blob | null>(null);
   const [unsealAt, setUnsealAt] = useState<string | null>(null);
-  const rec = useRef<MediaRecorder | null>(null);
-  const stream = useRef<MediaStream | null>(null);
-  const chunks = useRef<Blob[]>([]);
-  const timer = useRef<any>(null);
+  const [turn, setTurn] = useState(0);
+  const [kind, setKind] = useState<Kind>("audio");
+  const [asked, setAsked] = useState("");
+  const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean } | null>(null);
+  const r = useRecorder();
   const live = useRef<HTMLVideoElement | null>(null);
-  const startedAt = useRef(0);
 
   useEffect(() => {
     fetch(`/api/s/${params.token}`)
-      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+      .then((res) => res.json().then((j) => ({ ok: res.ok, j })))
       .then(({ ok, j }) => {
         if (!ok) throw new Error(j.error);
         setInfo(j);
         setUnsealAt(j.unsealAt);
+        setKind(j.format);
+        setAsked(j.text);
         setPhase(j.answered ? "done" : "ask");
       })
       .catch((e) => {
         setErr(e.message || "링크를 열 수 없어요");
         setPhase("error");
       });
-    return () => stopAll();
   }, [params.token]);
 
-  function stopAll() {
-    clearInterval(timer.current);
-    stream.current?.getTracks().forEach((t) => t.stop());
-  }
+  useEffect(() => {
+    if (live.current && r.stream && kind === "video") {
+      live.current.srcObject = r.stream;
+      live.current.play().catch(() => {});
+    }
+  }, [r.stream, kind]);
+
+  useEffect(() => {
+    if (r.blob && !r.recording) setPhase("review");
+  }, [r.blob, r.recording]);
+
+  const limit = turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
 
   async function start() {
-    if (!info) return;
     setErr("");
     try {
-      const s = await navigator.mediaDevices.getUserMedia(
-        info.format === "video"
-          ? { audio: true, video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 960 } } }
-          : { audio: true }
-      );
-      stream.current = s;
-      const mime = pickMime(info.format);
-      const r = new MediaRecorder(s, {
-        ...(mime ? { mimeType: mime } : {}),
-        ...(info.format === "video" ? { videoBitsPerSecond: 1_500_000 } : { audioBitsPerSecond: 48_000 }),
-      });
-      chunks.current = [];
-      r.ondataavailable = (e) => e.data.size && chunks.current.push(e.data);
-      r.onstop = () => {
-        const b = new Blob(chunks.current, { type: r.mimeType || mime || (info.format === "video" ? "video/webm" : "audio/webm") });
-        setBlob(b);
-        stopAll();
-        setPhase("review");
-      };
-      rec.current = r;
-      r.start(1000);
-      startedAt.current = Date.now();
-      setSec(0);
-      setPhase("recording");
-      timer.current = setInterval(() => {
-        const n = Math.floor((Date.now() - startedAt.current) / 1000);
-        setSec(n);
-        if (n >= LIMIT[info.format]) stop();
-      }, 500);
-      setTimeout(() => {
-        if (live.current && info.format === "video") {
-          live.current.srcObject = s;
-          live.current.play().catch(() => {});
-        }
-      }, 50);
+      await r.start(kind, limit);
     } catch {
       setErr("마이크(카메라) 사용을 허용해 주셔야 해요. 화면 위쪽 알림에서 '허용'을 눌러주세요.");
     }
   }
 
-  function stop() {
-    clearInterval(timer.current);
-    if (rec.current && rec.current.state !== "inactive") rec.current.stop();
-  }
-
   async function send() {
-    if (!blob) return;
+    if (!r.blob) return;
+    const blob = r.blob;
     setPhase("sending");
     setErr("");
     try {
@@ -113,7 +82,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mime: blob.type }),
-      }).then((r) => r.json());
+      }).then((x) => x.json());
       if (!u.path) throw new Error(u.error);
       const { error } = await browserClient()
         .storage.from("vf-media")
@@ -122,15 +91,45 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       const c = await fetch(`/api/s/${params.token}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ path: u.path, mime: blob.type, duration: sec }),
-      }).then((r) => r.json());
+        body: JSON.stringify({ path: u.path, mime: blob.type, duration: r.sec, turn, asked, kind }),
+      }).then((x) => x.json());
       if (!c.ok) throw new Error(c.error);
       setUnsealAt(c.unsealAt);
-      setPhase("done");
+      r.reset();
+
+      // 진행자 한마디 + 이어지는 질문
+      setPhase("thinking");
+      const h = await fetch(`/api/s/${params.token}/next`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ answerId: c.answerId }),
+      })
+        .then((x) => x.json())
+        .catch(() => ({ react: "말씀 잘 들었어요.", followup: null }));
+      if (h.followup && turn < MAX_TURNS) {
+        setHost(h);
+        setPhase("host");
+      } else {
+        setHost(h);
+        finish();
+      }
     } catch {
       setErr("보내지 못했어요. 인터넷 연결을 확인하고 다시 눌러주세요.");
       setPhase("review");
     }
+  }
+
+  function continueTalk() {
+    if (!host?.followup) return;
+    setAsked(host.followup);
+    setKind(host.video ? "video" : "audio");
+    setTurn((t) => t + 1);
+    setPhase("ask");
+  }
+
+  function finish() {
+    fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
+    setPhase("done");
   }
 
   async function later() {
@@ -148,14 +147,16 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       </main>
     );
 
-  const isVideo = info.format === "video";
-  const toChild = unsealAt ? `${koDate(unsealAt)}에 ${info.childName}에게 전해져요` : `${info.childName}에게 바로 전해져요`;
+  const c = info.childName;
+  const isVideo = kind === "video";
+  const toChild = unsealAt ? `${koDate(unsealAt)}에 ${c}에게 전해져요` : `${c}에게 바로 전해져요`;
 
   if (phase === "done")
     return (
-      <main className="screen center" style={{ paddingTop: 110 }}>
+      <main className="screen center" style={{ paddingTop: 100 }}>
         <Envelope />
-        <h1 className="serif" style={{ margin: "40px 0 0", fontSize: 28 }}>잘 담았어요.</h1>
+        {host?.react && <p className="muted" style={{ margin: "32px 0 0", fontSize: 17 }}>{host.react}</p>}
+        <h1 className="serif" style={{ margin: "14px 0 0", fontSize: 28 }}>오늘 이야기, 잘 담았어요.</h1>
         <p className="muted" style={{ margin: "14px 0 0", fontSize: 17, lineHeight: 1.7 }}>
           {info.honorific}의 이야기는 소중히 봉해두었다가
           <br />
@@ -179,67 +180,127 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       </main>
     );
 
+  if (phase === "thinking")
+    return (
+      <main className="screen center" style={{ paddingTop: 140 }}>
+        <span className="rec-dot pulse" />
+        <p className="serif" style={{ margin: "28px 0 0", fontSize: 22, lineHeight: 1.6 }}>
+          {info.honorific}의 이야기를
+          <br />
+          귀 기울여 듣고 있어요
+        </p>
+        <p className="small muted" style={{ marginTop: 14 }}>잠깐이면 돼요</p>
+      </main>
+    );
+
+  if (phase === "host" && host)
+    return (
+      <main className="screen center" style={{ paddingTop: 90 }}>
+        <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.6 }}>{host.react}</p>
+        <h1 className="serif q" style={{ marginTop: 26 }}>{host.followup}</h1>
+        <div className="grow" style={{ minHeight: 28 }} />
+        <button className="btn" onClick={continueTalk}>
+          {host.video ? <span className="rec-dot" /> : <Mic />}
+          {host.video ? "얼굴 보며 들려주기" : "이어서 말하기"}
+        </button>
+        <button className="link" style={{ marginTop: 6 }} onClick={finish}>오늘은 여기까지 할게요</button>
+      </main>
+    );
+
+  const first = turn === 0;
   return (
     <main className="screen center">
-      {isVideo ? (
-        <span className="pill">조금 특별한 질문이에요</span>
-      ) : (
-        <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>{info.childName}가 보낸 이번 주 질문</p>
+      {first && info.reactions.length > 0 && (
+        <div className="card redpen" style={{ width: "100%", textAlign: "left", marginBottom: 22 }}>
+          <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>
+            지난번 &lsquo;{info.reactions[0].about}&rsquo; 이야기에 {c}가 남긴 말
+          </div>
+          {info.reactions.map((x, i) => (
+            <div key={i} style={{ marginTop: 8 }}>
+              {x.text && <p className="hand" style={{ margin: 0 }}>{x.text}</p>}
+              {x.audioUrl && <audio src={x.audioUrl} controls style={{ marginTop: 8 }} />}
+            </div>
+          ))}
+        </div>
       )}
 
-      {phase === "recording" && isVideo ? (
+      {first ? (
+        isVideo ? (
+          <span className="pill">조금 특별한 질문이에요</span>
+        ) : (
+          <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>{c}가 보낸 이번 주 질문</p>
+        )
+      ) : (
+        <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>조금만 더 들려주세요</p>
+      )}
+
+      {r.recording && isVideo ? (
         <video ref={live} className="preview" muted playsInline style={{ marginTop: 24 }} />
-      ) : phase === "review" && blob ? (
+      ) : phase === "review" && r.blob ? (
         <div style={{ marginTop: 28, width: "100%" }}>
           {isVideo ? (
-            <video src={URL.createObjectURL(blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#0b1714" }} />
+            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#0b1714" }} />
           ) : (
-            <audio src={URL.createObjectURL(blob)} controls />
+            <audio src={URL.createObjectURL(r.blob)} controls />
           )}
         </div>
+      ) : first && info.photoUrl ? (
+        <img src={info.photoUrl} alt="" className="photo" style={{ marginTop: 24 }} />
       ) : (
         <div style={{ marginTop: isVideo ? 20 : 32 }}>{isVideo ? <Baby /> : <MomOnSofa />}</div>
       )}
 
-      <h1 className="serif q" style={{ marginTop: 28 }}>{info.text}</h1>
-      {phase === "ask" && (
+      <h1 className="serif q" style={{ marginTop: 28 }}>{asked}</h1>
+
+      {first && info.childAudioUrl && phase === "ask" && !r.recording && (
+        <div style={{ width: "100%", marginTop: 16 }}>
+          <p className="small muted" style={{ margin: "0 0 6px" }}>{c}가 직접 물어봤어요</p>
+          <audio src={info.childAudioUrl} controls />
+        </div>
+      )}
+
+      {phase === "ask" && !r.recording && (
         <p className="muted" style={{ margin: "12px 0 0", fontSize: 16, lineHeight: 1.6 }}>
-          {isVideo ? "이번엔 얼굴을 보며 들려주세요. 가족만 볼 수 있어요." : "생각나는 대로, 편하게 말씀해 주세요."}
+          {isVideo ? "얼굴을 보며 들려주세요. 가족만 볼 수 있어요." : "생각나는 대로, 편하게 말씀해 주세요."}
         </p>
       )}
 
       <div className="grow" style={{ minHeight: 28 }} />
       {err && <p className="err">{err}</p>}
 
-      {phase === "ask" && (
+      {phase === "ask" && !r.recording && (
         <>
           <button className="btn" onClick={start}>
             {isVideo ? <span className="rec-dot" /> : <Mic />}
             {isVideo ? "눌러서 녹화하기" : "눌러서 말하기"}
           </button>
           <p className="small muted" style={{ marginTop: 12 }}>
-            {isVideo ? "영상 · 최대 3분" : "음성 · 최대 15분"} · {toChild}
+            {isVideo ? "영상" : "음성"} · 최대 {Math.round(limit / 60) || 1}분 · {toChild}
           </p>
-          <button className="link" onClick={later}>지금은 어려워요</button>
+          {first ? (
+            <button className="link" onClick={later}>지금은 어려워요</button>
+          ) : (
+            <button className="link" onClick={finish}>오늘은 여기까지 할게요</button>
+          )}
         </>
       )}
 
-      {phase === "recording" && (
+      {r.recording && (
         <>
           <p className="row" style={{ justifyContent: "center", fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>
-            <span className="rec-dot pulse" /> {mmss(sec)}
-            <span className="small muted" style={{ fontWeight: 400 }}>/ {mmss(LIMIT[info.format])}</span>
+            <span className="rec-dot pulse" /> {mmss(r.sec)}
+            <span className="small muted" style={{ fontWeight: 400 }}>/ {mmss(limit)}</span>
           </p>
-          <button className="btn" onClick={stop}>다 말했어요</button>
+          <button className="btn" onClick={r.stop}>다 말했어요</button>
         </>
       )}
 
       {(phase === "review" || phase === "sending") && (
         <>
           <button className="btn" onClick={send} disabled={phase === "sending"}>
-            {phase === "sending" ? "보내는 중이에요…" : `${info.childName}에게 보내기`}
+            {phase === "sending" ? "보내는 중이에요…" : `${c}에게 보내기`}
           </button>
-          <button className="link" onClick={() => { setBlob(null); setPhase("ask"); }} disabled={phase === "sending"}>
+          <button className="link" onClick={() => { r.reset(); setPhase("ask"); }} disabled={phase === "sending"}>
             다시 하기
           </button>
         </>

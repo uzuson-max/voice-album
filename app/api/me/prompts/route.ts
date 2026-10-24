@@ -18,14 +18,17 @@ export async function GET(req: Request) {
   const db = admin();
   const { data } = await db
     .from("vf_prompts")
-    .select("id, text, format, source, status, position, sent_at, reminder_count, unseal_at, masked")
+    .select("id, text, format, source, status, position, sent_at, reminder_count, unseal_at, masked, child_audio_path, photo_path")
     .eq("storyteller_id", m.storyteller.id)
     .order("position")
     .order("created_at");
   // 봉인된 대답에서 나온 질문은 문장을 숨긴다
-  const all = (data || []).map((p) =>
-    p.masked ? { ...p, text: "봉인된 이야기에서 이어진 질문이에요. 열리는 날 함께 공개돼요." } : p
-  );
+  const all = (data || []).map(({ child_audio_path, photo_path, ...p }) => ({
+    ...p,
+    hasVoice: !!child_audio_path,
+    hasPhoto: !!photo_path,
+    ...(p.masked ? { text: "봉인된 이야기에서 이어진 질문이에요. 열리는 날 함께 공개돼요." } : {}),
+  }));
 
   // AI 한 줄: 가장 최근에 열린 이야기 요약
   const { data: recent } = await db
