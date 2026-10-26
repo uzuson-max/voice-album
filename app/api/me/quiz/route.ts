@@ -53,6 +53,11 @@ export async function POST(req: Request) {
       { onConflict: "family_id,qkey" },
     );
     if (error) return bad("저장 실패", 500);
+    // 다른 사용자들은 얼마나 몰랐는지 (10명 이상 쌓였을 때만 숫자로)
+    const all = await db.from("vf_quiz").select("id", { count: "exact", head: true }).eq("qkey", key);
+    const miss = await db.from("vf_quiz").select("id", { count: "exact", head: true }).eq("qkey", key).eq("known", false);
+    const n = all.count || 0;
+    return NextResponse.json({ ok: true, n, pct: n >= 10 ? Math.round(((miss.count || 0) / n) * 100) : null });
   } else if (note !== undefined) {
     const { data: cur } = await db.from("vf_quiz").select("known, learned_at").eq("family_id", m.family.id).eq("qkey", key).maybeSingle();
     if (!cur) return bad("먼저 카드에 답해주세요");
