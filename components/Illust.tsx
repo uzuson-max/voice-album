@@ -1,7 +1,7 @@
 // 시안의 선 일러스트. 출시 전 정식 일러스트로 교체할 자리.
-// 진한 바탕 위 크림색 선
-const S = { fill: "none", stroke: "#f3eee3", strokeWidth: 3, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-const INK = "#f3eee3", G = "#12231f", C = "#1b302a", A = "#f29b7c";
+// 틸 종이 위 딥틸 선
+const S = { fill: "none", stroke: "#173a38", strokeWidth: 3, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+const INK = "#173a38", G = "#bfd6cf", C = "#cfe3dc", A = "#e8896a";
 
 export function MomOnSofa() {
   return (
@@ -64,7 +64,7 @@ export function RecordTea() {
     <svg width="190" height="100" viewBox="0 0 190 100" {...S} role="img" aria-label="LP 레코드와 찻잔">
       <path d="M10 94 H180" />
       <circle cx="62" cy="50" r="42" fill={INK} />
-      <circle cx="62" cy="50" r="28" stroke="#4d5c50" strokeWidth={1.5} />
+      <circle cx="62" cy="50" r="28" stroke="#46655f" strokeWidth={1.5} />
       <circle cx="62" cy="50" r="12" fill={A} />
       <path d="M120 62 H164 Q164 92 142 92 Q120 92 120 62Z" fill={C} />
       <path d="M164 68 Q176 68 174 78 Q172 86 162 84" />
@@ -82,13 +82,13 @@ export function LP({ className, size = 132 }: { className?: string; size?: numbe
       <circle cx="50" cy="50" r="32" fill="none" stroke="#2c4a42" strokeWidth="1" />
       <circle cx="50" cy="50" r="24" fill="none" stroke="#2c4a42" strokeWidth="1" />
       <path d="M22 30 A34 34 0 0 1 40 17" fill="none" stroke="#3f6359" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="50" cy="50" r="15" fill={A} />
+      <circle cx="50" cy="50" r="15" fill="#f2b59a" />
       <circle cx="50" cy="50" r="2.5" fill="#0b1714" />
     </svg>
   );
 }
 
-export const Mic = ({ color = "#1d140f", size = 22 }: { color?: string; size?: number }) => (
+export const Mic = ({ color = "#fff4ee", size = 22 }: { color?: string; size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><path d="M12 18v3" />
   </svg>

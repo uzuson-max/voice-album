@@ -1,22 +1,30 @@
-/* 진한 숲 네이비 + 살구 포인트 */
+/* F안: 상자는 딥틸, 종이는 틸 페이퍼 + 자몽 포인트
+   종이(읽고 쓰는 화면) = --ground/--card/--ink
+   상자(제호·탭바·첫 화면·가격) = --box* */
 :root {
-  --ground: #12231f;
-  --card: #1b302a;
-  --card2: #24403a;
-  --tab: #2c4a42;
-  --ink: #f3eee3;
-  --muted: #a9bbb1;
-  --line: #2c4a42;
-  --primary: #f29b7c;
-  --on-primary: #1d140f;
-  --accent: #f29b7c;
-  --danger: #ff9e8a;
+  --ground: #bfd6cf;
+  --card: #cfe3dc;
+  --card2: #c4dcd4;
+  --tab: #20504c;
+  --ink: #173a38;
+  --muted: #46655f;
+  --line: rgba(23, 58, 56, 0.2);
+  --primary: #b5462f;
+  --on-primary: #fff4ee;
+  --accent: #b5462f;
+  --danger: #a3341f;
+
+  --box: #173a38;
+  --box2: #20504c;
+  --box-ink: #eef6f2;
+  --box-muted: #9ec2b5;
+  --box-accent: #f2b59a;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--ground); color: var(--ink); }
 /* 바탕 종이 그레인 (아주 옅게) */
 body {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.05'/%3E%3C/svg%3E");
   background-attachment: fixed;
 }
 body {
@@ -58,13 +66,13 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 
 /* 벨벳 양각 카드: 한 톤 밝은 면 + 위 하이라이트 + 아래 두께감 */
 .card {
-  background: linear-gradient(180deg, #24403a 0%, #1d342e 100%);
+  background: linear-gradient(180deg, #d6e8e1 0%, #c9dfd7 100%);
   border-radius: 20px; padding: 16px 18px;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.13),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
-    0 2px 0 #0c1915,
-    0 10px 18px -8px rgba(0, 0, 0, 0.65);
+    inset 0 2px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -2px 4px rgba(23, 58, 56, 0.1),
+    0 2px 0 rgba(23, 58, 56, 0.12),
+    0 10px 18px -8px rgba(23, 58, 56, 0.35);
 }
 .card.big { border-radius: 24px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
 .chip { display: inline-block; font-size: 13px; font-weight: 500; color: var(--primary); }
@@ -82,13 +90,13 @@ textarea.input { min-height: 90px; padding: 14px 16px; resize: vertical; }
 .tabbar {
   position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
   width: calc(100% - 40px); max-width: 440px; display: flex; gap: 4px; padding: 6px;
-  border-radius: 999px; background: var(--card); box-shadow: 0 8px 24px rgba(31, 43, 34, 0.14);
+  border-radius: 999px; background: var(--box); box-shadow: 0 10px 26px rgba(10, 30, 28, 0.35);
 }
 .tabbar a {
   flex: 1; min-height: 50px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
-  font-size: 15px; font-weight: 500; text-decoration: none; color: var(--muted);
+  font-size: 15px; font-weight: 500; text-decoration: none; color: var(--box-muted);
 }
-.tabbar a.on { background: var(--tab); color: var(--ink); font-weight: 700; }
+.tabbar a.on { background: var(--box2); color: var(--box-ink); font-weight: 700; }
 
 .err { color: var(--danger); font-size: 14px; }
 .rec-dot { width: 14px; height: 14px; border-radius: 7px; background: var(--accent); }
@@ -97,34 +105,38 @@ textarea.input { min-height: 90px; padding: 14px 16px; resize: vertical; }
 video, audio { width: 100%; border-radius: 16px; }
 video.preview { aspect-ratio: 3 / 4; object-fit: cover; background: #0b1714; transform: scaleX(-1); }
 .check { width: 22px; height: 22px; accent-color: var(--primary); flex-shrink: 0; }
-audio { color-scheme: dark; }
-select.input { color-scheme: dark; }
-input[type="date"].input { color-scheme: dark; }
-.input::placeholder { color: #6f857a; }
-.card.insight { background: linear-gradient(180deg, #2b4b44 0%, #22403a 100%); border: 1px solid #36574d; }
+audio { color-scheme: light; }
+select.input { color-scheme: light; }
+input[type="date"].input { color-scheme: light; }
+.input::placeholder { color: #6f8b84; }
+.card.insight { background: linear-gradient(180deg, #d9ebe4 0%, #cce2da 100%); border: 1px solid rgba(23, 58, 56, 0.16); }
 
 /* 웰컴 화면 */
 .splash {
-  position: fixed; inset: 0; z-index: 50; background: var(--ground);
+  position: fixed; inset: 0; z-index: 50; background: var(--box); color: var(--box-ink);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
   animation: splashOut 0.5s ease 1.5s forwards;
 }
 .splash .lp { width: 132px; height: 132px; animation: spin 2.4s linear infinite; }
 .splash .word { font-family: "Noto Serif KR", serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em; opacity: 0; animation: rise 0.6s ease 0.25s forwards; }
-.splash .tag { color: var(--muted); font-size: 15px; opacity: 0; animation: rise 0.6s ease 0.5s forwards; }
+.splash .tag { color: var(--box-muted); font-size: 15px; opacity: 0; animation: rise 0.6s ease 0.5s forwards; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .no-splash .splash { display: none; }
 @keyframes splashOut { to { opacity: 0; visibility: hidden; } }
 
 /* 우리집 신문 · 빨간펜 */
-.masthead { margin: 0 4px 4px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+/* 제호 = 상자: 화면 폭까지 딥틸, 아래 그림자로 종이가 나오는 느낌 */
+.masthead { margin: -52px -22px 6px; padding: 52px 26px 22px; background: var(--box); color: var(--box-ink);
+  border-radius: 0 0 26px 26px; box-shadow: 0 10px 22px rgba(10, 30, 28, 0.28); }
+.masthead .muted { color: var(--box-muted); }
+.masthead h1 { color: var(--box-accent); }
 .article p { margin: 0 0 12px; font-family: "Noto Serif KR", serif; font-size: 16px; line-height: 1.85; white-space: pre-wrap; }
 .article p:last-child { margin-bottom: 0; }
 .photo { width: 100%; max-height: 360px; object-fit: cover; border-radius: 16px; display: block; }
 .redpen { border-left: 3px solid var(--accent); padding: 10px 0 2px 14px; }
 .card.redpen { border-left: 3px solid var(--accent); background: var(--card2); padding: 14px 16px; }
-.hand { font-family: "Nanum Pen Script", "Noto Serif KR", cursive; font-size: 20px; color: #ffb8a0; line-height: 1.4; }
+.hand { font-family: "Nanum Pen Script", "Noto Serif KR", cursive; font-size: 20px; color: var(--accent); line-height: 1.4; }
 textarea.hand { font-size: 20px; }
 
 /* 시간여행 빌드업: 한 줄씩 천천히 */
@@ -144,4 +156,22 @@ textarea.hand { font-size: 20px; }
 .pullquote span { display: block; font-family: "Noto Serif KR", serif; font-size: 40px; line-height: 0.6; color: var(--accent); }
 .pullquote p { margin: 8px 0 0; font-family: "Noto Serif KR", serif; font-weight: 600; font-size: 20px; line-height: 1.55; }
 .reply { margin-top: 4px; padding: 14px 16px; border-radius: 16px; background: var(--card2);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -2px 6px rgba(0,0,0,0.28); }
+  box-shadow: inset 0 2px 4px rgba(23, 58, 56, 0.12), inset 0 -1px 0 rgba(255, 255, 255, 0.5); }
+
+/* 상자 카드: 가격·완성판처럼 비싸 보여야 하는 자리 */
+.card.box { background: linear-gradient(180deg, #20504c 0%, #173a38 100%); color: var(--box-ink);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -2px 6px rgba(0,0,0,0.3), 0 10px 20px -8px rgba(10,30,28,0.55); }
+.card.box .muted, .card.box .small.muted { color: var(--box-muted); }
+.card.box .chip { color: var(--box-accent); }
+
+/* 기사 속 영상: 누르면 화면 폭으로 펼쳐짐 */
+.film { position: relative; border-radius: 16px; overflow: hidden; background: var(--box);
+  transition: margin .6s cubic-bezier(.2,.8,.2,1), border-radius .6s; }
+.film video { border-radius: 0; display: block; }
+.film.open { margin: 0 -18px; border-radius: 0; }
+
+/* 첫 화면 = 상자 */
+body:has(.boxed) { background-color: var(--box); }
+.boxed { color: var(--box-ink); }
+.boxed .muted { color: var(--box-muted); }
+.boxed .btn { background: var(--box-accent); color: var(--box); }

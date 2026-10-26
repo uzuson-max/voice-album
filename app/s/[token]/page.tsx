@@ -251,7 +251,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       ) : phase === "review" && r.blob ? (
         <div style={{ marginTop: 28, width: "100%" }}>
           {isVideo ? (
-            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#0b1714" }} />
+            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#173a38" }} />
           ) : (
             <audio src={URL.createObjectURL(r.blob)} controls />
           )}

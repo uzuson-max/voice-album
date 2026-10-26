@@ -105,7 +105,7 @@ function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label:
       {a.turns.map((t, k) => (
         <div key={t.id} className="stack" style={{ gap: 6 }}>
           {k > 0 && <span className="tiny muted">이어서 · {t.asked}</span>}
-          {t.url && (t.mediaType === "video" ? <video src={t.url} controls playsInline /> : <audio src={t.url} controls />)}
+          {t.url && (t.mediaType === "video" ? <Film src={t.url} /> : <audio src={t.url} controls />)}
         </div>
       ))}
 
@@ -137,5 +137,15 @@ function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label:
         </div>
       )}
     </article>
+  );
+}
+
+// 기사 속 영상: 재생하면 신문 칸에서 화면 폭으로 펼쳐지고, 멈추면 다시 칸으로
+function Film({ src }: { src: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={`film${open ? " open" : ""}`}>
+      <video src={src} controls playsInline onPlay={() => setOpen(true)} onPause={() => setOpen(false)} onEnded={() => setOpen(false)} />
+    </div>
   );
 }

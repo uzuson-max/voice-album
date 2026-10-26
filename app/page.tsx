@@ -4,7 +4,7 @@ import { APP_NAME } from "@/lib/brand";
 
 export default function Landing() {
   return (
-    <main className="screen center" style={{ paddingTop: 90 }}>
+    <main className="screen center boxed" style={{ paddingTop: 90 }}>
       <LP size={150} />
       <p className="serif" style={{ fontSize: 22, margin: "28px 0 0" }}>{APP_NAME}</p>
       <h1 className="serif" style={{ fontSize: 30, lineHeight: 1.45, margin: "28px 0 0" }}>

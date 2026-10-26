@@ -49,13 +49,13 @@ export default function Plan() {
         )}
 
         <div className="card stack" style={{ gap: 10 }}>
-          <Row k="매주 질문" v="11개 (질문마다 이어 묻는 짧은 질문 포함)" />
+          <Row k="매주 질문" v="11개 (한 달에 한 번은 노래·목소리 하나 더)" />
           <Row k="내가 보내는 답장" v={`${replies}번 — ${label}의 다음 링크에 먼저 도착`} />
           <Row k="우리집 신문" v="매주 한 호, 목소리·영상·글로" />
           <Row k="완성판" v="12주가 끝나면 한 권으로 묶은 디지털판" />
         </div>
 
-        <div className="card stack" style={{ gap: 6 }}>
+        <div className="card box stack" style={{ gap: 6 }}>
           <div style={{ fontSize: 20, fontWeight: 700 }}>{PRICE.digital}</div>
           <div className="small muted">{PRICE.digitalNote}</div>
         </div>
