@@ -14,6 +14,11 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--ground); color: var(--ink); }
+/* 바탕 종이 그레인 (아주 옅게) */
+body {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.06'/%3E%3C/svg%3E");
+  background-attachment: fixed;
+}
 body {
   font-family: "Noto Sans KR", system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -26,7 +31,7 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 .screen.center { align-items: center; text-align: center; }
 .with-tabs { padding-bottom: 120px; }
 .grow { flex-grow: 1; }
-.stack { display: flex; flex-direction: column; gap: 14px; }
+.stack { display: flex; flex-direction: column; gap: 16px; }
 .row { display: flex; gap: 10px; align-items: center; }
 .between { justify-content: space-between; }
 
@@ -51,7 +56,16 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 .link { min-height: 44px; padding: 0 12px; border: none; background: none; color: var(--muted); font-size: 15px; text-decoration: underline; cursor: pointer; }
 .textbtn { min-height: 44px; padding: 0 4px; border: none; background: none; color: var(--primary); font-size: 14px; font-weight: 700; cursor: pointer; }
 
-.card { background: var(--card); border-radius: 20px; padding: 16px 18px; }
+/* 벨벳 양각 카드: 한 톤 밝은 면 + 위 하이라이트 + 아래 두께감 */
+.card {
+  background: linear-gradient(180deg, #24403a 0%, #1d342e 100%);
+  border-radius: 20px; padding: 16px 18px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.13),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25),
+    0 2px 0 #0c1915,
+    0 10px 18px -8px rgba(0, 0, 0, 0.65);
+}
 .card.big { border-radius: 24px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
 .chip { display: inline-block; font-size: 13px; font-weight: 500; color: var(--primary); }
 .pill { font-size: 14px; font-weight: 700; padding: 7px 14px; border-radius: 999px; background: var(--card); }
@@ -87,7 +101,7 @@ audio { color-scheme: dark; }
 select.input { color-scheme: dark; }
 input[type="date"].input { color-scheme: dark; }
 .input::placeholder { color: #6f857a; }
-.card.insight { background: var(--card2); border: 1px solid #36574d; }
+.card.insight { background: linear-gradient(180deg, #2b4b44 0%, #22403a 100%); border: 1px solid #36574d; }
 
 /* 웰컴 화면 */
 .splash {
