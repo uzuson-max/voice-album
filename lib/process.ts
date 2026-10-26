@@ -5,28 +5,35 @@ import { isOpen } from "./time";
 // 대답이 들어온 뒤 뒤에서: 받아쓰기 → (첫 대답이면) 제목·요약
 export async function processAnswer(answerId: string) {
   const db = admin();
-  const { data: a } = await db
+  const { data: a, error } = await db
     .from("vf_answers")
-    .select("*, vf_prompts(text), vf_storytellers(honorific)")
+    .select("*, vf_prompts!vf_answers_prompt_id_fkey(text, ask), vf_storytellers(honorific)")
     .eq("id", answerId)
     .single();
-  if (!a) return;
-  const question = (a as any).vf_prompts?.text || "";
+  if (!a) {
+    console.error("[process] 대답을 못 읽음", answerId, error?.message);
+    if (answerId) await db.from("vf_answers").update({ process_error: "read: " + (error?.message || "없음") }).eq("id", answerId);
+    return;
+  }
+  const question = (a as any).vf_prompts?.ask || (a as any).vf_prompts?.text || "";
   const honorific = (a as any).vf_storytellers?.honorific || "부모님";
 
   let transcript: string | null = null;
+  let problem: string | null = null;
   try {
-    const { data: file } = await db.storage.from(BUCKET).download(a.media_path);
+    const { data: file, error: dl } = await db.storage.from(BUCKET).download(a.media_path);
+    if (!file) problem = "download: " + (dl?.message || "없음");
+    else if (file.size === 0) problem = "empty: 녹음 파일이 비어 있음";
     // Whisper 한도 25MB — 대부분의 음성은 들어가고, 긴 영상은 건너뛴다
-    if (file && file.size < 24 * 1024 * 1024) {
-      transcript = await transcribe(await file.arrayBuffer(), a.mime || "audio/webm");
-    }
+    else if (file.size >= 24 * 1024 * 1024) problem = "too_big: " + file.size;
+    else transcript = await transcribe(await file.arrayBuffer(), a.mime || "audio/webm");
   } catch (e: any) {
+    problem = "stt: " + String(e?.message || e).slice(0, 300);
     console.error("[process] STT 실패", e?.message);
   }
 
-  // 받아쓰기는 바로 저장 — 진행자 한마디(/next)가 요약을 기다리지 않게
-  await db.from("vf_answers").update({ transcript: transcript ?? "" }).eq("id", answerId);
+  // 받아쓰기는 바로 저장 — 진행자 한마디(/next)가 요약을 기다리지 않게. 실패 이유도 남긴다.
+  await db.from("vf_answers").update({ transcript: transcript ?? "", process_error: problem }).eq("id", answerId);
 
   const patch: any = {};
   if (a.turn === 0) {
@@ -45,7 +52,7 @@ export async function processAnswer(answerId: string) {
 }
 
 // 받아쓰기가 끝날 때까지 기다린다 (최대 ms)
-export async function waitTranscript(answerId: string, ms = 45000): Promise<any | null> {
+export async function waitTranscript(answerId: string, ms = 25000): Promise<any | null> {
   const db = admin();
   const until = Date.now() + ms;
   while (Date.now() < until) {
@@ -137,7 +144,7 @@ export async function healPending(limit = 4) {
   const { data: stuck } = await db
     .from("vf_answers")
     .select("id")
-    .is("transcript", null)
+    .or("transcript.is.null,process_error.like.stt:*,process_error.like.download:*,process_error.like.read:*")
     .lt("created_at", tenMin)
     .order("created_at", { ascending: false })
     .limit(limit);
@@ -148,7 +155,7 @@ export async function healPending(limit = 4) {
   // 끝났는데 기사가 없는 이야기 → 다시 엮기 (받아쓰기가 있는 것만)
   const { data: noArticle } = await db
     .from("vf_prompts")
-    .select("id, vf_answers!inner(transcript)")
+    .select("id, vf_answers!vf_answers_prompt_id_fkey!inner(transcript)")
     .not("finished_at", "is", null)
     .is("article", null)
     .not("vf_answers.transcript", "is", null)

@@ -72,6 +72,16 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     if (r.blob && !r.recording) setPhase("review");
   }, [r.blob, r.recording]);
 
+  // 녹음이 끊겼는데 담긴 게 없으면: 보내기 대신 다시 녹음하도록
+  useEffect(() => {
+    if (r.failed && !r.recording && !r.blob) {
+      setErr("녹음이 중간에 끊겨서 저장되지 않았어요. 한 번만 다시 눌러주세요.");
+      setPhase("ask");
+    } else if (r.failed && r.blob) {
+      setErr("녹음이 중간에 끊겼어요. 여기까지 담긴 걸 보내거나, 다시 녹음할 수 있어요.");
+    }
+  }, [r.failed, r.recording, r.blob]);
+
   const limit = turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
 
   async function start() {
@@ -84,7 +94,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   }
 
   async function send() {
-    if (!r.blob) return;
+    if (!r.blob || !r.blob.size) {
+      setErr("녹음이 비어 있어요. 다시 녹음해 주세요.");
+      setPhase("ask");
+      return;
+    }
     const blob = r.blob;
     setPhase("sending");
     setErr("");
@@ -104,6 +118,12 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: u.path, mime: blob.type, duration: r.sec, turn, asked, kind }),
       }).then((x) => x.json());
+      if (c.empty) {
+        setErr("녹음이 제대로 올라가지 않았어요. 한 번만 다시 녹음해 주세요.");
+        r.reset();
+        setPhase("ask");
+        return;
+      }
       if (!c.ok) throw new Error(c.error);
       setUnsealAt(c.unsealAt);
       r.reset();

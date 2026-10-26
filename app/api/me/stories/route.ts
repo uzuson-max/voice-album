@@ -22,8 +22,8 @@ export async function GET(req: Request) {
   const { data } = await db
     .from("vf_answers")
     .select(
-      "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, unseal_at, created_at, " +
-        "vf_prompts(text, ask, lead, week, finished_at, article_title, article, article_quote, photo_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
+      "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, process_error, unseal_at, created_at, " +
+        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, photo_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
     )
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
@@ -71,7 +71,8 @@ export async function GET(req: Request) {
   }
   // 받아쓰기·기사가 빠진 이야기는 열어볼 때 뒤에서 다시 돌린다 (다음에 열면 채워져 있게)
   const twoMin = Date.now() - 2 * 60 * 1000;
-  const stuck = ((data || []) as any[]).filter((a) => a.transcript === null && new Date(a.created_at).getTime() < twoMin);
+  const retryable = (a: any) => a.transcript === null || /^(stt|download|read):/.test(a.process_error || "");
+  const stuck = ((data || []) as any[]).filter((a) => retryable(a) && new Date(a.created_at).getTime() < twoMin);
   const noArticle = Object.values(byPrompt).filter(
     (x: any) => !x.article && x.turns.some((t: any) => t.transcript) && x.finished
   );

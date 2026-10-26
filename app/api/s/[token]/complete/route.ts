@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
-import { admin } from "@/lib/supabaseAdmin";
+import { admin, BUCKET } from "@/lib/supabaseAdmin";
 import { processAnswer } from "@/lib/process";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +19,16 @@ export async function POST(req: Request, { params }: { params: { token: string }
   if (typeof path !== "string" || !path.startsWith(`${p.storyteller_id}/${p.id}/`)) {
     return NextResponse.json({ error: "잘못된 파일" }, { status: 400 });
   }
+  // 빈 파일이면 저장하지 않고 다시 녹음하게 한다 ("잘 담았어요"가 거짓말이 되지 않게)
+  const dir = path.slice(0, path.lastIndexOf("/"));
+  const name = path.slice(path.lastIndexOf("/") + 1);
+  const { data: listed } = await db.storage.from(BUCKET).list(dir, { search: name, limit: 1 });
+  const size = Number((listed?.[0] as any)?.metadata?.size ?? -1);
+  if (size === 0) {
+    await db.storage.from(BUCKET).remove([path]).catch(() => {});
+    return NextResponse.json({ ok: false, empty: true, error: "녹음이 비어 있어요" });
+  }
+
   const t = Number.isInteger(turn) ? Math.max(0, Math.min(3, turn)) : 0;
   const mediaType = t === 0 ? p.format : kind === "video" ? "video" : "audio";
   const unsealAt = p.unseal_at || (p as any).vf_storytellers?.unseal_at || null;
