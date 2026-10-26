@@ -45,7 +45,8 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 
 .h1 { margin: 0; font-size: 26px; font-weight: 700; }
 .serif { font-family: "Noto Serif KR", serif; font-weight: 600; letter-spacing: -0.01em; }
-.q { font-size: 25px; line-height: 1.55; margin: 0; }
+.q { font-size: 23px; line-height: 1.55; margin: 0; }
+.qline { display: block; }
 .muted { color: var(--muted); }
 .small { font-size: 14px; }
 .tiny { font-size: 13px; }
@@ -140,7 +141,7 @@ input[type="date"].input { color-scheme: light; }
 textarea.hand { font-size: 20px; }
 
 /* 시간여행 빌드업: 한 줄씩 천천히 */
-.lead p { margin: 0 0 14px; font-size: 19px; line-height: 1.75; color: var(--ink); opacity: 0; animation: rise 1.6s ease forwards; }
+.lead p { margin: 0 0 14px; font-size: 18px; line-height: 1.75; color: var(--ink); opacity: 0; animation: rise 1.6s ease forwards; }
 @keyframes dim { to { opacity: 0.38; } }
 .q.reveal { opacity: 0; animation: rise 1.6s ease forwards; }
 
@@ -181,3 +182,7 @@ body:has(.boxed) { background-color: var(--box); }
 .intro-lp { animation: spin 6s linear infinite; }
 .sound-toggle { position: fixed; top: 14px; right: 14px; z-index: 5; min-height: 36px; padding: 0 14px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 13px; cursor: pointer; }
+
+/* 줄바꿈: 단어 중간에서 끊지 않고(keep-all), 제목·질문은 줄 길이를 고르게, 본문은 한 단어만 떨어지지 않게 */
+h1, h2, .q, .lead p, .serif { text-wrap: balance; }
+p, .article p, .small, .tiny { text-wrap: pretty; }

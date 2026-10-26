@@ -28,8 +28,14 @@ const MAX_TURNS = 2;
 // 장면은 한 문장씩, 이 간격(초)으로 천천히 떠오른다
 const BEAT = 2.8;
 
+// 한 글자짜리 낱말(해 질 녘, 다 버거운…)은 뒤 낱말과 붙여서 그 사이에서 줄이 바뀌지 않게
+function glue(t: string) {
+  const w = t.split(" ");
+  return w.reduce((acc, cur, i) => (i === 0 ? cur : acc + (w[i - 1].length === 1 ? "\u00a0" : " ") + cur), "");
+}
+
 function splitLead(lead: string) {
-  return lead.replace(/([.?!요])\s+/g, "$1\n").split("\n").map((x) => x.trim()).filter(Boolean);
+  return lead.replace(/([.?!요])\s+/g, "$1\n").split("\n").map((x) => x.trim()).filter(Boolean).map(glue);
 } // 첫 대답 뒤 이어 말하기 최대 2번
 
 export default function ParentPage({ params }: { params: { token: string } }) {
@@ -270,7 +276,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     return (
       <main className="screen center" style={{ paddingTop: 90 }}>
         <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.6 }}>{host.react}</p>
-        <h1 className="serif q" style={{ marginTop: 26 }}>{host.followup}</h1>
+        <h1 className="serif q" style={{ marginTop: 26 }}>{splitLead(host.followup || "").map((line, i) => <span key={i} className="qline">{line}</span>)}</h1>
         <div className="grow" style={{ minHeight: 28 }} />
         <button className="btn" onClick={continueTalk}>
           {host.video ? <span className="rec-dot" /> : <Mic />}
@@ -351,7 +357,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         className={`serif q${first && info.lead && phase === "ask" && !r.recording ? " reveal" : ""}`}
         style={{ marginTop: 22, animationDelay: info.lead ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
       >
-        {asked}
+        {splitLead(asked).map((line, i) => (
+          <span key={i} className="qline">{line}</span>
+        ))}
       </h1>
 
       {first && ready && info.childAudioUrl && phase === "ask" && !r.recording && (
