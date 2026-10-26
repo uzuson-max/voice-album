@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { browserClient } from "@/lib/supabaseBrowser";
-import { Baby, Envelope, Mic, MomOnSofa } from "@/components/Illust";
+import { Baby, Envelope, LP, Mic, MomOnSofa } from "@/components/Illust";
+import { quietAmbient, resumeAmbient, startAmbient, stopAmbient, toggleMute } from "@/lib/ambient";
 import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
@@ -20,9 +21,12 @@ type Info = {
   photoUrl: string | null;
   reactions: Reaction[];
 };
-type Phase = "loading" | "error" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
+type Phase = "loading" | "error" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
 const MAX_TURNS = 2;
+
+// 장면은 한 문장씩, 이 간격(초)으로 천천히 떠오른다
+const BEAT = 2.8;
 
 function splitLead(lead: string) {
   return lead.replace(/([.?!요])\s+/g, "$1\n").split("\n").map((x) => x.trim()).filter(Boolean);
@@ -50,10 +54,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         setUnsealAt(j.unsealAt);
         setKind(j.format);
         setAsked(j.text);
-        setPhase(j.answered ? "done" : "ask");
+        setPhase(j.answered ? "done" : "intro");
         // 빌드업을 한 줄씩 천천히 보여준 뒤 질문과 버튼이 나온다 (시간여행)
-        const n = j.lead ? splitLead(j.lead).length : 0;
-        setTimeout(() => setReady(true), n ? n * 1700 + 1400 : 0);
+
       })
       .catch((e) => {
         setErr(e.message || "링크를 열 수 없어요");
@@ -81,6 +84,22 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       setErr("녹음이 중간에 끊겼어요. 여기까지 담긴 걸 보내거나, 다시 녹음할 수 있어요.");
     }
   }, [r.failed, r.recording, r.blob]);
+
+  // 녹음하는 동안은 음악을 완전히 내려 목소리에 섞이지 않게
+  useEffect(() => {
+    if (r.recording) quietAmbient();
+    else if (phase !== "done" && phase !== "intro" && phase !== "loading") resumeAmbient();
+  }, [r.recording, phase]);
+
+  const [soundOff, setSoundOff] = useState(false);
+
+  // "이야기 시작하기": 이 누름이 있어야 휴대폰이 소리를 허락한다
+  function begin(withSound: boolean) {
+    if (withSound) startAmbient();
+    setPhase("ask");
+    const n = info?.lead ? splitLead(info.lead).length : 0;
+    setTimeout(() => setReady(true), n ? (0.6 + n * BEAT + 1.6) * 1000 : 400);
+  }
 
   const limit = turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
 
@@ -160,6 +179,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   }
 
   function finish() {
+    stopAmbient(5);
     fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
     setPhase("done");
   }
@@ -182,6 +202,27 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const c = info.childName;
   const isVideo = kind === "video";
   const toChild = unsealAt ? `${koDate(unsealAt)}에 ${c}에게 전해져요` : `${c}에게 바로 전해져요`;
+
+  if (phase === "intro")
+    return (
+      <main className="screen center boxed" style={{ paddingTop: 96 }}>
+        <LP size={92} className="intro-lp" />
+        <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
+        <h1 className="serif" style={{ margin: "14px 0 0", fontSize: 26, lineHeight: 1.5 }}>
+          {josa(info.childName, "이/가")} 보낸
+          <br />
+          이번 주 질문이 도착했어요
+        </h1>
+        <p className="muted" style={{ margin: "18px 0 0", fontSize: 16, lineHeight: 1.7 }}>
+          조용한 곳에서 소리를 켜고 들어주세요.
+          <br />
+          잔잔한 음악과 함께 천천히 시작해요.
+        </p>
+        <div className="grow" />
+        <button className="btn" onClick={() => begin(true)}>이야기 시작하기</button>
+        <button className="link" style={{ marginTop: 6 }} onClick={() => begin(false)}>음악 없이 시작할게요</button>
+      </main>
+    );
 
   if (phase === "done")
     return (
@@ -242,6 +283,13 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const first = turn === 0;
   return (
     <main className="screen center">
+      <button
+        className="sound-toggle"
+        aria-label={soundOff ? "음악 켜기" : "음악 끄기"}
+        onClick={() => setSoundOff(toggleMute())}
+      >
+        {soundOff ? "음악 켜기" : "음악 끄기"}
+      </button>
       {first && info.reactions.length > 0 && (
         <div className="card redpen" style={{ width: "100%", textAlign: "left", marginBottom: 22 }}>
           <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>
@@ -284,15 +332,24 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
       {first && info.lead && phase === "ask" && !r.recording && (
         <div className="lead" style={{ marginTop: 26 }}>
-          {splitLead(info.lead).map((line, i) => (
-            <p key={i} style={{ animationDelay: `${0.3 + i * 1.7}s` }}>{line}</p>
+          {splitLead(info.lead).map((line, i, arr) => (
+            <p
+              key={i}
+              style={{
+                animation:
+                  `rise 1.6s ease ${0.6 + i * BEAT}s forwards` +
+                  (i < arr.length - 1 ? `, dim 1.4s ease ${0.6 + (i + 1) * BEAT}s forwards` : ""),
+              }}
+            >
+              {line}
+            </p>
           ))}
         </div>
       )}
 
       <h1
         className={`serif q${first && info.lead && phase === "ask" && !r.recording ? " reveal" : ""}`}
-        style={{ marginTop: 22, animationDelay: info.lead ? `${0.3 + splitLead(info.lead).length * 1.7}s` : "0s" }}
+        style={{ marginTop: 22, animationDelay: info.lead ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
       >
         {asked}
       </h1>

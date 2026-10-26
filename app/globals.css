@@ -140,8 +140,9 @@ input[type="date"].input { color-scheme: light; }
 textarea.hand { font-size: 20px; }
 
 /* 시간여행 빌드업: 한 줄씩 천천히 */
-.lead p { margin: 0 0 10px; font-size: 18px; line-height: 1.7; color: var(--muted); opacity: 0; animation: rise 1s ease forwards; }
-.q.reveal { opacity: 0; animation: rise 1s ease forwards; }
+.lead p { margin: 0 0 14px; font-size: 19px; line-height: 1.75; color: var(--ink); opacity: 0; animation: rise 1.6s ease forwards; }
+@keyframes dim { to { opacity: 0.38; } }
+.q.reveal { opacity: 0; animation: rise 1.6s ease forwards; }
 
 /* 로딩 화면 */
 .loader { justify-content: center; gap: 22px; padding-bottom: 80px; }
@@ -175,3 +176,8 @@ body:has(.boxed) { background-color: var(--box); }
 .boxed { color: var(--box-ink); }
 .boxed .muted { color: var(--box-muted); }
 .boxed .btn { background: var(--box-accent); color: var(--box); }
+
+/* 부모님 링크: 시작 화면 LP는 천천히 돌고, 질문 화면엔 작은 음악 끄기 */
+.intro-lp { animation: spin 6s linear infinite; }
+.sound-toggle { position: fixed; top: 14px; right: 14px; z-index: 5; min-height: 36px; padding: 0 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 13px; cursor: pointer; }
