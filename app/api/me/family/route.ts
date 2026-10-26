@@ -28,7 +28,12 @@ export async function POST(req: Request) {
   if (family) {
     await db.from("vf_families").update({ child_name: childName }).eq("id", family.id);
   } else {
-    const r = await db.from("vf_families").insert({ owner_id: uid, child_name: childName }).select().single();
+    if (!b.agree) return bad("약관과 개인정보처리방침에 동의해 주세요");
+    const r = await db
+      .from("vf_families")
+      .insert({ owner_id: uid, child_name: childName, agreed_at: new Date().toISOString() })
+      .select()
+      .single();
     if (r.error) return bad("저장 실패", 500);
     family = r.data;
   }

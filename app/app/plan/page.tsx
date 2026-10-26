@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { api } from "@/lib/supabaseBrowser";
 import { josa } from "@/lib/korean";
 import { PRICE } from "@/lib/brand";
+import BizFooter from "@/components/BizFooter";
 
 // 무료 체험이 끝난 뒤: 남은 11주를 미리 보여주고 이어가기 신청
 export default function Plan() {
@@ -71,6 +72,10 @@ export default function Plan() {
           </button>
         )}
         <button className="link" onClick={() => router.replace("/app/stories")}>첫 번째 이야기 다시 보기</button>
+        <p className="tiny muted" style={{ margin: 0, lineHeight: 1.6, textAlign: "center" }}>
+          첫 질문 발송 전에는 전액, 시작 후에는 남은 주차만큼 환불돼요. <a href="/refund">환불 정책</a>
+        </p>
+        <BizFooter />
       </div>
     </main>
   );

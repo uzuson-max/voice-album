@@ -18,6 +18,7 @@ export default function Family() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [saved, setSaved] = useState(false);
+  const [agree, setAgree] = useState(false);
 
   useEffect(() => {
     api("/api/me/family").then(({ family, storyteller }) => {
@@ -42,7 +43,7 @@ export default function Family() {
         method: "POST",
         body: JSON.stringify({
           ...f,
-          sendWeekday: Number(f.sendWeekday), sendHour: Number(f.sendHour), unsealAt: f.unsealAt || null,
+          sendWeekday: Number(f.sendWeekday), sendHour: Number(f.sendHour), unsealAt: f.unsealAt || null, agree,
           profile: { "태어난 해": f.born, "학교·전공": f.school, 고향: f.hometown, "했던 일": f.job, "좋아하는 것": f.likes,
             "내가 태어난 해": f.childBorn, "최애 음식": f.food, 말버릇: f.catchphrase, "못 한 말": f.unsaid },
         }),
@@ -105,7 +106,16 @@ export default function Family() {
 
         {err && <p className="err">{err}</p>}
         {saved && <p className="small" style={{ color: "var(--primary)" }}>저장했어요.</p>}
-        <button className="btn" disabled={busy}>{busy ? "저장 중…" : isNew ? "다음: 질문 고르기" : "저장"}</button>
+        {isNew && (
+          <label className="row small" style={{ alignItems: "flex-start", gap: 10, lineHeight: 1.6 }}>
+            <input type="checkbox" className="check" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+            <span>
+              <a href="/terms" target="_blank">이용약관</a>과 <a href="/privacy" target="_blank">개인정보처리방침</a>에 동의하고,
+              부모님께 서비스를 알리고 동의를 받았어요. 서비스 개선을 위해 운영자가 녹음과 글을 볼 수 있다는 점도 확인했어요. (필수)
+            </span>
+          </label>
+        )}
+        <button className="btn" disabled={busy || (isNew && !agree)}>{busy ? "저장 중…" : isNew ? "다음: 질문 고르기" : "저장"}</button>
         {!isNew && (
           <button type="button" className="link" onClick={() => router.push("/app/pick")}>
             12주 과정으로 질문함 새로 채우기

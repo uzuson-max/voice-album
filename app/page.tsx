@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LP } from "@/components/Illust";
 import { APP_NAME } from "@/lib/brand";
+import BizFooter from "@/components/BizFooter";
 
 export default function Landing() {
   return (
@@ -21,6 +22,7 @@ export default function Landing() {
       </p>
       <div className="grow" style={{ minHeight: 32 }} />
       <Link href="/login" className="btn">시작하기</Link>
+      <BizFooter />
     </main>
   );
 }

@@ -39,6 +39,13 @@ function splitLead(lead: string) {
 } // 첫 대답 뒤 이어 말하기 최대 2번
 
 export default function ParentPage({ params }: { params: { token: string } }) {
+  const log = (kind: string, detail?: any) => {
+    try {
+      const body = JSON.stringify({ kind, detail });
+      if (kind === "leave" && navigator.sendBeacon) navigator.sendBeacon(`/api/s/${params.token}/event`, new Blob([body], { type: "application/json" }));
+      else fetch(`/api/s/${params.token}/event`, { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+    } catch {}
+  };
   const [info, setInfo] = useState<Info | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [err, setErr] = useState("");
@@ -61,6 +68,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         setKind(j.format);
         setAsked(j.text);
         setPhase(j.answered ? "done" : "intro");
+        log("open", { answered: !!j.answered });
         // 빌드업을 한 줄씩 천천히 보여준 뒤 질문과 버튼이 나온다 (시간여행)
 
       })
@@ -92,6 +100,28 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   }, [r.failed, r.recording, r.blob]);
 
   // 녹음하는 동안은 음악을 완전히 내려 목소리에 섞이지 않게
+  // 녹음 시작·끝·실패 기록
+  const recRef = useRef(false);
+  useEffect(() => {
+    if (r.recording && !recRef.current) log("rec_start", { turn, kind });
+    if (!r.recording && recRef.current) log("rec_stop", { turn, sec: r.sec });
+    recRef.current = r.recording;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r.recording]);
+  useEffect(() => {
+    if (r.failed) log("rec_fail", { turn, sec: r.sec, hasBlob: !!r.blob });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r.failed]);
+  // 창을 닫거나 다른 앱으로 갈 때 마지막 단계
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === "hidden") log("leave", { phase: phaseRef.current }); };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (r.recording) quietAmbient();
     else if (phase !== "done" && phase !== "intro" && phase !== "loading") resumeAmbient();
@@ -102,6 +132,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   // "이야기 시작하기": 이 누름이 있어야 휴대폰이 소리를 허락한다
   function begin(withSound: boolean) {
     if (withSound) startAmbient();
+    log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
     const n = info?.lead ? splitLead(info.lead).length : 0;
     setTimeout(() => setReady(true), n ? (0.6 + n * BEAT + 1.6) * 1000 : 400);
@@ -125,6 +156,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       return;
     }
     const blob = r.blob;
+    log("send", { turn, sec: r.sec, bytes: blob.size });
     setPhase("sending");
     setErr("");
     try {
@@ -151,6 +183,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       }
       if (!c.ok) throw new Error(c.error);
       setUnsealAt(c.unsealAt);
+      log("sent", { turn });
       r.reset();
 
       // 진행자 한마디 + 이어지는 질문
@@ -186,11 +219,13 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   function finish() {
     stopAmbient(5);
+    log("finish", { turn });
     fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
     setPhase("done");
   }
 
   async function later() {
+    log("later");
     await fetch(`/api/s/${params.token}/later`, { method: "POST" }).catch(() => {});
     setPhase("later");
   }
@@ -227,6 +262,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <div className="grow" />
         <button className="btn" onClick={() => begin(true)}>이야기 시작하기</button>
         <button className="link" style={{ marginTop: 6 }} onClick={() => begin(false)}>음악 없이 시작할게요</button>
+        <p className="tiny muted" style={{ margin: "10px 0 0", lineHeight: 1.6 }}>
+          남겨주신 이야기는 가족에게만 전해져요. <a href="/privacy">개인정보처리방침</a>
+        </p>
       </main>
     );
 

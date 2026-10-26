@@ -186,3 +186,13 @@ body:has(.boxed) { background-color: var(--box); }
 /* 줄바꿈: 단어 중간에서 끊지 않고(keep-all), 제목·질문은 줄 길이를 고르게, 본문은 한 단어만 떨어지지 않게 */
 h1, h2, .q, .lead p, .serif { text-wrap: balance; }
 p, .article p, .small, .tiny { text-wrap: pretty; }
+
+/* 사업자 정보 · 약관 */
+.biz { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); text-align: center; width: 100%; }
+.biz a { font-size: 12px; color: inherit; opacity: 0.8; }
+.biz p { margin: 10px 0 0; font-size: 11px; line-height: 1.7; opacity: 0.7; }
+.legal-body h2 { font-size: 16px; margin: 26px 0 8px; }
+.legal-body p { margin: 0 0 8px; font-size: 14px; line-height: 1.75; }
+.legal-body table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px 0 10px; }
+.legal-body th, .legal-body td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; line-height: 1.55; }
+.nw { white-space: nowrap; }
