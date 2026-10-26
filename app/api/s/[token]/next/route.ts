@@ -28,7 +28,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
   if (!a.transcript || a.transcript.trim().length < 4) {
     const f = halfFor(a.turn) ?? null;
     if (f) await db.from("vf_answers").update({ react: "말씀 잘 들었어요.", followup: f }).eq("id", a.id);
-    return NextResponse.json({ react: "말씀 잘 들었어요.", followup: f, song: !!f });
+    return NextResponse.json({ react: "말씀 잘 들었어요.", followup: f, song: !!f && /노래|자장가/.test(f) });
   }
 
   const { count: videos } = await db
@@ -47,7 +47,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
       videoDone: (videos || 0) > 0,
     });
     const f = halfFor(a.turn);
-    if (f !== undefined) Object.assign(r, { followup: f, video: false, song: !!f });
+    if (f !== undefined) Object.assign(r, { followup: f, video: false, song: !!f && /노래|자장가/.test(f) });
     await db.from("vf_answers").update({ react: r.react, followup: r.followup }).eq("id", a.id);
     return NextResponse.json(r);
   } catch {

@@ -213,7 +213,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <div className="grow" style={{ minHeight: 28 }} />
         <button className="btn" onClick={continueTalk}>
           {host.video ? <span className="rec-dot" /> : <Mic />}
-          {host.video ? "얼굴 보며 들려주기" : host.song ? "불러주기" : "이어서 말하기"}
+          {host.video ? "얼굴 보며 들려주기" : host.song ? "불러주기" : "하나 더 남기기"}
         </button>
         <button className="link" style={{ marginTop: 6 }} onClick={finish}>오늘은 여기까지 할게요</button>
       </main>

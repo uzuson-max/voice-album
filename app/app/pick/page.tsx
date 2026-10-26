@@ -46,7 +46,7 @@ export default function Pick() {
       <div className="stack">
         <h1 className="h1">{josa(label, "과/와")} 함께할 12주</h1>
         <p className="muted small" style={{ margin: 0 }}>
-          일주일에 하나씩 가요. 9주차엔 노래도 하나 남기고, 중간중간 내가 먼저 답장을 남겨요.
+          일주일에 하나씩 가요. 한 달에 한 번은 하나를 더 남기고(첫 번째는 노래), 중간중간 내가 먼저 답장을 남겨요.
         </p>
         {rows.map((r) => {
           const head = r.chapter !== chapter ? (chapter = r.chapter) : null;

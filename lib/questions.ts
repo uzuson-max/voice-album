@@ -1,5 +1,6 @@
 // lib/questions.ts
-// 우리집 레코드 — 12주 과정. 매주 질문 1개. 9주차만 두 번: 말 + 노래(자장가).
+// 우리집 레코드 — 12주 과정. 매주 질문 1개. 한 달에 한 번(4·8·12주)은 녹음이 두 번: 대답 + 하나 더.
+// 첫 번째 '하나 더'는 노래 — 엄마는 자장가, 아빠는 좋아하시던 노래.
 // 자녀 답장 4번(3·5·7·11주 뒤)은 부모님 다음 링크에 먼저 도착한다. (부모 12 : 자녀 4)
 //
 // 말투 규칙
@@ -56,6 +57,7 @@ export function buildVars(i: CourseInput): FamilyVars & { flags: Record<string, 
       noCatchphrase: !get(PROFILE_KEYS.catchphrase),
       noUnsaid: !get(PROFILE_KEYS.unsaid),
       noFood: !food,
+      isDad: ['아빠', '아버지', '아버님'].includes(label),
     },
   };
 }
@@ -70,7 +72,8 @@ export type Week = Text & {
   hint?: string;
   skipIf?: string;          // flags 키가 true 면 alt
   alt?: Text;
-  encore?: string;          // 대답이 끝나면 한 번 더 남기는 것 (노래 등). 이 주는 녹음이 두 번
+  encore?: string;          // 대답이 끝나면 한 번 더 남기는 것. 이 주는 녹음이 두 번
+  encoreDad?: string;       // 아빠일 때 encore
   reply?: Text;             // 이 주 대답을 들은 뒤 자녀가 남기는 답장 (자녀 화면)
   replyIf?: string;         // flags 키가 true 면 답장 없음
   free?: boolean;           // 무료 체험 회차
@@ -107,6 +110,8 @@ export const COURSE: Week[] = [
     week: 4, format: 'video', chapter: '나를 키우던 시절',
     lead: '{childBirthYear}년, {parent:은/는} 처음으로 저를 품에 안았어요.',
     ask: '그날 밤, 무슨 생각을 하면서 잠들었어요?',
+    encore: '그때 저 재우면서 불러주던 자장가, 한 소절만 불러주세요. 기억이 안 나면 흥얼거리기만 해도 좋아요.',
+    encoreDad: '{parent:이/가} 좋아하던 노래 한 소절만 불러주세요. 나중에 그 노래 들으면 {parent} 생각날 것 같아요.',
     skipIf: 'noChildYear',
     alt: {
       lead: '{parent:이/가} 처음으로 저를 품에 안은 날이에요.',
@@ -146,12 +151,12 @@ export const COURSE: Week[] = [
     lead: '제가 혼자 결정해야 하는 날이 올 거예요. 사람 때문에, 돈 때문에 마음이 흔들리는 날이요.',
     ask: '그런 날을 생각하면 {parent:이/가} 제일 걱정되는 거 하나만, 미리 말해주세요.',
     hint: '잔소리처럼 들려도 괜찮아요. 평소에 하고 싶었던 그 걱정, 그대로요.',
+    encore: '마지막으로, 전화 받을 때처럼 제 이름 한 번만 불러주세요. 목소리 듣고 싶은 날 꺼내 들을게요.',
   },
   {
     week: 9, format: 'video', chapter: '물려줄 것',
     lead: '제가 {childAge+10:살}이 됐다고 생각해주세요. 일도 사람도 다 버거운 어느 밤이에요.',
     ask: '그날 제가 꺼내봤으면 하는 말을, 지금 해주세요.',
-    encore: '그런 밤에 틀어놓고 잘 수 있게, 저 어릴 때 불러주던 자장가 한 소절만 불러주세요. 기억이 안 나면 좋아하는 노래도 좋아요.',
     skipIf: 'noChildYear',
     alt: {
       lead: '제가 지금보다 열 살 더 먹었다고 생각해주세요. 일도 사람도 다 버거운 어느 밤이에요.',
@@ -179,6 +184,7 @@ export const COURSE: Week[] = [
     week: 12, format: 'video', chapter: '남기는 말',
     lead: '세 번째 주에 스무 살의 {parent} 이야기를 들었어요.',
     ask: '이제 지금의 {parent:이/가} 스무 살의 {parent}에게 한마디 해주세요.',
+    encore: '마지막으로, 나중에 이 기록을 보게 될 우리 가족 모두에게 한마디만 남겨주세요.',
   },
 ];
 
@@ -216,7 +222,7 @@ export function buildCourse(input: CourseInput): CourseRow[] {
       chapter: w.chapter,
       lead: r(t.lead),
       ask: r(t.ask) as string,
-      encore: r(w.encore),
+      encore: r(v.flags.isDad && w.encoreDad ? w.encoreDad : w.encore),
       hint: r(w.hint),
       replyLead: reply ? r(reply.lead) : null,
       replyAsk: reply ? r(reply.ask) : null,
