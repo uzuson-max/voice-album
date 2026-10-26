@@ -22,6 +22,7 @@ const CSS = `
   max-width: 460px; margin: 0 auto; padding: 12px 14px 12px; border-radius: 22px;
   background: rgba(14, 26, 22, 0.78); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4);
   border: 1px solid rgba(255, 255, 255, 0.09);
+  color: #f3ede2; --ink: #f3ede2; --muted: rgba(243, 237, 226, 0.62);
   box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.7);
   touch-action: pan-x; transition: transform .25s ease, opacity .25s ease;
 }
