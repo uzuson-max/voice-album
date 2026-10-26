@@ -3,10 +3,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabaseBrowser";
+import QuizCard from "@/components/QuizCard";
 
 const TABS = [
   { href: "/app", label: "질문함" },
   { href: "/app/stories", label: "이야기" },
+  { href: "/app/know", label: "알아요?" },
   { href: "/app/family", label: "가족" },
 ];
 
@@ -39,6 +41,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
       {children}
+      {!hideTabs && <QuizCard />}
       {!hideTabs && (
         <nav className="tabbar" aria-label="주 메뉴">
           {TABS.map((t) => (
