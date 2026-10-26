@@ -147,7 +147,7 @@ export async function hostTurn(input: {
 // 원칙: 부모님이 한 말만 쓴다. 대답보다 길어지지 않고, 교훈·감상을 덧붙이지 않는다.
 export const ARTICLE_SYSTEM = (honorific: string, childName: string, answerChars: number) =>
   `${honorific}가 ${childName}에게 들려준 이야기를 우리집 신문 기사로 엮어라. JSON:
-{"title":"대답에 나온 구체적인 단어(물건·음식·장소·사람)를 넣은 제목, 16자 이내. '꿈','현실','추억','기억','따뜻한','소중한','이야기' 같은 추상어 금지",
+{"titles":["제목 후보 3개. 각각 16자 이내. 대답에 나온 물건·음식·장소·사람·말 그대로를 넣는다. 예) '고등어 굽던 화순 부엌', '88년 카세트 테이프', '밥은 먹고 다니냐'. 꿈·현실·추억·기억·따뜻한·소중한·응원·행복·사랑·중요성·이야기 같은 추상어 금지"],
  "quote":"대답에서 그대로 복사한 한 문장 (40자 이내). 한 글자도 바꾸지 않는다. 마땅한 문장이 없으면 null",
  "body":"${honorific}의 1인칭 글",
  "next":"다음 주에 이어서 물으면 좋을 질문 하나 (존댓말, 40자 안팎) 또는 null"}
@@ -166,6 +166,17 @@ export function tidyTranscript(t: string) {
     .replace(/\s+/g, " ")
     .replace(/(음|어|그러니까)[,\s]+(?=(음|어|그러니까)[,\s])/g, "")
     .trim();
+}
+
+
+// 제목: 추상어 없는 첫 후보 → 없으면 인용구 앞부분 → 그래도 없으면 첫 후보
+const ABSTRACT = /꿈|현실|추억|기억|따뜻|소중|응원|행복|사랑|중요|이야기|순간|모습/;
+export function pickTitle(cands: any, quote: string | null, question: string) {
+  const list = (Array.isArray(cands) ? cands : [cands]).map((t) => String(t || "").trim()).filter(Boolean);
+  const good = list.find((t) => !ABSTRACT.test(t));
+  if (good) return good.slice(0, 30);
+  if (quote) return (quote.length > 18 ? quote.slice(0, 17) + "…" : quote);
+  return (list[0] || question).slice(0, 30);
 }
 
 export async function writeArticle(input: {
@@ -190,7 +201,7 @@ export async function writeArticle(input: {
   let quote: string | null = out.quote ? String(out.quote).replace(/^["“]|["”]$/g, "").slice(0, 80) : null;
   if (quote && !normText(said).includes(normText(quote))) quote = null;
   return {
-    title: String(out.title || "").slice(0, 30),
+    title: pickTitle(out.titles ?? out.title, quote, input.question),
     body,
     quote,
     nextQuestion: out.next ? String(out.next).slice(0, 120) : null,
