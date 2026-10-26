@@ -12,17 +12,23 @@ export async function POST(req: Request, { params }: { params: { token: string }
   const db = admin();
   const { data: p } = await db
     .from("vf_prompts")
-    .select("id, text, ask, vf_storytellers(honorific, vf_families(child_name))")
+    .select("id, text, ask, half, week, vf_storytellers(honorific, vf_families(child_name))")
     .eq("token", params.token)
     .maybeSingle();
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
   const st: any = (p as any).vf_storytellers;
 
   const a = await waitTranscript(String(answerId || ""));
+  // 12주 과정: 꼬리 질문 없이 끝낸다. 노래가 있는 주(half 칸 = 앙코르)만 첫 대답 뒤 한 번 더.
+  const encore: string | null = (p as any).half || null;
+  const course = !!(p as any).week;
+  const halfFor = (turn: number) => (course ? (turn === 0 ? encore : null) : undefined);
   if (!a || a.prompt_id !== p.id) return NextResponse.json({ react: "말씀 잘 들었어요.", followup: null });
   if (a.react) return NextResponse.json({ react: a.react, followup: a.followup, video: false });
   if (!a.transcript || a.transcript.trim().length < 4) {
-    return NextResponse.json({ react: "말씀 잘 들었어요.", followup: null });
+    const f = halfFor(a.turn) ?? null;
+    if (f) await db.from("vf_answers").update({ react: "말씀 잘 들었어요.", followup: f }).eq("id", a.id);
+    return NextResponse.json({ react: "말씀 잘 들었어요.", followup: f, song: !!f });
   }
 
   const { count: videos } = await db
@@ -40,6 +46,8 @@ export async function POST(req: Request, { params }: { params: { token: string }
       turn: a.turn,
       videoDone: (videos || 0) > 0,
     });
+    const f = halfFor(a.turn);
+    if (f !== undefined) Object.assign(r, { followup: f, video: false, song: !!f });
     await db.from("vf_answers").update({ react: r.react, followup: r.followup }).eq("id", a.id);
     return NextResponse.json(r);
   } catch {

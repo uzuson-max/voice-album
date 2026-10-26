@@ -10,3 +10,9 @@ export const appUrl = () => {
   if (prod) return prod.startsWith("http") ? prod : `https://${prod}`;
   return "https://voice-album-9uvm.vercel.app";
 };
+
+// 가격 표시는 여기 한 곳에서 바꾼다 (확정 전)
+export const PRICE = {
+  digital: "30만 원대",
+  digitalNote: "12주 질문 + 매주 우리집 신문 + 디지털 완성판",
+};

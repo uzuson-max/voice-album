@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { admin, BUCKET } from "@/lib/supabaseAdmin";
 import { loadFamily, unauthorized, userIdFrom } from "@/lib/auth";
 import { isOpen } from "@/lib/time";
+import { waitUntil } from "@vercel/functions";
+import { processAnswer, finishPrompt } from "@/lib/process";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 // 우리집 신문: 열린 이야기는 질문 하나 = 기사 하나 (이어 말하기 포함), 봉인된 이야기는 개수와 열리는 날만
 export async function GET(req: Request) {
@@ -20,7 +23,7 @@ export async function GET(req: Request) {
     .from("vf_answers")
     .select(
       "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, unseal_at, created_at, " +
-        "vf_prompts(text, article_title, article, photo_path, reaction_text, reaction_audio_path)"
+        "vf_prompts(text, ask, lead, week, finished_at, article_title, article, article_quote, photo_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
     )
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
@@ -40,14 +43,20 @@ export async function GET(req: Request) {
     if (!byPrompt[a.prompt_id]) {
       byPrompt[a.prompt_id] = {
         promptId: a.prompt_id,
-        question: p.text,
-        title: p.article_title || a.title || p.text,
+        question: p.ask || p.text,
+        lead: p.lead,
+        week: p.week,
+        title: p.article_title || a.title || p.ask || p.text,
         article: p.article,
+        quote: p.article_quote,
+        replyLead: p.reply_lead,
+        replyAsk: p.reply_ask,
         summary: a.summary,
         photoUrl: await sign(p.photo_path),
         reactionText: p.reaction_text,
         reactionAudioUrl: await sign(p.reaction_audio_path),
         createdAt: a.created_at,
+        finished: !!p.finished_at,
         turns: [],
       };
     }
@@ -60,6 +69,31 @@ export async function GET(req: Request) {
       url: await sign(a.media_path),
     });
   }
+  // 받아쓰기·기사가 빠진 이야기는 열어볼 때 뒤에서 다시 돌린다 (다음에 열면 채워져 있게)
+  const twoMin = Date.now() - 2 * 60 * 1000;
+  const stuck = ((data || []) as any[]).filter((a) => a.transcript === null && new Date(a.created_at).getTime() < twoMin);
+  const noArticle = Object.values(byPrompt).filter(
+    (x: any) => !x.article && x.turns.some((t: any) => t.transcript) && x.finished
+  );
+  if (stuck.length || noArticle.length) {
+    const job = (async () => {
+      for (const a of stuck.slice(0, 4)) await processAnswer(a.id).catch(() => {});
+      for (const x of noArticle.slice(0, 3) as any[]) {
+        await db.from("vf_prompts").update({ finished_at: null }).eq("id", x.promptId);
+        await finishPrompt(x.promptId).catch(() => {});
+      }
+      // 방금 받아쓰기가 끝난 이야기도 기사로 엮는다
+      if (stuck.length) {
+        const ids = Array.from(new Set(stuck.map((a) => a.prompt_id)));
+        for (const id of ids.slice(0, 3)) {
+          await db.from("vf_prompts").update({ finished_at: null }).eq("id", id).is("article", null);
+          await finishPrompt(id).catch(() => {});
+        }
+      }
+    })();
+    try { waitUntil(job); } catch {}
+  }
+
   const articles = Object.values(byPrompt).sort((x: any, y: any) => String(y.createdAt).localeCompare(String(x.createdAt)));
   const sealed = Object.values(sealedMap).sort((a, b) => a.unsealAt.localeCompare(b.unsealAt));
   return NextResponse.json({ articles, sealed, family, storyteller });

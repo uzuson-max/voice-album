@@ -15,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: { token: string }
   const db = admin();
   const { data: p } = await db
     .from("vf_prompts")
-    .select("id, storyteller_id, text, format, status, unseal_at, child_audio_path, photo_path, vf_storytellers(honorific, unseal_at, vf_families(child_name))")
+    .select("id, storyteller_id, text, format, status, unseal_at, child_audio_path, photo_path, hint, vf_storytellers(honorific, unseal_at, vf_families(child_name))")
     .eq("token", params.token)
     .maybeSingle();
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
@@ -50,6 +50,7 @@ export async function GET(_req: Request, { params }: { params: { token: string }
   return NextResponse.json({
     text: t.ask || p.text,
     lead: t.lead,
+    hint: (p as any).hint || null,
     format: p.format,
     answered: p.status === "answered",
     honorific: st?.honorific,

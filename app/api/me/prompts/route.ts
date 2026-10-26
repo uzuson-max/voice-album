@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   const [{ data }, { data: recent }] = await Promise.all([
     db
     .from("vf_prompts")
-    .select("id, text, format, source, status, position, sent_at, reminder_count, unseal_at, masked, child_audio_path, photo_path")
+    .select("id, text, ask, week, format, source, status, position, sent_at, reminder_count, unseal_at, masked, child_audio_path, photo_path")
     .eq("storyteller_id", m.storyteller.id)
     .order("position")
     .order("created_at"),
@@ -63,9 +63,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const m = await mine(req);
   if (!m) return unauthorized();
-  const { items } = await req.json().catch(() => ({}));
+  const { items, replaceQueued } = await req.json().catch(() => ({}));
   if (!Array.isArray(items) || !items.length) return bad("질문이 없어요");
   const db = admin();
+  // 12주 과정으로 새로 채울 때: 아직 안 보낸 질문은 비운다
+  if (replaceQueued) await db.from("vf_prompts").delete().eq("storyteller_id", m.storyteller.id).eq("status", "queued");
   const { data: last } = await db
     .from("vf_prompts")
     .select("position")
@@ -74,16 +76,25 @@ export async function POST(req: Request) {
     .limit(1)
     .maybeSingle();
   let pos = (last?.position ?? 0) + 1;
+  const str = (v: any, n: number) => (typeof v === "string" && v.trim() ? v.trim().slice(0, n) : null);
   const rows = items
-    .filter((q: any) => String(q.text || "").trim())
+    .filter((q: any) => String(q.text || q.ask || "").trim())
     .slice(0, 60)
     .map((q: any) => ({
       storyteller_id: m.storyteller.id,
-      text: String(q.text).trim().slice(0, 200),
+      text: String(q.text || q.ask).trim().slice(0, 200),
       format: q.format === "video" ? "video" : "audio",
       source: ["library", "ai", "custom"].includes(q.source) ? q.source : "custom",
       unseal_at: q.unsealAt || null,
       position: pos++,
+      // 12주 과정 질문: 장면·질문이 이미 완성돼 있어서 AI 빌드업을 건너뛴다
+      week: Number.isInteger(q.week) ? q.week : null,
+      lead: str(q.lead, 300),
+      ask: str(q.ask, 200),
+      half: str(q.half, 200),
+      hint: str(q.hint, 200),
+      reply_lead: str(q.replyLead, 300),
+      reply_ask: str(q.replyAsk, 200),
     }));
   const { error } = await db.from("vf_prompts").insert(rows);
   if (error) return bad("저장 실패", 500);

@@ -5,10 +5,12 @@ import Loader from "@/components/Loader";
 import { GiftBox } from "@/components/Illust";
 import { VoiceButton } from "@/components/ChildMedia";
 import { koDate } from "@/lib/time";
+import { josa } from "@/lib/korean";
 
 type Turn = { id: string; asked: string; mediaType: "audio" | "video"; duration: number | null; transcript: string | null; url: string | null };
 type Article = {
-  promptId: string; question: string; title: string; article: string | null; summary: string | null;
+  promptId: string; question: string; lead: string | null; week: number | null; title: string; article: string | null;
+  quote: string | null; replyLead: string | null; replyAsk: string | null; summary: string | null;
   photoUrl: string | null; reactionText: string | null; reactionAudioUrl: string | null; createdAt: string; turns: Turn[];
 };
 
@@ -37,7 +39,7 @@ export default function Stories() {
             <GiftBox />
             <div style={{ fontSize: 20, fontWeight: 700 }}>{koDate(s.unsealAt)}에 열려요</div>
             <div className="muted" style={{ fontSize: 15 }}>
-              {label}가 이야기 {s.count}개를 봉해두었어요{s.video ? ` · 영상 ${s.video}개` : ""}
+              {josa(label, "이/가")} 이야기 {s.count}개를 봉해두었어요{s.video ? ` · 영상 ${s.video}개` : ""}
             </div>
           </div>
         ))}
@@ -46,7 +48,7 @@ export default function Stories() {
           <div className="card big">
             <GiftBox />
             <div style={{ fontSize: 18, fontWeight: 700 }}>아직 도착한 이야기가 없어요</div>
-            <div className="muted small">{label}가 대답하면 여기에 한 편씩 실려요</div>
+            <div className="muted small">{josa(label, "이/가")} 대답하면 여기에 한 편씩 실려요</div>
           </div>
         )}
 
@@ -77,10 +79,18 @@ function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label:
   return (
     <article className="card stack" style={{ gap: 12, padding: "20px 18px" }}>
       <div className="row tiny muted" style={{ gap: 8 }}>
-        <span>제{no}호</span><span>·</span><span>{date}</span>
+        <span>제{a.week || no}호</span><span>·</span><span>{date}</span>
       </div>
       <h2 className="serif" style={{ margin: 0, fontSize: 22, lineHeight: 1.4 }}>{a.title}</h2>
+      {a.lead && <p className="small muted" style={{ margin: 0, lineHeight: 1.6 }}>{a.lead}</p>}
       <p className="small muted" style={{ margin: 0 }}>Q. {a.question}</p>
+
+      {a.quote && (
+        <blockquote className="pullquote">
+          <span aria-hidden="true">“</span>
+          <p>{a.quote}</p>
+        </blockquote>
+      )}
 
       {a.photoUrl && <img src={a.photoUrl} alt="" className="photo" />}
 
@@ -99,23 +109,33 @@ function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label:
         </div>
       ))}
 
-      <div className="redpen stack" style={{ gap: 8 }}>
-        <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>빨간펜 · {label}께 다음 질문과 함께 전해져요</div>
-        <textarea
-          className="input hand"
-          value={pen}
-          onChange={(e) => { setPen(e.target.value); setSaved(false); }}
-          placeholder={`예) 이거 처음 알았어. ${label} 그때 진짜 멋있었네`}
-          style={{ minHeight: 70 }}
-        />
-        <div className="row" style={{ flexWrap: "wrap" }}>
-          <VoiceButton promptId={a.promptId} target="reaction" has={!!a.reactionAudioUrl} label="목소리로 한마디" limit={60} onDone={onSaved} />
-          <div className="grow" />
-          <button className="btn sm" onClick={savePen} disabled={saving || saved || !pen.trim()}>
-            {saving ? "저장 중…" : saved ? "남겼어요" : "남기기"}
-          </button>
+      {a.replyAsk ? (
+        <div className="reply stack" style={{ gap: 8 }}>
+          <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>내 답장 차례 · {label}의 다음 링크에 먼저 도착해요</div>
+          {a.replyLead && <p className="small muted" style={{ margin: 0, whiteSpace: "pre-line" }}>{a.replyLead}</p>}
+          <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.55 }}>{a.replyAsk}</p>
+          <div className="row">
+            <VoiceButton promptId={a.promptId} target="reaction" has={!!a.reactionAudioUrl} label="목소리로 답장하기" limit={120} onDone={onSaved} />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="reply stack" style={{ gap: 8 }}>
+          <div className="tiny muted" style={{ fontWeight: 700 }}>엮은이의 한 줄 · 선택</div>
+          <textarea
+            className="input"
+            value={pen}
+            onChange={(e) => { setPen(e.target.value); setSaved(false); }}
+            placeholder={`예) ${josa(label, "이/가")} 그때 그런 꿈이 있었는지 처음 알았다.`}
+            style={{ minHeight: 60 }}
+          />
+          <div className="row">
+            <div className="grow" />
+            <button className="btn sm" onClick={savePen} disabled={saving || saved || !pen.trim()}>
+              {saving ? "저장 중…" : saved ? "남겼어요" : "남기기"}
+            </button>
+          </div>
+        </div>
+      )}
     </article>
   );
 }

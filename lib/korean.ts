@@ -70,8 +70,9 @@ export function callName(given: string, nickname = false): string {
 
 /** 부르는 말: '재빈' → '재빈아', '민지' → '민지야' */
 export function vocative(given: string, nickname = false): string {
-  const n = given.trim();
-  if (nickname) return josa(n, '아/야');
+  let n = given.trim();
+  // '재빈이'처럼 이미 '이'가 붙어 있으면 떼고 부른다: 재빈이 → 재빈아
+  if (!nickname && n.length >= 2 && n.endsWith('이') && hasBatchim(n.slice(0, -1))) n = n.slice(0, -1);
   return josa(n, '아/야');
 }
 

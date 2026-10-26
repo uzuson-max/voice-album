@@ -3,8 +3,9 @@ import { admin } from "./supabaseAdmin";
 import { sendText } from "./sms";
 import { kstParts, WEEKDAYS } from "./time";
 import { APP_NAME, appUrl } from "./brand";
-import { finishPrompt } from "./process";
+import { finishPrompt, healPending } from "./process";
 import { ensureLead } from "./lead";
+import { josa } from "./korean";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -26,6 +27,17 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .maybeSingle();
   if (!next) return { sent: false, reason: "보낼 질문이 없어요" };
 
+  // 무료 체험: 첫 질문 하나까지만
+  const { count: sentAny } = await db
+    .from("vf_prompts")
+    .select("id", { count: "exact", head: true })
+    .eq("storyteller_id", storyteller.id)
+    .neq("status", "queued");
+  if (sentAny) {
+    const { data: fam } = await db.from("vf_families").select("plan").eq("id", storyteller.family_id).maybeSingle();
+    if ((fam?.plan || "trial") === "trial") return { sent: false, reason: "무료 체험은 첫 질문 하나까지예요" };
+  }
+
   // 처음 보내는 질문인지, 아직 못 전한 자녀 반응이 있는지
   const { count: sentBefore } = await db
     .from("vf_prompts")
@@ -45,21 +57,22 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
 
   const token = crypto.randomBytes(16).toString("base64url");
   const h = storyteller.honorific || "";
+  const cGa = josa(childName, "이/가");
   let text: string;
   if (!sentBefore) {
     text =
-      `[${APP_NAME}] ${childName}가 ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
+      `[${APP_NAME}] ${cGa} ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
       `앞으로 매주 ${WEEKDAYS[storyteller.send_weekday]}요일에 ${childName}의 질문이 하나씩 와요. ` +
       `생각나는 만큼만 편하게 들려주시면 돼요.\n\n` +
       `첫 번째 질문이에요.\n"${q}"\n\n${link(token)}`;
   } else {
     text =
-      `[${APP_NAME}] ${childName}가 이번 주 질문을 보냈어요.\n` +
-      (reactions ? `지난번 이야기에 ${childName}가 남긴 말도 함께 있어요.\n` : "") +
+      `[${APP_NAME}] ${cGa} 이번 주 질문을 보냈어요.\n` +
+      (reactions ? `지난번 이야기를 듣고 ${cGa} 보낸 답장도 함께 있어요.\n` : "") +
       `\n"${q}"\n\n` +
       `아래 링크를 누르고 편하게 말씀해 주세요.\n${link(token)}`;
   }
-  await sendText(storyteller.phone, text, `${childName}가 보낸 질문`);
+  await sendText(storyteller.phone, text, `${cGa} 보낸 질문`);
   await db
     .from("vf_prompts")
     .update({ status: "sent", token, sent_at: new Date().toISOString() })
@@ -86,6 +99,9 @@ export async function runDispatch(now = new Date()) {
   const db = admin();
   const { weekday, hour } = kstParts(now);
   const log: any[] = [];
+
+  // 0-a) 받아쓰기·기사가 빠진 것 되살리기
+  log.push(...(await healPending().catch(() => [])));
 
   // 0) 이어 말하기 도중 창을 닫은 이야기는 30분 뒤 기사로 마무리
   const { data: open } = await db

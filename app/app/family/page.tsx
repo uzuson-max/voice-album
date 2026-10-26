@@ -8,6 +8,7 @@ const empty = {
   childName: "", label: "엄마", honorific: "어머니", phone: "",
   sendWeekday: 3, sendHour: 9, unsealAt: "",
   born: "", school: "", hometown: "", job: "", likes: "",
+  childBorn: "", food: "", catchphrase: "", unsaid: "",
 };
 
 export default function Family() {
@@ -26,6 +27,7 @@ export default function Family() {
         childName: family.child_name, label: storyteller.label, honorific: storyteller.honorific, phone: storyteller.phone,
         sendWeekday: storyteller.send_weekday, sendHour: storyteller.send_hour, unsealAt: storyteller.unseal_at || "",
         born: storyteller.profile?.["태어난 해"] || "", school: storyteller.profile?.["학교·전공"] || "", hometown: storyteller.profile?.고향 || "", job: storyteller.profile?.["했던 일"] || "", likes: storyteller.profile?.["좋아하는 것"] || "",
+        childBorn: storyteller.profile?.["내가 태어난 해"] || "", food: storyteller.profile?.["최애 음식"] || "", catchphrase: storyteller.profile?.["말버릇"] || "", unsaid: storyteller.profile?.["못 한 말"] || "",
       });
     });
   }, []);
@@ -41,7 +43,8 @@ export default function Family() {
         body: JSON.stringify({
           ...f,
           sendWeekday: Number(f.sendWeekday), sendHour: Number(f.sendHour), unsealAt: f.unsealAt || null,
-          profile: { "태어난 해": f.born, "학교·전공": f.school, 고향: f.hometown, "했던 일": f.job, "좋아하는 것": f.likes },
+          profile: { "태어난 해": f.born, "학교·전공": f.school, 고향: f.hometown, "했던 일": f.job, "좋아하는 것": f.likes,
+            "내가 태어난 해": f.childBorn, "최애 음식": f.food, 말버릇: f.catchphrase, "못 한 말": f.unsaid },
         }),
       });
       if (isNew) router.replace("/app/pick");
@@ -85,8 +88,16 @@ export default function Family() {
           <input className="input" type="date" value={f.unsealAt} onChange={set("unsealAt")} />
         </Field>
 
-        <div className="section" style={{ marginTop: 18 }}>부모님에 대해 조금만 (맞춤 질문에 써요)</div>
-        <Field label="태어난 해" hint="질문 속 '그때'를 정확히 짚는 데 써요"><input className="input" inputMode="numeric" value={f.born} onChange={set("born")} placeholder="예: 1962" /></Field>
+        <div className="section" style={{ marginTop: 18 }}>12주 질문에 들어가요</div>
+        <div className="row">
+          <Field label="부모님이 태어난 해"><input className="input" inputMode="numeric" value={f.born} onChange={set("born")} placeholder="1962" /></Field>
+          <Field label="내가 태어난 해"><input className="input" inputMode="numeric" value={f.childBorn} onChange={set("childBorn")} placeholder="1988" /></Field>
+        </div>
+        <span className="tiny muted" style={{ marginTop: -6 }}>"1988년, 엄마는 스물여섯 살이었어요" 같은 첫 질문을 만들어요</span>
+        <Field label="부모님이 해준 음식 중 내 최애" hint="7주차 질문이 돼요. 비워두면 '꼭 알려주고 싶은 것'으로 물어봐요"><input className="input" value={f.food} onChange={set("food")} placeholder="예: 김치찌개" /></Field>
+        <Field label="부모님이 맨날 하던 말버릇"><input className="input" value={f.catchphrase} onChange={set("catchphrase")} placeholder="예: 밥은 먹고 다니냐" /></Field>
+        <Field label="부모님께 아직 못 한 말 한 줄" hint="부모님께 바로 보이지 않아요. 11주차에 내가 직접 말할 때 다시 꺼내드려요."><input className="input" value={f.unsaid} onChange={set("unsaid")} /></Field>
+        <div className="section" style={{ marginTop: 18 }}>조금 더 (선택)</div>
         <Field label="다니신 학교·전공 (아시면)"><input className="input" value={f.school} onChange={set("school")} placeholder="예: 순천여고, 경희대 국문과" /></Field>
         <Field label="고향"><input className="input" value={f.hometown} onChange={set("hometown")} placeholder="예: 전남 순천" /></Field>
         <Field label="젊을 때 하셨던 일"><input className="input" value={f.job} onChange={set("job")} placeholder="예: 섬유공장, 미용실" /></Field>
@@ -95,6 +106,11 @@ export default function Family() {
         {err && <p className="err">{err}</p>}
         {saved && <p className="small" style={{ color: "var(--primary)" }}>저장했어요.</p>}
         <button className="btn" disabled={busy}>{busy ? "저장 중…" : isNew ? "다음: 질문 고르기" : "저장"}</button>
+        {!isNew && (
+          <button type="button" className="link" onClick={() => router.push("/app/pick")}>
+            12주 과정으로 질문함 새로 채우기
+          </button>
+        )}
         {!isNew && (
           <button type="button" className="link" onClick={async () => { await browserClient().auth.signOut(); router.replace("/"); }}>
             로그아웃

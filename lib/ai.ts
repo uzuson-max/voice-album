@@ -1,3 +1,4 @@
+import { josa } from "./korean";
 // OpenAI 호출 (gpt-4o-mini, whisper-1). SDK 없이 fetch만 쓴다.
 const KEY = () => process.env.OPENAI_API_KEY!;
 
@@ -138,7 +139,7 @@ export async function hostTurn(input: {
   let followup = out.followup ? String(out.followup).slice(0, 80) : null;
   const video = !!out.moving && !input.videoDone && input.turn < 2;
   if (input.turn >= 2) followup = null;
-  if (video) followup = `방금 그 이야기, ${input.childName}가 얼굴 보면서 한 번 더 듣고 싶을 것 같아요. 1분만 들려주실래요?`;
+  if (video) followup = `방금 그 이야기, ${josa(input.childName, "이/가")} 얼굴 보면서 한 번 더 듣고 싶을 것 같아요. 1분만 들려주실래요?`;
   return { react, followup, video };
 }
 
@@ -148,11 +149,12 @@ export async function writeArticle(input: {
   childName: string;
   question: string;
   turns: { asked: string; transcript: string }[];
-}): Promise<{ title: string; body: string; nextQuestion: string | null }> {
+}): Promise<{ title: string; body: string; quote: string | null; nextQuestion: string | null }> {
   const talk = input.turns.map((t) => `Q. ${t.asked}\nA. ${t.transcript}`).join("\n\n").slice(0, 9000);
   const out = await chatJSON(
     `${input.honorific}가 ${input.childName}에게 들려준 이야기를 신문 기사처럼 엮어라. JSON:
 {"title":"이야기 속 구체적인 장면을 담은 제목 (16자 이내)",
+ "quote":"대답 속 부모님 말 그대로의 한 문장 (40자 이내, 고치지 않는다). 가장 마음에 남을 말.",
  "body":"${input.honorific}의 1인칭 글. 말한 그대로에 가깝게, 사투리·말버릇·어미를 살린다. 감탄사·반복만 정리. 문단 2~5개, 문단 사이 빈 줄.",
  "next":"다음 주에 이어서 물으면 좋을 질문 하나 (존댓말, 40자 안팎) 또는 null"}
 규칙: 대답에 없는 사실·감정을 지어내지 않는다. 미화하지 않는다.`,
@@ -162,6 +164,7 @@ export async function writeArticle(input: {
   return {
     title: String(out.title || "").slice(0, 30),
     body: String(out.body || "").slice(0, 6000),
+    quote: out.quote ? String(out.quote).replace(/^["“]|["”]$/g, "").slice(0, 80) : null,
     nextQuestion: out.next ? String(out.next).slice(0, 120) : null,
   };
 }

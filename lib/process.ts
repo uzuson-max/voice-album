@@ -93,9 +93,13 @@ export async function finishPrompt(promptId: string) {
       question: p.ask || p.text,
       turns,
     });
-    await db.from("vf_prompts").update({ article_title: art.title || null, article: art.body || null }).eq("id", promptId);
+    await db
+      .from("vf_prompts")
+      .update({ article_title: art.title || null, article: art.body || null, article_quote: art.quote || null })
+      .eq("id", promptId);
 
-    if (art.nextQuestion) {
+    // 12주 과정 질문은 순서가 정해져 있어서 AI 이어지는 질문을 끼워 넣지 않는다
+    if (art.nextQuestion && !p.week) {
       const { data: first } = await db
         .from("vf_prompts")
         .select("position")
@@ -120,4 +124,37 @@ export async function finishPrompt(promptId: string) {
     console.error("[finish] 기사 실패", e?.message);
     await db.from("vf_prompts").update({ finished_at: null }).eq("id", promptId);
   }
+}
+
+// 놓친 처리 되살리기 (매시간): 받아쓰기가 안 된 대답, 기사가 안 나온 이야기
+export async function healPending(limit = 4) {
+  const db = admin();
+  const log: any[] = [];
+  const tenMin = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+  const { data: stuck } = await db
+    .from("vf_answers")
+    .select("id")
+    .is("transcript", null)
+    .lt("created_at", tenMin)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  for (const a of stuck || []) {
+    await processAnswer(a.id).catch(() => {});
+    log.push({ healedAnswer: a.id });
+  }
+  // 끝났는데 기사가 없는 이야기 → 다시 엮기 (받아쓰기가 있는 것만)
+  const { data: noArticle } = await db
+    .from("vf_prompts")
+    .select("id, vf_answers!inner(transcript)")
+    .not("finished_at", "is", null)
+    .is("article", null)
+    .not("vf_answers.transcript", "is", null)
+    .neq("vf_answers.transcript", "")
+    .limit(limit);
+  for (const p of noArticle || []) {
+    await db.from("vf_prompts").update({ finished_at: null }).eq("id", p.id);
+    await finishPrompt(p.id).catch(() => {});
+    log.push({ healedArticle: p.id });
+  }
+  return log;
 }

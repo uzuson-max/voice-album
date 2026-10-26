@@ -1,4 +1,5 @@
 "use client";
+import { josa } from "@/lib/korean";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -7,7 +8,7 @@ import Loader from "@/components/Loader";
 import { WEEKDAYS } from "@/lib/time";
 import { PhotoButton, VoiceButton } from "@/components/ChildMedia";
 
-type P = { id: string; text: string; format: "audio" | "video"; source: string; status: string; reminder_count: number; masked?: boolean; hasVoice?: boolean; hasPhoto?: boolean };
+type P = { id: string; text: string; week?: number | null; format: "audio" | "video"; source: string; status: string; reminder_count: number; masked?: boolean; hasVoice?: boolean; hasPhoto?: boolean };
 
 const SRC: Record<string, string> = { followup: "지난 대답에서 이어진 질문", ai: "맞춤 질문", library: "", custom: "직접 쓴 질문" };
 
@@ -76,18 +77,25 @@ export default function Questions() {
     <main className="screen with-tabs">
       <div className="stack">
         <h1 className="h1" style={{ margin: "0 4px" }}>질문함</h1>
+        {d.family?.plan === "trial" && d.sent.length > 0 && (
+          <a href="/app/plan" className="card stack" style={{ gap: 6, textDecoration: "none", color: "inherit" }}>
+            <span className="chip" style={{ color: "var(--accent)" }}>무료 체험</span>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>첫 번째 이야기까지 담았어요</div>
+            <div className="small muted">남은 11주를 이어가려면 여기를 눌러주세요 →</div>
+          </a>
+        )}
         {d.insight && (
           <div className="card insight stack" style={{ gap: 6 }}>
             <span className="chip" style={{ color: "var(--accent)" }}>AI 한 줄</span>
             {d.insight.kind === "open" ? (
               <>
-                <div style={{ fontSize: 16, fontWeight: 700 }}>{st.label}가 &lsquo;{d.insight.title}&rsquo; 이야기를 들려주셨어요</div>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{josa(st.label, "이/가")} &lsquo;{d.insight.title}&rsquo; 이야기를 들려주셨어요</div>
                 <div className="small muted" style={{ lineHeight: 1.6 }}>{d.insight.summary}</div>
-                <div className="tiny muted">이어서 물어볼 질문을 다음 차례에 넣어뒀어요.</div>
+                {!d.queued[0]?.week && <div className="tiny muted">이어서 물어볼 질문을 다음 차례에 넣어뒀어요.</div>}
               </>
             ) : (
               <>
-                <div style={{ fontSize: 16, fontWeight: 700 }}>{st.label}가 새 이야기를 봉해두셨어요</div>
+                <div style={{ fontSize: 16, fontWeight: 700 }}>{josa(st.label, "이/가")} 새 이야기를 봉해두셨어요</div>
                 <div className="small muted">내용은 열리는 날까지 비밀. 대신 이어지는 질문은 미리 준비해뒀어요.</div>
               </>
             )}
@@ -123,7 +131,7 @@ export default function Questions() {
 
         {d.queued.length > 0 && (
           <p className="tiny muted" style={{ margin: "-6px 4px 0", lineHeight: 1.6 }}>
-            질문을 내 목소리로 남겨두면 {st.label}가 링크를 열 때 {d.family?.child_name || "내"} 목소리로 먼저 들어요. 사진은 있을 때만요.
+            질문을 내 목소리로 남겨두면 {josa(st.label, "이/가")} 링크를 열 때 {d.family?.child_name || "내"} 목소리로 먼저 들어요. 사진은 있을 때만요.
           </p>
         )}
 

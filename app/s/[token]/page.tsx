@@ -3,12 +3,14 @@ import { useEffect, useRef, useState } from "react";
 import { browserClient } from "@/lib/supabaseBrowser";
 import { Baby, Envelope, Mic, MomOnSofa } from "@/components/Illust";
 import { koDate } from "@/lib/time";
+import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
 
 type Reaction = { about: string; text: string | null; audioUrl: string | null };
 type Info = {
   text: string;
   lead: string | null;
+  hint: string | null;
   format: Kind;
   answered: boolean;
   honorific: string;
@@ -34,7 +36,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [turn, setTurn] = useState(0);
   const [kind, setKind] = useState<Kind>("audio");
   const [asked, setAsked] = useState("");
-  const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean } | null>(null);
+  const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean; song?: boolean } | null>(null);
   const [ready, setReady] = useState(false);
   const r = useRecorder();
   const live = useRef<HTMLVideoElement | null>(null);
@@ -211,7 +213,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <div className="grow" style={{ minHeight: 28 }} />
         <button className="btn" onClick={continueTalk}>
           {host.video ? <span className="rec-dot" /> : <Mic />}
-          {host.video ? "얼굴 보며 들려주기" : "이어서 말하기"}
+          {host.video ? "얼굴 보며 들려주기" : host.song ? "불러주기" : "이어서 말하기"}
         </button>
         <button className="link" style={{ marginTop: 6 }} onClick={finish}>오늘은 여기까지 할게요</button>
       </main>
@@ -223,7 +225,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       {first && info.reactions.length > 0 && (
         <div className="card redpen" style={{ width: "100%", textAlign: "left", marginBottom: 22 }}>
           <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>
-            지난번 &lsquo;{info.reactions[0].about}&rsquo; 이야기에 {c}가 남긴 말
+            {josa(c, "이/가")} 보낸 답장 · &lsquo;{info.reactions[0].about}&rsquo; 이야기를 듣고
           </div>
           {info.reactions.map((x, i) => (
             <div key={i} style={{ marginTop: 8 }}>
@@ -238,7 +240,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         isVideo ? (
           <span className="pill">조금 특별한 질문이에요</span>
         ) : (
-          <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>{c}가 보낸 이번 주 질문</p>
+          <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>{josa(c, "이/가")} 보낸 이번 주 질문</p>
         )
       ) : (
         <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>조금만 더 들려주세요</p>
@@ -277,12 +279,16 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
       {first && ready && info.childAudioUrl && phase === "ask" && !r.recording && (
         <div style={{ width: "100%", marginTop: 16 }}>
-          <p className="small muted" style={{ margin: "0 0 6px" }}>{c}가 직접 물어봤어요</p>
+          <p className="small muted" style={{ margin: "0 0 6px" }}>{josa(c, "이/가")} 직접 물어봤어요</p>
           <audio src={info.childAudioUrl} controls />
         </div>
       )}
 
-      {phase === "ask" && ready && !r.recording && !(first && info.lead) && (
+      {first && info.hint && phase === "ask" && ready && !r.recording && (
+        <p className="small muted" style={{ margin: "12px 0 0", lineHeight: 1.6 }}>{info.hint}</p>
+      )}
+
+      {phase === "ask" && ready && !r.recording && !(first && (info.lead || info.hint)) && (
         <p className="muted" style={{ margin: "12px 0 0", fontSize: 16, lineHeight: 1.6 }}>
           {isVideo ? "얼굴을 보며 들려주세요. 가족만 볼 수 있어요." : "생각나는 대로, 편하게 말씀해 주세요."}
         </p>
