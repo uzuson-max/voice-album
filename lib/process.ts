@@ -25,7 +25,10 @@ export async function processAnswer(answerId: string) {
     console.error("[process] STT 실패", e?.message);
   }
 
-  const patch: any = { transcript: transcript ?? "" };
+  // 받아쓰기는 바로 저장 — 진행자 한마디(/next)가 요약을 기다리지 않게
+  await db.from("vf_answers").update({ transcript: transcript ?? "" }).eq("id", answerId);
+
+  const patch: any = {};
   if (a.turn === 0) {
     patch.title = question.slice(0, 24);
     if (transcript && transcript.trim().length > 10) {
@@ -38,7 +41,7 @@ export async function processAnswer(answerId: string) {
       }
     }
   }
-  await db.from("vf_answers").update(patch).eq("id", answerId);
+  if (Object.keys(patch).length) await db.from("vf_answers").update(patch).eq("id", answerId);
 }
 
 // 받아쓰기가 끝날 때까지 기다린다 (최대 ms)
@@ -48,7 +51,7 @@ export async function waitTranscript(answerId: string, ms = 45000): Promise<any 
   while (Date.now() < until) {
     const { data } = await db.from("vf_answers").select("*").eq("id", answerId).maybeSingle();
     if (data && data.transcript !== null) return data;
-    await new Promise((r) => setTimeout(r, 2000));
+    await new Promise((r) => setTimeout(r, 700));
   }
   return null;
 }
