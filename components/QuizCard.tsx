@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "@/lib/supabaseBrowser";
 
 // 앱을 켤 때(탭 세션당 1번) 천천히 떠오르는 "알아요?" 카드.
@@ -15,7 +15,22 @@ const CSS = `
 @keyframes wrIn { from { opacity: 0; } to { opacity: 1; } }
 .wr-in { opacity: 0; animation: wrIn .7s ease forwards; }
 .wr-up { opacity: 0; animation: wrUp .9s cubic-bezier(.2,.7,.2,1) forwards; }
-@media (prefers-reduced-motion: reduce) { .wr-in, .wr-up { animation: none; opacity: 1; } }
+@keyframes wrDown { from { opacity: 0; transform: translateY(-120%); } to { opacity: 1; transform: none; } }
+.wr-down { animation: wrDown .55s cubic-bezier(.2,.8,.2,1) both; }
+.wr-noti {
+  position: fixed; left: 10px; right: 10px; top: calc(10px + env(safe-area-inset-top)); z-index: 60;
+  max-width: 460px; margin: 0 auto; padding: 12px 14px 12px; border-radius: 22px;
+  background: rgba(14, 26, 22, 0.78); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.7);
+  touch-action: pan-x; transition: transform .25s ease, opacity .25s ease;
+}
+.wr-noti .ic { width: 20px; height: 20px; border-radius: 6px; background: var(--primary); display: grid; place-items: center; flex-shrink: 0; }
+.wr-noti .ic i { width: 7px; height: 7px; border-radius: 50%; background: var(--on-primary); display: block; }
+.wr-noti .act { min-height: 36px; padding: 0 14px; border-radius: 999px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
+.wr-noti .act.main { background: var(--primary); color: var(--on-primary); }
+.wr-noti .act.sub { background: rgba(255, 255, 255, 0.08); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { .wr-in, .wr-up, .wr-down { animation: none; opacity: 1; } }
 `;
 
 export default function QuizCard() {
@@ -143,22 +158,38 @@ function Reminder() {
     } catch {}
   }
 
+  // 위로 밀어 닫기
+  let y0 = 0;
+  const onStart = (e: React.TouchEvent) => { y0 = e.touches[0].clientY; };
+  const onMove = (e: React.TouchEvent) => {
+    const dy = Math.min(0, e.touches[0].clientY - y0);
+    (e.currentTarget as HTMLElement).style.transform = `translateY(${dy}px)`;
+  };
+  const onEnd = (e: React.TouchEvent) => {
+    const el = e.currentTarget as HTMLElement;
+    const dy = e.changedTouches[0].clientY - y0;
+    if (dy < -40) { el.style.transform = "translateY(-140%)"; el.style.opacity = "0"; setTimeout(() => setM(null), 220); }
+    else el.style.transform = "";
+  };
+
   return (
-    <div className="wr-up card stack" style={{
-      position: "fixed", left: 12, right: 12, bottom: "calc(90px + env(safe-area-inset-bottom))", zIndex: 40,
-      maxWidth: 460, margin: "0 auto", gap: 10, boxShadow: "0 10px 30px rgba(0,0,0,.35)",
-    }}>
-      <span className="tiny muted">아까 그 질문, 기억나요?</span>
-      <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.5, wordBreak: "keep-all" }}>{m.q}</div>
+    <div className="wr-noti wr-down" role="status" onTouchStart={onStart} onTouchMove={onMove} onTouchEnd={onEnd}>
+      <div className="row" style={{ gap: 8 }}>
+        <span className="ic"><i /></span>
+        <span className="tiny" style={{ fontWeight: 700 }}>우리집 레코드</span>
+        <span className="tiny muted">· 아까 그 질문</span>
+        <div className="grow" />
+        <button className="textbtn" aria-label="닫기" style={{ minHeight: 28, padding: "0 2px", color: "var(--muted)", fontSize: 18 }} onClick={() => setM(null)}>×</button>
+      </div>
+      <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.5, margin: "4px 0 10px 28px", wordBreak: "keep-all" }}>{m.q}</div>
       {sent ? (
-        <p className="small" style={{ margin: 0 }}>질문함에 넣었어요. {m.label} 목소리로 답이 올 거예요.</p>
+        <p className="small muted" style={{ margin: "0 0 2px 28px" }}>질문함에 넣었어요. {m.label} 목소리로 답이 올 거예요.</p>
       ) : (
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          {m.phone && <a className="btn sm" href={`tel:${m.phone}`} onClick={() => setM(null)}>{m.label}에게 전화하기</a>}
-          <button className="btn sm soft" onClick={send}>질문으로 보내기</button>
+        <div className="row" style={{ gap: 6, marginLeft: 28, flexWrap: "wrap" }}>
+          {m.phone && <a className="act main" href={`tel:${m.phone}`} onClick={() => setM(null)}>{m.label}에게 전화</a>}
+          <button className="act sub" onClick={send}>질문으로 보내기</button>
         </div>
       )}
-      <button className="textbtn" style={{ alignSelf: "flex-end", color: "var(--muted)" }} onClick={() => setM(null)}>{sent ? "닫기" : "다음에"}</button>
     </div>
   );
 }
