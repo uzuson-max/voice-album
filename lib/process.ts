@@ -81,7 +81,10 @@ export async function finishPrompt(promptId: string) {
     .eq("prompt_id", promptId)
     .order("turn")
     .order("created_at");
+  // 한 달에 한 번 '하나 더'(노래·이름 부르기·가족에게)는 기사에 섞지 않고 목소리 카드로 따로 둔다
+  const encoreWeek = !!(p.week && p.half);
   const turns = (answers || [])
+    .filter((a) => !(encoreWeek && a.turn > 0))
     .filter((a) => a.transcript && a.transcript.trim().length > 5)
     .map((a) => ({ asked: a.turn === 0 ? p.ask || p.text : a.asked || "", transcript: a.transcript as string }));
   if (!turns.length) return;

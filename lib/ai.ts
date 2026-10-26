@@ -143,29 +143,58 @@ export async function hostTurn(input: {
   return { react, followup, video };
 }
 
-// 한 질문의 대답들(이어 말하기 포함) → 우리집 신문 기사 + 다음 주에 이어 물을 질문
+// 한 질문의 대답들 → 우리집 신문 기사.
+// 원칙: 부모님이 한 말만 쓴다. 대답보다 길어지지 않고, 교훈·감상을 덧붙이지 않는다.
+export const ARTICLE_SYSTEM = (honorific: string, childName: string, answerChars: number) =>
+  `${honorific}가 ${childName}에게 들려준 이야기를 우리집 신문 기사로 엮어라. JSON:
+{"title":"대답에 나온 구체적인 단어(물건·음식·장소·사람)를 넣은 제목, 16자 이내. '꿈','현실','추억','기억','따뜻한','소중한','이야기' 같은 추상어 금지",
+ "quote":"대답에서 그대로 복사한 한 문장 (40자 이내). 한 글자도 바꾸지 않는다. 마땅한 문장이 없으면 null",
+ "body":"${honorific}의 1인칭 글",
+ "next":"다음 주에 이어서 물으면 좋을 질문 하나 (존댓말, 40자 안팎) 또는 null"}
+본문 규칙:
+- ${honorific}가 실제로 한 말만으로 만든다. 모든 문장은 대답 속에 근거가 있어야 한다.
+- 대답에 없는 사실·감정·교훈·당부·회상을 절대 덧붙이지 않는다. "~해야 해", "~가 소중하더라", "그 시절이 그리워" 같은 마무리 금지.
+- 군말(음, 그러니까)과 같은 말 반복만 정리한다. 사투리·어미·말버릇·말끝 흐림은 그대로 둔다.
+- 길이: 대답이 약 ${answerChars}자다. 본문은 그보다 길면 안 된다. 대답이 짧으면 본문도 짧게, 한 문단이어도 된다.
+- 문단 1~4개, 문단 사이 빈 줄.`;
+
+const normText = (s: string) => String(s || "").replace(/[\s.,!?~…'"“”‘’·-]/g, "");
+
+// 받아쓰기를 그대로 보여줄 때 쓰는 최소 정리 (공백·같은 군말 반복만)
+export function tidyTranscript(t: string) {
+  return String(t || "")
+    .replace(/\s+/g, " ")
+    .replace(/(음|어|그러니까)[,\s]+(?=(음|어|그러니까)[,\s])/g, "")
+    .trim();
+}
+
 export async function writeArticle(input: {
   honorific: string;
   childName: string;
   question: string;
   turns: { asked: string; transcript: string }[];
-}): Promise<{ title: string; body: string; quote: string | null; nextQuestion: string | null }> {
+}): Promise<{ title: string; body: string; quote: string | null; nextQuestion: string | null; fallback: boolean }> {
   const talk = input.turns.map((t) => `Q. ${t.asked}\nA. ${t.transcript}`).join("\n\n").slice(0, 9000);
+  const said = input.turns.map((t) => t.transcript).join("\n");
+  const answerChars = said.replace(/\s+/g, " ").trim().length;
   const out = await chatJSON(
-    `${input.honorific}가 ${input.childName}에게 들려준 이야기를 신문 기사처럼 엮어라. JSON:
-{"title":"이야기 속 구체적인 장면을 담은 제목 (16자 이내)",
- "quote":"대답 속 부모님 말 그대로의 한 문장 (40자 이내, 고치지 않는다). 가장 마음에 남을 말.",
- "body":"${input.honorific}의 1인칭 글. 말한 그대로에 가깝게, 사투리·말버릇·어미를 살린다. 감탄사·반복만 정리. 문단 2~5개, 문단 사이 빈 줄.",
- "next":"다음 주에 이어서 물으면 좋을 질문 하나 (존댓말, 40자 안팎) 또는 null"}
-규칙: 대답에 없는 사실·감정을 지어내지 않는다. 미화하지 않는다.`,
+    ARTICLE_SYSTEM(input.honorific, input.childName, answerChars),
     `처음 질문: ${input.question}\n\n${talk}`,
-    0.4
+    0.3
   );
+  let body = String(out.body || "").slice(0, 6000);
+  // 안전장치 1: 기사가 대답보다 부풀면 부모님 말 원문으로
+  const fallback = !body.trim() || body.length > answerChars * 1.2 + 40;
+  if (fallback) body = input.turns.map((t) => tidyTranscript(t.transcript)).filter(Boolean).join("\n\n");
+  // 안전장치 2: 인용구가 대답에 그대로 없으면 뺀다
+  let quote: string | null = out.quote ? String(out.quote).replace(/^["“]|["”]$/g, "").slice(0, 80) : null;
+  if (quote && !normText(said).includes(normText(quote))) quote = null;
   return {
     title: String(out.title || "").slice(0, 30),
-    body: String(out.body || "").slice(0, 6000),
-    quote: out.quote ? String(out.quote).replace(/^["“]|["”]$/g, "").slice(0, 80) : null,
+    body,
+    quote,
     nextQuestion: out.next ? String(out.next).slice(0, 120) : null,
+    fallback,
   };
 }
 
