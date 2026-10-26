@@ -20,8 +20,10 @@ export async function ensureLead(promptId: string): Promise<{ lead: string | nul
       profile: st?.profile || {},
       question: p.text,
     });
-    await db.from("vf_prompts").update({ lead: t.lead || null, ask: t.ask || null }).eq("id", p.id);
-    return { lead: t.lead || null, ask: t.ask || null };
+    // 질문 문장은 자녀가 고른 그대로 둔다. AI가 다시 쓰면 "그때의 경험 중 어떤 교훈이…"처럼
+    // 주어가 빠지고 모호해져서, AI는 앞에 깔아주는 장면(lead)만 만든다.
+    await db.from("vf_prompts").update({ lead: t.lead || null, ask: p.text }).eq("id", p.id);
+    return { lead: t.lead || null, ask: p.text };
   } catch (e: any) {
     console.error("[lead]", e?.message);
     return { lead: null, ask: null };
