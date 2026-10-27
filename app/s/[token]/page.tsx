@@ -20,6 +20,7 @@ type Info = {
   childAudioUrl: string | null;
   photoUrl: string | null;
   reactions: Reaction[];
+  next?: { day: string; lead: string | null } | null;
 };
 type Phase = "loading" | "error" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
@@ -280,7 +281,19 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           {toChild}.
         </p>
         <div className="grow" />
-        <p className="small muted">다음 질문은 다음 주에 문자로 보내드려요</p>
+        {info.next ? (
+          <div className="card stack" style={{ gap: 8, textAlign: "left", width: "100%", marginTop: 28 }}>
+            <span className="tiny muted">다음 이야기 · {info.next.day}에 문자로 보내드려요</span>
+            {info.next.lead ? (
+              <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.7, whiteSpace: "pre-line" }}>{info.next.lead}</p>
+            ) : (
+              <p className="small" style={{ margin: 0 }}>{info.childName}의 다음 질문이 준비돼 있어요.</p>
+            )}
+            <span className="tiny muted">그날까지 천천히 떠올려 두셔도 좋아요.</span>
+          </div>
+        ) : (
+          <p className="small muted">{info.childName}에게 이야기가 잘 전해졌어요</p>
+        )}
       </main>
     );
 
