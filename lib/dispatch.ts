@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { admin } from "./supabaseAdmin";
 import { sendText } from "./sms";
-import { kstParts, WEEKDAYS } from "./time";
+import { kstParts, SEND_DAYS, SEND_DAYS_LABEL } from "./time";
 import { APP_NAME, appUrl } from "./brand";
 import { finishPrompt, healPending } from "./process";
 import { ensureLead } from "./lead";
@@ -62,12 +62,12 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
   if (!sentBefore) {
     text =
       `[${APP_NAME}] ${cGa} ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
-      `앞으로 매주 ${WEEKDAYS[storyteller.send_weekday]}요일에 ${childName}의 질문이 하나씩 와요. ` +
+      `앞으로 매주 ${SEND_DAYS_LABEL}에 ${childName}의 질문이 하나씩 와요. ` +
       `생각나는 만큼만 편하게 들려주시면 돼요.\n\n` +
       `첫 번째 질문이에요.\n"${q}"\n\n${link(token)}`;
   } else {
     text =
-      `[${APP_NAME}] ${cGa} 이번 주 질문을 보냈어요.\n` +
+      `[${APP_NAME}] ${cGa} 새 질문을 보냈어요.\n` +
       (reactions ? `지난번 이야기를 듣고 ${cGa} 보낸 답장도 함께 있어요.\n` : "") +
       `\n"${q}"\n\n` +
       `아래 링크를 누르고 편하게 말씀해 주세요.\n${link(token)}`;
@@ -133,8 +133,8 @@ export async function runDispatch(now = new Date()) {
     const childName = (st as any).vf_families?.child_name || "";
     try {
       // 1) 새 질문
-      if (weekday === st.send_weekday && hour >= st.send_hour) {
-        const since = new Date(now.getTime() - 6 * DAY).toISOString();
+      if (SEND_DAYS.includes(weekday) && hour >= st.send_hour) {
+        const since = new Date(now.getTime() - 2 * DAY).toISOString();
         const { count } = await db
           .from("vf_prompts")
           .select("id", { count: "exact", head: true })

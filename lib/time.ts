@@ -19,6 +19,10 @@ export function koDate(date?: string | null): string {
 
 export const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 질문 발송 요일: 화·토 (주 2회, 12회차를 6주에)
+export const SEND_DAYS = [2, 6];
+export const SEND_DAYS_LABEL = "화요일과 토요일";
+
 export function isOpen(unsealAt?: string | null): boolean {
   return !unsealAt || unsealAt <= todayKST();
 }
