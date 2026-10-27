@@ -71,6 +71,7 @@ export type Week = Text & {
   week: number;
   format: 'audio' | 'video';
   chapter: string;
+  why: string;              // 자녀에게 보이는 '이 회차를 넣은 이유'
   hint?: string;
   skipIf?: string;          // flags 키가 true 면 alt
   alt?: Text;
@@ -85,6 +86,7 @@ export type Week = Text & {
 export const COURSE: Week[] = [
   {
     week: 1, format: 'audio', chapter: '나를 모르던 시절', free: true,
+    why: '부모님이 처음 부모가 된 순간에서 시작해요. 내가 등장하는 이야기라, 첫 녹음부터 끝까지 듣게 돼요.',
     lead: '{age@childBirth:살} 무렵의 {parent:이/가} 제가 생겼다는 걸 처음 알게 된 날이에요.',
     ask: '그날 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.',
     skipIf: 'noYears',
@@ -94,7 +96,8 @@ export const COURSE: Week[] = [
     },
   },
   {
-    week: 2, format: 'audio', chapter: '나를 모르던 시절',
+    week: 2, format: 'audio', chapter: '나를 모르던 시절', free: true,
+    why: '그 시절 노래 한 곡이면 기억이 줄줄이 따라 나와요. {parent:이/가} {parent}이기 전, 한 사람이던 시절을 처음 들어보는 회차예요.',
     lead: '{teenYear}년, {parent:은/는} 중학생이었어요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
     ask: '그때 {parent:은/는} 어떤 아이였어요? 제일 많이 따라 부른 노래 한 곡이랑, 그 노래를 들으면 떠오르는 사람 얘기를 해주세요.',
     skipIf: 'noParentYear',
@@ -105,6 +108,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 3, format: 'video', chapter: '나를 모르던 시절',
+    why: '첫 영상 회차예요. 스무 살의 꿈은 자녀가 거의 모르는 이야기라, 듣고 나면 대화거리가 생겨요. 처음으로 나도 답장을 남겨요.',
     lead: '스무 살의 {parent:이/가} 거울 앞에 서 있어요. "나는 이렇게 살 거야" 하고 생각하면서요.',
     ask: '그때 꿈꾼 모습 중에, 이룬 거 하나랑 못 이룬 거 하나만 알려주세요.',
     hint: '오늘부터는 얼굴도 함께 남겨요. 평소 앉는 자리에서, 화장 안 해도 괜찮아요.',
@@ -115,6 +119,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 4, format: 'video', chapter: '나를 키우던 시절',
+    why: '내 이름에 담긴 마음은 지금 묻지 않으면 영영 모르게 돼요. 이어서 노래 한 소절을 남겨, 힘든 날 꺼내 들을 수 있어요.',
     lead: '{childBirthYear}년, {parent:은/는} 처음으로 저를 품에 안았어요.',
     ask: '제 이름은 누가, 어떤 마음으로 지었어요? 후보였다가 떨어진 이름도 있었으면 알려주세요.',
     encore: '그때 저 재우면서 불러주던 자장가, 한 소절만 불러주세요. 기억이 안 나면 흥얼거리기만 해도 좋아요.',
@@ -127,6 +132,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 5, format: 'video', chapter: '나를 키우던 시절',
+    why: '그 시절 서로 서운했던 말을 이제야 풀어요. 대답을 듣고 내 마음도 답장으로 전해요.',
     lead: '제가 중학생, 방문을 쾅 닫던 시절이에요.',
     ask: '그때 제가 했던 말 중에, 아직도 가슴에 남아 있는 말 있어요? 솔직하게 말해줘도 괜찮아요.',
     reply: {
@@ -136,10 +142,12 @@ export const COURSE: Week[] = [
   },
   {
     week: 6, format: 'video', chapter: '나를 키우던 시절',
+    why: '부모님은 앞에서 칭찬을 잘 안 하죠. 몰래 하던 자랑을 직접 듣는 회차예요.',
     ask: '저 몰래, {parent:이/가} 다른 사람한테 제 자랑을 했던 순간 하나만 알려주세요.',
   },
   {
     week: 7, format: 'video', chapter: '물려줄 것', preview: true,
+    why: '언젠가 그 맛을 다시 못 보는 날이 와요. 내가 좋아하는 요리를 영상으로 남기고, 나도 직접 만들어 답장해요.',
     ask: '{favoriteFood}, 제가 나중에 혼자 만들 수 있게 처음부터 알려주세요.',
     hint: '부엌에서 폰을 세워두고 평소처럼 해주세요. "대충 이 정도"도 그대로 남겨요.',
     skipIf: 'noFood',
@@ -155,6 +163,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 8, format: 'video', chapter: '물려줄 것',
+    why: '잔소리로 흘려듣던 걱정을 기록으로 남겨요. 마지막엔 내 이름을 부르는 목소리를 하나 더 남겨요.',
     lead: '제가 혼자 결정해야 하는 날이 올 거예요. 사람 때문에, 돈 때문에 마음이 흔들리는 날이요.',
     ask: '그런 날을 생각하면 {parent:이/가} 제일 걱정되는 거 하나만, 미리 말해주세요.',
     hint: '잔소리처럼 들려도 괜찮아요. 평소에 하고 싶었던 그 걱정, 그대로요.',
@@ -162,6 +171,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 9, format: 'video', chapter: '물려줄 것',
+    why: '지칠 미래의 나에게 미리 보내는 말이에요. 힘든 밤 꺼내 볼 수 있는 영상 편지가 돼요.',
     lead: '제가 {childAge+10:살}이 됐다고 생각해주세요. 일도 사람도 다 버거운 어느 밤이에요.',
     ask: '그날 제가 꺼내봤으면 하는 말을, 지금 해주세요.',
     skipIf: 'noChildYear',
@@ -172,6 +182,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 10, format: 'audio', chapter: '남기는 말',
+    why: '귀에 익은 그 말버릇, 사라지면 제일 그리운 소리예요. 왜 그 말을 했는지까지 함께 남겨요.',
     lead: '"{catchphrase}" — {parent:이/가} 맨날 하던 그 말이요.',
     ask: '그 말, 왜 그렇게 자주 했어요? 그리고 지금 저한테 한 번만 해주세요.',
     skipIf: 'noCatchphrase',
@@ -181,6 +192,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 11, format: 'video', chapter: '남기는 말',
+    why: '부모님이 기억되고 싶은 모습을 직접 듣고, 내가 처음에 적어둔 말을 이제 전해요.',
     ask: '10년 뒤 오늘 {parent:이/가} 곁에 없다면, 제가 꼭 기억했으면 하는 {parent} 모습은 뭐예요?',
     reply: {
       lead: '처음 시작할 때 적어둔 말이에요.\n"{unsaidWords}"',
@@ -189,6 +201,7 @@ export const COURSE: Week[] = [
   },
   {
     week: 12, format: 'video', chapter: '남기는 말',
+    why: '스무 살의 자신에게 하는 말로 12주를 닫아요. 마지막엔 가족 모두에게 남기는 인사를 담아요.',
     lead: '세 번째 주에 스무 살의 {parent} 이야기를 들었어요.',
     ask: '이제 지금의 {parent:이/가} 스무 살의 {parent}에게 한마디 해주세요.',
     encore: '마지막으로, 나중에 이 기록을 보게 될 우리 가족 모두에게 한마디만 남겨주세요.',
@@ -201,6 +214,7 @@ export type CourseRow = {
   week: number;
   format: 'audio' | 'video';
   chapter: string;
+  why: string;
   lead: string | null;
   ask: string;
   encore: string | null;   // 대답 뒤 한 번 더 (노래)
@@ -227,6 +241,7 @@ export function buildCourse(input: CourseInput): CourseRow[] {
       week: w.week,
       format: w.format,
       chapter: w.chapter,
+      why: r(w.why) as string,
       lead: r(t.lead),
       ask: r(t.ask) as string,
       encore: r(v.flags.isDad && w.encoreDad ? w.encoreDad : w.encore),
