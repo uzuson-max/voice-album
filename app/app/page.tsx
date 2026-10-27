@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, cached, remember } from "@/lib/supabaseBrowser";
 import Loader from "@/components/Loader";
-import { WEEKDAYS } from "@/lib/time";
 import { PhotoButton, VoiceButton } from "@/components/ChildMedia";
 
 type P = { id: string; text: string; week?: number | null; format: "audio" | "video"; source: string; status: string; reminder_count: number; masked?: boolean; hasVoice?: boolean; hasPhoto?: boolean };
@@ -103,7 +102,7 @@ export default function Questions() {
         )}
         <div className="card">
           <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
-            매주 {WEEKDAYS[st.send_weekday]}요일 {st.send_hour}시에 {st.label}에게 보내요
+            매주 화·토 {st.send_hour}시에 {st.label}에게 보내요
           </p>
           <p className="small muted" style={{ margin: "6px 0 12px" }}>대답이 없으면 이틀 뒤, 닷새 뒤에 한 번씩 다정하게 알려드려요.</p>
           <button className="btn sm" onClick={sendNow}>지금 바로 하나 보내기</button>
