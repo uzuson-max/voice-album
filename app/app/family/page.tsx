@@ -105,7 +105,7 @@ export default function Family() {
           </div>
           <Field label="부모님 음식 중 내 최애"><input className="input" value={f.food} onChange={set("food")} /></Field>
           <Field label="부모님 말버릇"><input className="input" value={f.catchphrase} onChange={set("catchphrase")} /></Field>
-          <Field label="아직 못 한 말 한 줄"><input className="input" value={f.unsaid} onChange={set("unsaid")} /></Field>
+          <Field label="쑥스러워서 못 했던 말 (11회차에 내가 직접 전해요)"><input className="input" value={f.unsaid} onChange={set("unsaid")} /></Field>
           <Field label="다니신 학교·전공"><input className="input" value={f.school} onChange={set("school")} /></Field>
           <Field label="고향"><input className="input" value={f.hometown} onChange={set("hometown")} /></Field>
           <Field label="젊을 때 하셨던 일"><input className="input" value={f.job} onChange={set("job")} /></Field>
@@ -213,10 +213,10 @@ export default function Family() {
       ),
     },
     {
-      title: `${p}에게 아직 못 한 말이 있다면`,
-      why: `${josa(p, "은/는")} 볼 수 없어요. 마지막 즈음, 내가 직접 말하는 회차에 이 문장을 다시 꺼내드려요.`,
+      title: `${p}에게 쑥스러워서 못 했던 말이 있나요?`,
+      why: `"고마워요", "그때 미안했어요"처럼 내가 ${p}에게 하고 싶었던 말이에요. 지금은 ${josa(p, "이/가")} 볼 수 없게 보관해두고, 11회차에 내가 이 말을 직접 영상으로 전할 때 다시 꺼내드려요.`,
       optional: true,
-      body: <input className="input" value={f.unsaid} onChange={set("unsaid")} placeholder="한 줄이면 충분해요" />,
+      body: <input className="input" value={f.unsaid} onChange={set("unsaid")} placeholder="예: 그때 대학 보내줘서 고마웠어요" />,
     },
     {
       title: "질문을 어디로 보낼까요?",
