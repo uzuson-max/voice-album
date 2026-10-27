@@ -17,7 +17,7 @@ export async function GET(req: Request) {
 
   const db = admin();
   const sign = async (path?: string | null) =>
-    path ? (await db.storage.from(BUCKET).createSignedUrl(path, 60 * 60)).data?.signedUrl || null : null;
+    path ? (await db.storage.from(BUCKET).createSignedUrl(path, 60 * 60 * 12)).data?.signedUrl || null : null;
 
   const { data } = await db
     .from("vf_answers")
