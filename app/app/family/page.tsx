@@ -124,6 +124,17 @@ export default function Family() {
   const v = varsOf(f);
   const years = v.parentBirthYear > 1900 && v.childBirthYear > v.parentBirthYear;
   const course = buildCourse({ childName: v.childGiven, label: p, profile: profileOf(f) });
+  // 아무것도 안 적었을 때와 비교해 '맞춤으로 바뀐 회차'를 센다
+  const plain = buildCourse({ childName: v.childGiven, label: p, profile: {} });
+  const tailored = course.filter((w, i) => w.ask !== plain[i].ask || w.lead !== plain[i].lead || w.replyAsk !== plain[i].replyAsk);
+  // 방금 적은 값이 실제로 들어간 질문 하나를 찾아 보여준다
+  const findQ = (val: string) => {
+    const t = val.trim();
+    if (t.length < 2) return null;
+    return course.find((w) => (w.ask + (w.lead || "")).includes(t)) || null;
+  };
+  const foodQ = findQ(f.food);
+  const catchQ = findQ(f.catchphrase);
 
   const steps: { title: string; why?: string; body: React.ReactNode; ok?: boolean; optional?: boolean }[] = [
     {
@@ -184,6 +195,7 @@ export default function Family() {
           {years && (
             <Preview label="이런 장면이 만들어져요" text={render("{childBirthYear}년, {parent:은/는} {age@childBirth:살}이었어요.", v)} />
           )}
+          {years && course[0] && <QPreview w={course[0]} p={p} />}
         </div>
       ),
     },
@@ -191,13 +203,23 @@ export default function Family() {
       title: `${p} 음식 중에 제일 좋아하는 건요?`,
       why: `${josa(p, "이/가")} 그 음식을 처음부터 영상으로 알려주는 회차가 돼요. 언젠가 다시 못 먹게 될 맛을 남기는 시간이에요.`,
       optional: true,
-      body: <input className="input" value={f.food} onChange={set("food")} placeholder="예: 김치찌개, 계란볶음밥" />,
+      body: (
+        <div className="stack" style={{ gap: 12 }}>
+          <input className="input" value={f.food} onChange={set("food")} placeholder="예: 김치찌개, 계란볶음밥" />
+          {foodQ && <QPreview w={foodQ} p={p} />}
+        </div>
+      ),
     },
     {
       title: `${josa(p, "이/가")} 맨날 하던 말이 있어요?`,
       why: "그 말을 왜 그렇게 자주 했는지, 그리고 지금 한 번만 해달라고 묻는 회차가 돼요.",
       optional: true,
-      body: <input className="input" value={f.catchphrase} onChange={set("catchphrase")} placeholder="예: 밥은 먹고 다니냐" />,
+      body: (
+        <div className="stack" style={{ gap: 12 }}>
+          <input className="input" value={f.catchphrase} onChange={set("catchphrase")} placeholder="예: 밥은 먹고 다니냐" />
+          {catchQ && <QPreview w={catchQ} p={p} />}
+        </div>
+      ),
     },
     {
       title: `${p}에 대해 아는 만큼만`,
@@ -217,6 +239,26 @@ export default function Family() {
       why: `"고마워요", "그때 미안했어요"처럼 내가 ${p}에게 하고 싶었던 말이에요. 지금은 ${josa(p, "이/가")} 볼 수 없게 보관해두고, 11회차에 내가 이 말을 직접 영상으로 전할 때 다시 꺼내드려요.`,
       optional: true,
       body: <input className="input" value={f.unsaid} onChange={set("unsaid")} placeholder="예: 그때 대학 보내줘서 고마웠어요" />,
+    },
+    {
+      title: "상담 결과",
+      why: tailored.length >= 6
+        ? `알려주신 이야기로 ${p}만을 위한 질문이 만들어졌어요.`
+        : `조금만 더 알려주시면 질문이 훨씬 ${p}다워져요. '이전'으로 돌아가 채울 수 있어요.`,
+      body: (
+        <div className="stack" style={{ gap: 12 }}>
+          <div className="card stack" style={{ gap: 6, alignItems: "center", textAlign: "center", padding: "22px 18px" }}>
+            <span className="tiny muted">12번의 이야기 중</span>
+            <div className="serif" style={{ fontSize: 40, lineHeight: 1.1 }}>{tailored.length}번</div>
+            <span className="small">{josa(p, "이/가")} 주인공인 질문으로 바뀌었어요</span>
+          </div>
+          {tailored.length > 0 && (
+            <div className="row" style={{ flexWrap: "wrap", gap: 6 }}>
+              {tailored.map((w) => <span key={w.week} className="chip">{w.week}회차 · {w.chapter}</span>)}
+            </div>
+          )}
+        </div>
+      ),
     },
     {
       title: "질문을 어디로 보낼까요?",
@@ -301,6 +343,16 @@ function Preview({ label, text }: { label: string; text: string }) {
     <div className="card stack" style={{ gap: 6 }}>
       <span className="tiny muted">{label}</span>
       <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.6 }}>{text}</p>
+    </div>
+  );
+}
+
+// 적은 내용이 실제로 들어간 회차 질문
+function QPreview({ w, p }: { w: { week: number; format: string; lead: string | null; ask: string }; p: string }) {
+  return (
+    <div className="card stack" style={{ gap: 6 }}>
+      <span className="tiny muted">{w.week}회차에 {p}에게 이렇게 물어요 · {w.format === "video" ? "영상" : "음성"}</span>
+      <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.6 }}>{w.ask}</p>
     </div>
   );
 }
