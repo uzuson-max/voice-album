@@ -27,13 +27,14 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .maybeSingle();
   if (!next) return { sent: false, reason: "보낼 질문이 없어요" };
 
-  // 무료 체험: 첫 질문 하나까지만
+  // 무료 체험: 첫 질문 하나까지만 (베타 기간엔 전 회차 무료 — 정식 판매 때 false로)
+  const BETA_ALL_FREE = true;
   const { count: sentAny } = await db
     .from("vf_prompts")
     .select("id", { count: "exact", head: true })
     .eq("storyteller_id", storyteller.id)
     .neq("status", "queued");
-  if (sentAny) {
+  if (sentAny && !BETA_ALL_FREE) {
     const { data: fam } = await db.from("vf_families").select("plan").eq("id", storyteller.family_id).maybeSingle();
     if ((fam?.plan || "trial") === "trial") return { sent: false, reason: "무료 체험은 첫 질문 하나까지예요" };
   }
@@ -54,6 +55,8 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
   // 그 시절로 데려가는 빌드업을 미리 만들어 둔다 (문자에는 다듬은 질문만)
   const t = await ensureLead(next.id);
   const q = t.ask || next.text;
+  // 문자에도 장면을 먼저 깔아서, 질문만 덩그러니 오지 않게
+  const scene = t.lead ? `${t.lead.replace(/\s*\n\s*/g, " ").trim()}\n\n` : "";
 
   const token = crypto.randomBytes(16).toString("base64url");
   const h = storyteller.honorific || "";
@@ -64,12 +67,12 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
       `[${APP_NAME}] ${cGa} ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
       `앞으로 매주 ${SEND_DAYS_LABEL}에 ${childName}의 질문이 하나씩 와요. ` +
       `생각나는 만큼만 편하게 들려주시면 돼요.\n\n` +
-      `첫 번째 질문이에요.\n"${q}"\n\n${link(token)}`;
+      `첫 번째 질문이에요.\n\n${scene}"${q}"\n\n${link(token)}`;
   } else {
     text =
       `[${APP_NAME}] ${cGa} 새 질문을 보냈어요.\n` +
       (reactions ? `지난번 이야기를 듣고 ${cGa} 보낸 답장도 함께 있어요.\n` : "") +
-      `\n"${q}"\n\n` +
+      `\n${scene}"${q}"\n\n` +
       `아래 링크를 누르고 편하게 말씀해 주세요.\n${link(token)}`;
   }
   await sendText(storyteller.phone, text, `${cGa} 보낸 질문`);

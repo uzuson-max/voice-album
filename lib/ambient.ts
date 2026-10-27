@@ -13,36 +13,38 @@ let engine: Engine | null = null;
 let muted = false;
 let wanted = 0;
 
-async function fileEngine(): Promise<Engine | null> {
-  try {
-    const head = await fetch(FILE, { method: "HEAD" });
-    if (!head.ok) return null;
-  } catch {
-    return null;
-  }
+// 휴대폰은 버튼을 누른 그 순간에 바로 play()를 불러야 소리를 허락한다 — 그래서 await 없이 즉시 재생.
+// 아이폰은 볼륨 조절이 막혀 있어서, 줄일 때는 멈추고 올릴 때는 다시 튼다. (음원 자체를 작게 만들어 둠)
+function fileEngine(onFail: () => void): Engine {
   const el = new Audio(FILE);
   el.loop = true;
   el.volume = 0;
-  await el.play();
+  el.play().catch(onFail);
   let raf = 0;
+  let pauseT: any = 0;
   return {
     setLevel(v, sec) {
       cancelAnimationFrame(raf);
+      clearTimeout(pauseT);
+      if (v > 0 && el.paused) el.play().catch(() => {});
+      const to = Math.min(1, v / LEVEL); // 음원 자체가 이미 작아서 1이 기본 크기
       const from = el.volume, t0 = performance.now();
       const step = () => {
         const k = Math.min(1, (performance.now() - t0) / (sec * 1000 || 1));
-        el.volume = Math.max(0, Math.min(1, from + (v - from) * k));
+        try { el.volume = Math.max(0, Math.min(1, from + (to - from) * k)); } catch {}
         if (k < 1) raf = requestAnimationFrame(step);
       };
       step();
+      if (v === 0) pauseT = setTimeout(() => el.pause(), sec * 1000);
     },
     stop() { el.pause(); },
   };
 }
 
-function synthEngine(): Engine {
+function synthEngine(given?: AudioContext): Engine {
   const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext;
-  const ctx: AudioContext = new Ctx();
+  const ctx: AudioContext = given || new Ctx();
+  ctx.resume?.().catch?.(() => {});
   const master = ctx.createGain();
   master.gain.value = 0;
   const tone = ctx.createBiquadFilter();
@@ -117,11 +119,18 @@ function synthEngine(): Engine {
 }
 
 // 반드시 버튼을 누르는 순간 불러야 한다 (휴대폰은 사용자가 누르기 전엔 소리를 막는다)
-export async function startAmbient() {
+export function startAmbient() {
   if (engine) { wanted = LEVEL; engine.setLevel(muted ? 0 : LEVEL, 3); return; }
   try {
-    engine = (await fileEngine()) || synthEngine();
+    // 음원이 막히면 쓸 수 있게, 누른 순간에 소리 장치도 같이 깨워둔다
+    const Ctx: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+    const spare: AudioContext | undefined = Ctx ? new Ctx() : undefined;
+    spare?.resume?.().catch?.(() => {});
     wanted = LEVEL;
+    engine = fileEngine(() => {
+      engine = synthEngine(spare);
+      engine.setLevel(muted ? 0 : wanted, 4);
+    });
     engine.setLevel(muted ? 0 : LEVEL, 4);
   } catch {
     engine = null;
