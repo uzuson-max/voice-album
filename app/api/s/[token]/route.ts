@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { admin, BUCKET } from "@/lib/supabaseAdmin";
 import { ensureLead } from "@/lib/lead";
+import { kstParts, SEND_DAYS, WEEKDAYS } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,25 @@ export async function GET(_req: Request, { params }: { params: { token: string }
     }))
   );
 
+  // 다음 질문 예고: 다음 발송 요일 + 다음 질문의 장면(질문 자체는 그날 공개)
+  const { data: nx } = await db
+    .from("vf_prompts")
+    .select("lead, text")
+    .eq("storyteller_id", p.storyteller_id)
+    .eq("status", "queued")
+    .order("created_at")
+    .limit(1)
+    .maybeSingle();
+  let next: { day: string; lead: string | null } | null = null;
+  if (nx) {
+    const today = kstParts().weekday;
+    let d = 1;
+    while (d < 8 && !SEND_DAYS.includes((today + d) % 7)) d++;
+    next = { day: `${WEEKDAYS[(today + d) % 7]}요일`, lead: nx.lead || null };
+  }
+
   return NextResponse.json({
+    next,
     text: t.ask || p.text,
     lead: t.lead,
     hint: (p as any).hint || null,
