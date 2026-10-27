@@ -20,7 +20,17 @@ export default function Stories() {
     api("/api/me/stories")
       .then((r) => { remember("stories", r); setD(r); })
       .catch(() => setD((v: any) => v || { articles: [], sealed: [] }));
-  useEffect(() => { const c = cached("stories"); if (c) setD(c); load(); }, []);
+  useEffect(() => {
+    const c = cached("stories"); if (c) setD(c); load();
+    // 앱을 오래 켜뒀다 다시 보면 영상 주소가 만료돼 있으니 새로 받아온다
+    let last = Date.now();
+    const onShow = () => { if (document.visibilityState === "visible" && Date.now() - last > 10 * 60 * 1000) { last = Date.now(); load(); } };
+    document.addEventListener("visibilitychange", onShow);
+    return () => document.removeEventListener("visibilitychange", onShow);
+  }, []);
+  // 영상·음성이 안 열리면(주소 만료) 한 번만 새 주소로 다시 받는다
+  const [retried, setRetried] = useState(false);
+  const onMediaError = () => { if (!retried) { setRetried(true); load(); } };
   if (!d) return <Loader label="이야기를 펼치는 중" />;
   const label = d.storyteller?.label || "부모님";
   const total = d.articles.length;
@@ -53,14 +63,14 @@ export default function Stories() {
         )}
 
         {d.articles.map((a: Article, i: number) => (
-          <ArticleCard key={a.promptId} a={a} no={total - i} label={label} onSaved={load} />
+          <ArticleCard key={a.promptId} a={a} no={total - i} label={label} onSaved={load} onMediaError={onMediaError} />
         ))}
       </div>
     </main>
   );
 }
 
-function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label: string; onSaved: () => void }) {
+function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: number; label: string; onSaved: () => void; onMediaError: () => void }) {
   const [pen, setPen] = useState(a.reactionText || "");
   const [saved, setSaved] = useState(!!a.reactionText);
   const [saving, setSaving] = useState(false);
@@ -105,7 +115,7 @@ function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label:
       {a.turns.map((t, k) => (
         <div key={t.id} className="stack" style={{ gap: 6 }}>
           {k > 0 && <span className="tiny muted">이어서 · {t.asked}</span>}
-          {t.url && (t.mediaType === "video" ? <Film src={t.url} /> : <audio src={t.url} controls />)}
+          {t.url && (t.mediaType === "video" ? <Film src={t.url} onError={onMediaError} /> : <audio src={t.url} controls preload="metadata" onError={onMediaError} />)}
         </div>
       ))}
 
@@ -141,11 +151,11 @@ function ArticleCard({ a, no, label, onSaved }: { a: Article; no: number; label:
 }
 
 // 기사 속 영상: 재생하면 신문 칸에서 화면 폭으로 펼쳐지고, 멈추면 다시 칸으로
-function Film({ src }: { src: string }) {
+function Film({ src, onError }: { src: string; onError: () => void }) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`film${open ? " open" : ""}`}>
-      <video src={src} controls playsInline onPlay={() => setOpen(true)} onPause={() => setOpen(false)} onEnded={() => setOpen(false)} />
+      <video src={src} controls playsInline preload="metadata" onError={onError} onPlay={() => setOpen(true)} onPause={() => setOpen(false)} onEnded={() => setOpen(false)} />
     </div>
   );
 }
