@@ -36,5 +36,39 @@ export const QUIZ: QuizItem[] = [
   { key: "wish", q: "{L}가 요즘 제일 하고 싶은 게 뭔지 알아요?", ask: "{H}가 요즘 마음속으로 제일 해보고 싶은 건 뭐예요?" },
 ];
 
+// "몰라요"를 눌렀을 때 보여주는 짧은 한마디
+export const UNKNOWN_NOTE: Record<string, string> = {
+  nickname: "별명이 붙은 사연까지 물어보세요.",
+  dream: "왜 그 꿈이었는지도 같이 물어보세요.",
+  bestfriend: "지금도 연락하시는지 물어보세요.",
+  firstlove: "몇 살 때였는지부터 물어보세요.",
+  song: "한 소절 불러달라고 해보세요.",
+  subject: "어떤 칭찬을 받았는지도 물어보세요.",
+  hometown: "집 앞에 뭐가 있었는지부터 물어보세요.",
+  firstjob: "첫 월급날 기억나시는지 물어보세요.",
+  parents: "외할머니가 자주 하던 말을 물어보세요.",
+  scold: "무슨 일로 혼났는지 물어보세요.",
+  food: "얼마였는지도 물어보세요.",
+  trip: "누구랑 갔는지 물어보세요.",
+  meet: "첫인상부터 물어보세요.",
+  proud: "언제였는지 물어보세요.",
+  hard: "그때 무엇이 버티게 했는지 물어보세요.",
+  talent: "지금도 하실 수 있는지 물어보세요.",
+  fashion: "그 시절 사진이 있는지 물어보세요.",
+  movie: "누구랑 봤는지 물어보세요.",
+  regret: "스무 살로 돌아가면 뭘 하고 싶은지 물어보세요.",
+  mebirth: "그날 어땠는지 물어보세요.",
+  mename: "다른 후보 이름도 있었는지 물어보세요.",
+  mefirst: "몇 살 때였는지 물어보세요.",
+  habit: "언제부터 그랬는지 물어보세요.",
+  teacher: "어떤 분이었는지 물어보세요.",
+  home: "식구들이 어디서 잤는지 물어보세요.",
+  siblings: "어릴 때 같이 하던 놀이를 물어보세요.",
+  fear: "왜 무서웠는지 물어보세요.",
+  happyday: "딱 하루만 고른다면 언제인지 물어보세요.",
+  secret: "한 번도 안 해준 이야기가 있는지 물어보세요.",
+  wish: "요즘 해보고 싶은 게 있는지 물어보세요.",
+};
+
 export const fill = (s: string, label: string, honorific: string) =>
   s.replaceAll("{L}", label).replaceAll("{H}", honorific);
