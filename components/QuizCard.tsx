@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { api } from "@/lib/supabaseBrowser";
+import { UNKNOWN_NOTE } from "@/lib/quiz";
 
 // 앱을 켤 때(탭 세션당 1번) 천천히 떠오르는 "알아요?" 카드.
 // 몰랐던 질문은 바로 행동을 요구하지 않고, 둘러보다가 잠시 뒤(또는 앱에 다시 돌아왔을 때) 아래에서 한 번 더 살며시 보여준다.
@@ -98,10 +99,10 @@ export default function QuizCard() {
           {step === "unknown" && (
             <div className="stack" style={{ gap: 12 }}>
               <p className="wr-up" style={{ margin: 0, fontSize: 18, lineHeight: 1.7, wordBreak: "keep-all" }}>
-                {pct !== null ? <>우리집 레코드를 쓰는 분들 중 <b style={{ color: "var(--accent)" }}>{pct}%</b>도 몰랐어요.</> : <>처음엔 다들 잘 몰라요.</>}
+                {pct !== null ? <>우리집 레코드를 쓰는 분들 중 <b style={{ color: "var(--accent)" }}>{pct}%</b>도 몰랐어요.</> : <>몰라도 괜찮아요.</>}
               </p>
               <p className="wr-up muted" style={{ margin: 0, fontSize: 16, lineHeight: 1.7, wordBreak: "keep-all", animationDelay: ".6s" }}>
-                {L}도 그 시절엔 하고 싶은 게 많던 학생이었을 거예요.<br />언젠가 통화할 때 슬쩍 물어봐도 좋아요.
+                {(UNKNOWN_NOTE[n.key] || "다음 통화 때 물어보세요.").replaceAll("{L}", L)}
               </p>
             </div>
           )}
