@@ -2,12 +2,12 @@ import { josa } from "./korean";
 // OpenAI 호출 (gpt-4o-mini, whisper-1). SDK 없이 fetch만 쓴다.
 const KEY = () => process.env.OPENAI_API_KEY!;
 
-async function chatJSON(system: string, user: string, temperature = 0.7): Promise<any> {
+async function chatJSON(system: string, user: string, temperature = 0.7, model = "gpt-4o-mini"): Promise<any> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${KEY()}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "gpt-4o-mini",
+      model,
       temperature,
       response_format: { type: "json_object" },
       messages: [
@@ -191,7 +191,8 @@ export async function writeArticle(input: {
   const out = await chatJSON(
     ARTICLE_SYSTEM(input.honorific, input.childName, answerChars),
     `처음 질문: ${input.question}\n\n${talk}`,
-    0.3
+    0.3,
+    process.env.ARTICLE_MODEL || "gpt-4.1" // 결과물이 상품이라 기사만 상위 모델
   );
   let body = String(out.body || "").slice(0, 6000);
   // 안전장치 1: 기사가 대답보다 부풀면 부모님 말 원문으로
