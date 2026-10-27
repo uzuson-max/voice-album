@@ -51,8 +51,10 @@ export function buildVars(i: CourseInput): FamilyVars & { flags: Record<string, 
     catchphrase: get(PROFILE_KEYS.catchphrase),
     unsaidWords: get(PROFILE_KEYS.unsaid),
     favoriteFood: food,
+    teenYear: parentBirthYear ? parentBirthYear + 14 : 0, // 중학생(열네 살) 무렵
     flags: {
       noYears: !parentBirthYear || !childBirthYear || childBirthYear <= parentBirthYear,
+      noParentYear: !parentBirthYear,
       noChildYear: !childBirthYear,
       noCatchphrase: !get(PROFILE_KEYS.catchphrase),
       noUnsaid: !get(PROFILE_KEYS.unsaid),
@@ -83,18 +85,23 @@ export type Week = Text & {
 export const COURSE: Week[] = [
   {
     week: 1, format: 'audio', chapter: '나를 모르던 시절', free: true,
-    lead: '{childBirthYear}년, {parent:은/는} {age@childBirth:살}이었어요. 아직 저를 만나기 전이요.',
-    ask: '그해 {parent:이/가} 제일 갖고 싶었던 건 뭐였어요?',
+    lead: '{age@childBirth:살} 무렵의 {parent:이/가} 제가 생겼다는 걸 처음 알게 된 날이에요.',
+    ask: '그날 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.',
     skipIf: 'noYears',
     alt: {
-      lead: '제가 태어나기 바로 전 해예요. {parent:은/는} 아직 저를 만나기 전이었어요.',
-      ask: '그해 {parent:이/가} 제일 갖고 싶었던 건 뭐였어요?',
+      lead: '{parent:이/가} 제가 생겼다는 걸 처음 알게 된 날이에요.',
+      ask: '그날 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.',
     },
   },
   {
     week: 2, format: 'audio', chapter: '나를 모르던 시절',
-    lead: '{hometown}, {parent:이/가} 열두 살이던 여름방학. 하루 종일 놀다가 해 질 녘에 집 대문을 열어요.',
-    ask: '그때 제일 먼저 나던 냄새가 뭐였어요? 누가 부엌에 있었어요?',
+    lead: '{teenYear}년, {parent:은/는} 중학생이었어요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
+    ask: '그때 {parent:은/는} 어떤 아이였어요? 제일 많이 따라 부른 노래 한 곡이랑, 그 노래를 들으면 떠오르는 사람 얘기를 해주세요.',
+    skipIf: 'noParentYear',
+    alt: {
+      lead: '{parent:이/가} 중학생이던 시절이에요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
+      ask: '그때 {parent:은/는} 어떤 아이였어요? 제일 많이 따라 부른 노래 한 곡이랑, 그 노래를 들으면 떠오르는 사람 얘기를 해주세요.',
+    },
   },
   {
     week: 3, format: 'video', chapter: '나를 모르던 시절',
@@ -109,13 +116,13 @@ export const COURSE: Week[] = [
   {
     week: 4, format: 'video', chapter: '나를 키우던 시절',
     lead: '{childBirthYear}년, {parent:은/는} 처음으로 저를 품에 안았어요.',
-    ask: '그날 밤, 무슨 생각을 하면서 잠들었어요?',
+    ask: '제 이름은 누가, 어떤 마음으로 지었어요? 후보였다가 떨어진 이름도 있었으면 알려주세요.',
     encore: '그때 저 재우면서 불러주던 자장가, 한 소절만 불러주세요. 기억이 안 나면 흥얼거리기만 해도 좋아요.',
     encoreDad: '{parent:이/가} 좋아하던 노래 한 소절만 불러주세요. 나중에 그 노래 들으면 {parent} 생각날 것 같아요.',
     skipIf: 'noChildYear',
     alt: {
       lead: '{parent:이/가} 처음으로 저를 품에 안은 날이에요.',
-      ask: '그날 밤, 무슨 생각을 하면서 잠들었어요?',
+      ask: '제 이름은 누가, 어떤 마음으로 지었어요? 후보였다가 떨어진 이름도 있었으면 알려주세요.',
     },
   },
   {
