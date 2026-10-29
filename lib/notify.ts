@@ -2,9 +2,10 @@
 // 자녀 알림 원칙: 좋은 소식만 보낸다. "이번 주 녹음이 없어요" 같은 알림은 만들지 않는다.
 
 import { admin } from "./supabaseAdmin";
-import { sendText } from "./sms";
+import { sendKakao } from "./sms";
 import { APP_NAME, appUrl } from "./brand";
 import { josa } from "./korean";
+import { kstParts, koDate } from "./time";
 
 // 기사가 처음 완성됐을 때 한 번만: "엄마 이야기가 도착했어요"
 export async function notifyArrival(promptId: string) {
@@ -29,10 +30,67 @@ export async function notifyArrival(promptId: string) {
   if (!lock?.length) return;
 
   const label = st?.label || "부모님";
-  const title = p.article_title ? `\n\n‘${p.article_title}’` : "";
-  await sendText(
+  const who = josa(label, "이/가");
+  const title = p.article_title || "새 이야기";
+  await sendKakao(
     to,
-    `[${APP_NAME}] ${josa(label, "이/가")} 들려준 이야기가 도착했어요.${title}\n\n${appUrl()}/app/stories`,
+    "arrival",
+    { "#{부모님}": who, "#{제목}": title },
+    `[${APP_NAME}] ${who} 들려준 이야기가 도착했어요.\n\n‘${title}’\n\n${appUrl()}/app/stories`,
     "이야기 도착"
   );
+}
+
+// 보관이 끝나기 30일 전 한 번: 원본 전체 내려받기 안내
+const DAY = 24 * 60 * 60 * 1000;
+export async function notifyKeepEnding(now = new Date(), keepYears = 1) {
+  const db = admin();
+  const log: any[] = [];
+  const { data: fams } = await db
+    .from("vf_families")
+    .select("id, child_phone, keep_notified_at, vf_storytellers(id, label)")
+    .not("child_phone", "is", null)
+    .is("keep_notified_at", null)
+    .limit(200);
+  for (const f of (fams || []) as any[]) {
+    const st = f.vf_storytellers?.[0];
+    if (!st) continue;
+    // 과정이 끝난 가족만: 보낼 질문이 남아 있지 않고
+    const { count: queued } = await db
+      .from("vf_prompts")
+      .select("id", { count: "exact", head: true })
+      .eq("storyteller_id", st.id)
+      .eq("status", "queued");
+    if (queued) continue;
+    const { data: last } = await db
+      .from("vf_answers")
+      .select("created_at")
+      .eq("storyteller_id", st.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!last) continue;
+    const end = new Date(new Date(last.created_at).getTime() + keepYears * 365 * DAY);
+    const left = end.getTime() - now.getTime();
+    if (left > 30 * DAY || left < 0) continue;
+
+    const { data: lock } = await db
+      .from("vf_families")
+      .update({ keep_notified_at: now.toISOString() })
+      .eq("id", f.id)
+      .is("keep_notified_at", null)
+      .select("id");
+    if (!lock?.length) continue;
+    const date = koDate(kstParts(end).date);
+    const label = st.label || "부모님";
+    await sendKakao(
+      f.child_phone,
+      "keep",
+      { "#{부모님}": label, "#{날짜}": date },
+      `[${APP_NAME}] ${label} 이야기 보관이 ${date}에 끝나요.\n\n그 전에 목소리·영상 원본을 내려받아 두세요.\n${appUrl()}/app/export`,
+      "원본 내려받기 안내"
+    ).catch((e) => log.push({ keepFail: f.id, e: e?.message }));
+    log.push({ keepNotified: f.id });
+  }
+  return log;
 }

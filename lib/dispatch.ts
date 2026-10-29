@@ -2,10 +2,11 @@ import crypto from "crypto";
 import { admin } from "./supabaseAdmin";
 import { sendText } from "./sms";
 import { kstParts, SEND_DAYS, SEND_DAYS_LABEL } from "./time";
-import { APP_NAME, appUrl } from "./brand";
+import { APP_NAME, appUrl, PRICE } from "./brand";
 import { finishPrompt, healPending } from "./process";
 import { ensureLead } from "./lead";
 import { josa } from "./korean";
+import { notifyKeepEnding } from "./notify";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -132,6 +133,9 @@ export async function runDispatch(now = new Date()) {
   const db = admin();
   const { weekday, hour } = kstParts(now);
   const log: any[] = [];
+
+  // 0-b) 하루 한 번(오전 10시): 보관이 끝나기 30일 전 가족에게 원본 내려받기 안내
+  if (hour === 10) log.push(...(await notifyKeepEnding(now, PRICE.keepYears).catch(() => [])));
 
   // 0-a) 받아쓰기·기사가 빠진 것 되살리기
   log.push(...(await healPending().catch(() => [])));
