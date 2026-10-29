@@ -175,6 +175,7 @@ textarea.hand { font-size: 20px; }
 /* 첫 화면 = 상자 */
 body:has(.boxed) { background-color: var(--box); }
 .boxed { color: var(--box-ink); }
+.boxed .lead p { color: var(--box-ink); }
 .boxed .muted { color: var(--box-muted); }
 .boxed .btn { background: var(--box-accent); color: var(--box); }
 
