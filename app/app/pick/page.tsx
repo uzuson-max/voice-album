@@ -29,7 +29,9 @@ export default function Pick() {
     setBusy(true);
     const items = rows.map((r) => ({ ...r, half: r.encore, text: r.ask, source: "library" }));
     await api("/api/me/prompts", { method: "POST", body: JSON.stringify({ items, replaceQueued: true }) });
-    router.replace("/app");
+    // 아직 한 번도 안 보냈으면, 첫 문자보다 내 카톡이 먼저 가도록
+    const r: any = await api("/api/me/prompts").catch(() => null);
+    router.replace(r && r.sent?.length === 0 ? "/app/invite" : "/app");
   }
 
   if (!rows)

@@ -3,20 +3,28 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/supabaseBrowser";
 import { josa } from "@/lib/korean";
-import { PRICE } from "@/lib/brand";
+import { PRICE, perPerson } from "@/lib/brand";
 import BizFooter from "@/components/BizFooter";
 
-// 무료 체험이 끝난 뒤: 남은 11주를 미리 보여주고 이어가기 신청
+// 결제 전 화면 — 무료 체험 대신, 받는 것·환불·보관을 한 화면에서 분명하게
 export default function Plan() {
   const router = useRouter();
   const [course, setCourse] = useState<any[] | null>(null);
   const [label, setLabel] = useState("부모님");
+  const [honorific, setHonorific] = useState("어머니");
+  const [child, setChild] = useState("");
   const [state, setState] = useState<"idle" | "busy" | "done">("idle");
 
   useEffect(() => {
     api("/api/me/recommend", { method: "POST" })
       .then((r) => { setCourse(r.course); setLabel(r.label || "부모님"); })
       .catch(() => router.replace("/app"));
+    api("/api/me/family")
+      .then(({ family, storyteller }) => {
+        if (storyteller?.honorific) setHonorific(storyteller.honorific);
+        if (family?.child_name) setChild(family.child_name);
+      })
+      .catch(() => {});
   }, [router]);
 
   async function request() {
@@ -30,51 +38,65 @@ export default function Plan() {
   }
 
   if (!course) return <main className="screen center"><p className="muted">잠시만요…</p></main>;
-  const preview = course.find((w) => w.preview);
   const replies = course.filter((w) => w.replyAsk).length;
+  const songs = course.filter((w) => w.encore).length;
+  const demo = `/s/demo?c=${encodeURIComponent(child)}&h=${encodeURIComponent(honorific)}`;
 
   return (
     <main className="screen">
       <div className="stack">
-        <h1 className="h1">{josa(label, "과/와")} 남은 11주</h1>
+        <h1 className="h1">{josa(label, "과/와")} 함께할 12번의 이야기</h1>
         <p className="muted small" style={{ margin: 0, lineHeight: 1.7 }}>
-          첫 번째 이야기는 여기까지 무료로 담았어요. 이어가면 매주 한 질문씩, 우리집 신문이 한 호씩 쌓여요.
+          화요일과 토요일, 질문이 하나씩 가요. 다 모이면 {label} 목소리가 담긴 양장본 한 권이 집으로 가요.
         </p>
 
-        {preview && (
-          <div className="card stack" style={{ gap: 8 }}>
-            <span className="chip">{preview.week}주차엔 이런 질문이 가요</span>
-            <p className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.55 }}>{preview.ask}</p>
-            {preview.hint && <p className="tiny muted" style={{ margin: 0 }}>{preview.hint}</p>}
+        <div className="card box stack" style={{ gap: 6 }}>
+          <div style={{ fontSize: 22, fontWeight: 700 }}>{PRICE.label}</div>
+          <div className="small muted">{PRICE.note}</div>
+          <div className="tiny muted" style={{ lineHeight: 1.6 }}>
+            형제와 나누면 2명 {perPerson(2)} · 3명 {perPerson(3)} · 4명 {perPerson(4)}
           </div>
-        )}
-
-        <div className="card stack" style={{ gap: 10 }}>
-          <Row k="매주 질문" v="11개 (한 달에 한 번은 노래·목소리 하나 더)" />
-          <Row k="내가 보내는 답장" v={`${replies}번 — ${label}의 다음 링크에 먼저 도착`} />
-          <Row k="우리집 신문" v="매주 한 호, 목소리·영상·글로" />
-          <Row k="완성판" v="12주가 끝나면 한 권으로 묶은 디지털판" />
         </div>
 
-        <div className="card box stack" style={{ gap: 6 }}>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>{PRICE.digital}</div>
-          <div className="small muted">{PRICE.digitalNote}</div>
+        <div className="card stack" style={{ gap: 10 }}>
+          <Row k="질문" v={`12번 — 그중 ${songs}번은 노래·목소리를 하나 더 남겨요`} />
+          <Row k="부모님 참여" v="문자 링크 하나. 앱 설치·로그인 없이 말로만" />
+          <Row k="매번 받는 것" v="목소리·영상 원본 + 우리집 신문 한 편" />
+          <Row k="내가 보내는 답장" v={`${replies}번 — ${label}의 다음 링크에 먼저 도착`} />
+          <Row k="12번이 끝나면" v="양장본 1권 · 장마다 QR로 목소리 다시 듣기" />
+          <Row k="보관" v={`끝난 뒤 ${PRICE.keepYears}년 동안 열람·원본 전체 내려받기`} />
+          {PRICE.extraCopy && <Row k="형제용 추가 부수" v={PRICE.extraCopy} />}
+        </div>
+
+        <a href={demo} className="btn soft" target="_blank" rel="noreferrer">{josa(label, "이/가")} 받는 화면 직접 체험해보기</a>
+
+        <div className="card stack" style={{ gap: 8 }}>
+          <div style={{ fontWeight: 700 }}>첫 두 이야기를 받아보고 아니다 싶으면 전액 돌려드려요.</div>
+          <div className="small muted" style={{ lineHeight: 1.6 }}>
+            그 뒤에는 남은 회차만큼 돌려드려요. 사유는 묻지 않아요. <a href="/refund">환불 정책</a>
+          </div>
+        </div>
+
+        <div className="card stack" style={{ gap: 8 }}>
+          <div className="small" style={{ lineHeight: 1.7 }}>
+            {label} 목소리와 영상은 가족 외에는 누구도 볼 수 없어요. 보관 기간이 끝나기 30일 전에 원본 전체 내려받기를 안내해 드려요.
+          </div>
+          <div className="small muted" style={{ lineHeight: 1.7 }}>
+            {josa(label, "이/가")} 편찮으셔서 일정을 바꿔야 하면 바로 말씀해 주세요. 더 자주 보내거나, 그때까지 남은 이야기로 먼저 책을 만들어 드려요.
+          </div>
         </div>
 
         {state === "done" ? (
           <div className="card stack" style={{ gap: 6 }}>
             <div style={{ fontWeight: 700 }}>신청을 받았어요.</div>
-            <div className="small muted" style={{ lineHeight: 1.6 }}>결제 안내를 따로 드릴게요. 확인되면 다음 주 질문부터 바로 이어서 가요.</div>
+            <div className="small muted" style={{ lineHeight: 1.6 }}>결제 안내를 따로 드릴게요. 확인되면 첫 질문부터 바로 시작해요.</div>
           </div>
         ) : (
           <button className="btn" onClick={request} disabled={state === "busy"}>
-            {state === "busy" ? "신청 중…" : "12주 이어가기 신청"}
+            {state === "busy" ? "신청 중…" : `${PRICE.label}으로 시작하기`}
           </button>
         )}
-        <button className="link" onClick={() => router.replace("/app/stories")}>첫 번째 이야기 다시 보기</button>
-        <p className="tiny muted" style={{ margin: 0, lineHeight: 1.6, textAlign: "center" }}>
-          첫 질문 발송 전에는 전액, 시작 후에는 남은 주차만큼 환불돼요. <a href="/refund">환불 정책</a>
-        </p>
+        <button className="link" onClick={() => router.replace("/app/pick")}>12번 질문 전체 다시 보기</button>
         <BizFooter />
       </div>
     </main>
@@ -84,7 +106,7 @@ export default function Plan() {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="row" style={{ alignItems: "flex-start", gap: 12 }}>
-      <span className="small muted" style={{ width: 96, flexShrink: 0 }}>{k}</span>
+      <span className="small muted" style={{ width: 104, flexShrink: 0 }}>{k}</span>
       <span className="small" style={{ lineHeight: 1.6 }}>{v}</span>
     </div>
   );

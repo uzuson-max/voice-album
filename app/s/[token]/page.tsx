@@ -21,8 +21,10 @@ type Info = {
   photoUrl: string | null;
   reactions: Reaction[];
   next?: { day: string; lead: string | null } | null;
+  firstEver?: boolean;
+  demo?: boolean;
 };
-type Phase = "loading" | "error" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
+type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
 const MAX_TURNS = 2;
 
@@ -40,7 +42,9 @@ function splitLead(lead: string) {
 } // 첫 대답 뒤 이어 말하기 최대 2번
 
 export default function ParentPage({ params }: { params: { token: string } }) {
+  const isDemo = params.token === "demo";
   const log = (kind: string, detail?: any) => {
+    if (isDemo) return;
     try {
       const body = JSON.stringify({ kind, detail });
       if (kind === "leave" && navigator.sendBeacon) navigator.sendBeacon(`/api/s/${params.token}/event`, new Blob([body], { type: "application/json" }));
@@ -60,7 +64,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const live = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    fetch(`/api/s/${params.token}`)
+    fetch(`/api/s/${params.token}${isDemo ? window.location.search : ""}`)
       .then((res) => res.json().then((j) => ({ ok: res.ok, j })))
       .then(({ ok, j }) => {
         if (!ok) throw new Error(j.error);
@@ -68,7 +72,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         setUnsealAt(j.unsealAt);
         setKind(j.format);
         setAsked(j.text);
-        setPhase(j.answered ? "done" : "intro");
+        setPhase(j.answered ? "done" : j.firstEver ? "welcome" : "intro");
         log("open", { answered: !!j.answered });
         // 빌드업을 한 줄씩 천천히 보여준 뒤 질문과 버튼이 나온다 (시간여행)
 
@@ -158,6 +162,12 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       return;
     }
     const blob = r.blob;
+    if (isDemo) {
+      r.reset();
+      setHost({ react: "말씀 잘 들었어요.", followup: null });
+      setPhase("done");
+      return;
+    }
     log("send", { turn, sec: r.sec, bytes: blob.size });
     setPhase("sending");
     setErr("");
@@ -222,13 +232,13 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   function finish() {
     stopAmbient(5);
     log("finish", { turn });
-    fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
+    if (!isDemo) fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
     setPhase("done");
   }
 
   async function later() {
     log("later");
-    await fetch(`/api/s/${params.token}/later`, { method: "POST" }).catch(() => {});
+    if (!isDemo) await fetch(`/api/s/${params.token}/later`, { method: "POST" }).catch(() => {});
     setPhase("later");
   }
 
@@ -245,6 +255,36 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const c = info.childName;
   const isVideo = kind === "video";
   const toChild = `${c}에게 바로 전해져요`; // 이야기 열리는 날 기능은 뺐음
+
+  if (phase === "welcome") {
+    const lines = [
+      `${josa(c, "이/가")} 보낸 초대예요.`,
+      `앞으로 12번, ${info.honorific} 이야기를 듣고 싶어요.`,
+      "한 번에 10분이면 충분해요.",
+      "글은 안 쓰셔도 돼요. 말로만 하시면 돼요.",
+    ];
+    return (
+      <main className="screen center boxed" style={{ paddingTop: 96 }}>
+        <LP size={92} className="intro-lp" />
+        <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
+        <div className="lead" style={{ marginTop: 26 }}>
+          {lines.map((line, i) => (
+            <p key={i} className="serif" style={{ fontSize: i === 0 ? 24 : 19, animation: `rise 1.6s ease ${0.4 + i * 1.6}s forwards` }}>
+              {line}
+            </p>
+          ))}
+        </div>
+        <div className="grow" />
+        <button
+          className="btn"
+          style={{ opacity: 0, animation: `rise 1.2s ease ${0.4 + lines.length * 1.6}s forwards` }}
+          onClick={() => { log("welcome"); setPhase("intro"); }}
+        >
+          첫 이야기 들어가기
+        </button>
+      </main>
+    );
+  }
 
   if (phase === "intro")
     return (
@@ -302,6 +342,16 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           </div>
         ) : (
           <p style={{ marginTop: 32, fontSize: 18 }}>{info.childName}에게 이야기가 잘 전해졌어요</p>
+        )}
+        {isDemo && (
+          <div className="card stack" style={{ gap: 8, textAlign: "left", width: "100%", marginTop: 20 }}>
+            <span className="chip" style={{ color: "var(--accent)" }}>체험은 여기까지예요</span>
+            <p className="small" style={{ margin: 0, lineHeight: 1.7 }}>
+              실제로는 이 목소리가 바로 자녀에게 전해지고, 이야기칸에 한 편의 기사로 올라와요.
+              12번이 모이면 장마다 QR로 목소리를 다시 들을 수 있는 양장본이 집으로 가요.
+            </p>
+            <a href="/app/plan" className="btn sm" style={{ alignSelf: "flex-start" }}>구성과 가격 보기</a>
+          </div>
         )}
         <div className="grow" />
       </main>

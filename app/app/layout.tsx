@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   if (!ready) return <main className="screen" />;
-  const hideTabs = path === "/app/pick";
+  const hideTabs = path === "/app/pick" || path === "/app/invite";
   return (
     <>
       {children}

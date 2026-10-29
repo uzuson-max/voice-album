@@ -25,18 +25,13 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .order("created_at")
     .limit(1)
     .maybeSingle();
-  if (!next) return { sent: false, reason: "보낼 질문이 없어요" };
+  if (!next) return revisitMissed(storyteller, childName);
 
-  // 무료 체험: 첫 질문 하나까지만 (베타 기간엔 전 회차 무료 — 정식 판매 때 false로)
+  // 무료 체험 없음: 결제(plan='paid')가 확인된 가족만 보낸다. 베타 기간엔 전 회차 무료 — 정식 판매 때 false로
   const BETA_ALL_FREE = true;
-  const { count: sentAny } = await db
-    .from("vf_prompts")
-    .select("id", { count: "exact", head: true })
-    .eq("storyteller_id", storyteller.id)
-    .neq("status", "queued");
-  if (sentAny && !BETA_ALL_FREE) {
+  if (!BETA_ALL_FREE) {
     const { data: fam } = await db.from("vf_families").select("plan").eq("id", storyteller.family_id).maybeSingle();
-    if ((fam?.plan || "trial") === "trial") return { sent: false, reason: "무료 체험은 첫 질문 하나까지예요" };
+    if (fam?.plan !== "paid") return { sent: false, reason: "결제가 확인되면 첫 질문이 가요" };
   }
 
   // 처음 보내는 질문인지, 아직 못 전한 자녀 반응이 있는지
@@ -64,9 +59,9 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
   let text: string;
   if (!sentBefore) {
     text =
-      `[${APP_NAME}] ${cGa} ${h} 이야기를 오래 간직하고 싶어서 준비했어요.\n\n` +
-      `앞으로 매주 ${SEND_DAYS_LABEL}에 ${childName}의 질문이 하나씩 와요. ` +
-      `생각나는 만큼만 편하게 들려주시면 돼요.\n\n` +
+      `[${APP_NAME}] ${cGa} ${h} 이야기가 궁금해서 질문을 준비했어요.\n\n` +
+      `앞으로 ${SEND_DAYS_LABEL}에 ${childName}의 질문이 하나씩 와요. ` +
+      `한 번에 10분, 말로만 편하게 들려주시면 돼요.\n\n` +
       `첫 번째 질문이에요.\n\n${scene}"${q}"\n\n${link(token)}`;
   } else {
     text =
@@ -80,13 +75,46 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .from("vf_prompts")
     .update({ status: "sent", token, sent_at: new Date().toISOString() })
     .eq("id", next.id);
-  return { sent: true, promptId: next.id };
+  return { sent: true, promptId: next.id, reason: "" };
+}
+
+// 장면의 첫 문장만 살짝 보여준다 ("아직 안 하셨어요" 같은 말은 쓰지 않는다)
+function teaser(prompt: any): string {
+  const first = String(prompt.lead || "").replace(/\s*\n\s*/g, " ").split(/(?<=[.?!요])\s+/)[0]?.trim();
+  return first || `"${prompt.ask || prompt.text}"`;
+}
+
+// 새 질문이 다 나간 뒤: 대답 없이 지나간 회차 하나를 "못다 한 이야기"로 한 번만 다시 연다
+async function revisitMissed(storyteller: any, childName: string) {
+  const db = admin();
+  const { data: missed } = await db
+    .from("vf_prompts")
+    .select("*")
+    .eq("storyteller_id", storyteller.id)
+    .eq("status", "sent")
+    .is("revisited_at", null)
+    .order("sent_at")
+    .limit(1)
+    .maybeSingle();
+  if (!missed) return { sent: false, reason: "보낼 질문이 없어요" };
+  const cGa = josa(childName, "이/가");
+  const text =
+    `[${APP_NAME}] 그동안 못다 한 이야기가 하나 있어요.\n\n${teaser(missed)}\n\n` +
+    `${cGa} 꼭 듣고 싶어 했던 이야기예요. 편하실 때 들려주세요.\n${link(missed.token)}`;
+  await sendText(storyteller.phone, text, "못다 한 이야기");
+  await db
+    .from("vf_prompts")
+    .update({ revisited_at: new Date().toISOString(), sent_at: new Date().toISOString(), reminder_count: 0, snooze_until: null })
+    .eq("id", missed.id);
+  return { sent: true, promptId: missed.id, revisit: true };
 }
 
 async function remind(prompt: any, storyteller: any) {
+  const h = storyteller.honorific || "";
   const text =
-    `[${APP_NAME}] 지난번 질문, 편하실 때 들려주세요.\n\n"${prompt.ask || prompt.text}"\n${link(prompt.token)}`;
-  await sendText(storyteller.phone, text, "지난번 질문");
+    `[${APP_NAME}] ${h}, ${teaser(prompt)}\n\n` +
+    `이 이야기가 기다리고 있어요. 편하실 때 천천히 들어오세요.\n${link(prompt.token)}`;
+  await sendText(storyteller.phone, text, "기다리는 이야기");
   await admin()
     .from("vf_prompts")
     .update({
@@ -97,7 +125,9 @@ async function remind(prompt: any, storyteller: any) {
     .eq("id", prompt.id);
 }
 
-// 매시간 호출: 정해진 요일·시간이면 새 질문, 대답 없으면 다정한 알림 (최대 2번 + "지금은 어려워요" 후 1번)
+// 매시간 호출: 정해진 요일·시간이면 새 질문.
+// 대답이 없으면 보낸 다음 날 저녁에 한 번만 다시 초대하고, "지금은 어려워요"를 누르셨으면 그때 한 번 더.
+// 밀린 질문은 쌓지 않는다 — 다음 발송일엔 새 질문만 가고, 못 한 회차는 과정 끝에 "못다 한 이야기"로 다시 연다.
 export async function runDispatch(now = new Date()) {
   const db = admin();
   const { weekday, hour } = kstParts(now);
@@ -158,9 +188,8 @@ export async function runDispatch(now = new Date()) {
         const snoozeDue = p.snooze_until && new Date(p.snooze_until) <= now;
         const due =
           snoozeDue ||
-          (p.reminder_count === 0 && sentAgo >= 2 * DAY) ||
-          (p.reminder_count === 1 && sentAgo >= 5 * DAY);
-        if (due && p.reminder_count < 3) {
+          (p.reminder_count === 0 && sentAgo >= DAY - 3 * 60 * 60 * 1000 && hour >= 18);
+        if (due && p.reminder_count < 2) {
           await remind(p, st);
           log.push({ st: st.id, reminded: p.id });
         }

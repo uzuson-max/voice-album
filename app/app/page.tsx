@@ -78,9 +78,9 @@ export default function Questions() {
         <h1 className="h1" style={{ margin: "0 4px" }}>질문함</h1>
         {d.family?.plan === "trial" && d.sent.length > 0 && (
           <a href="/app/plan" className="card stack" style={{ gap: 6, textDecoration: "none", color: "inherit" }}>
-            <span className="chip" style={{ color: "var(--accent)" }}>무료 체험</span>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>첫 번째 이야기까지 담았어요</div>
-            <div className="small muted">남은 11주를 이어가려면 여기를 눌러주세요 →</div>
+            <span className="chip" style={{ color: "var(--accent)" }}>정식 과정</span>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>12번의 이야기와 양장본까지</div>
+            <div className="small muted">구성과 가격을 확인하려면 여기를 눌러주세요 →</div>
           </a>
         )}
         {d.insight && (
@@ -100,11 +100,18 @@ export default function Questions() {
             )}
           </div>
         )}
+        {d.sent.length === 0 && (
+          <Link href="/app/invite" className="card stack" style={{ gap: 6, textDecoration: "none", color: "inherit" }}>
+            <span className="chip" style={{ color: "var(--accent)" }}>첫 문자가 가기 전에</span>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{st.label}에게 먼저 카톡 한마디 보내기</div>
+            <div className="small muted">모르는 번호보다 내 말이 먼저 가면, {josa(st.label, "이/가")} 첫 질문을 기다려요 →</div>
+          </Link>
+        )}
         <div className="card">
           <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
             매주 화·토 {st.send_hour}시에 {st.label}에게 보내요
           </p>
-          <p className="small muted" style={{ margin: "6px 0 12px" }}>대답이 없으면 이틀 뒤, 닷새 뒤에 한 번씩 다정하게 알려드려요.</p>
+          <p className="small muted" style={{ margin: "6px 0 12px" }}>바로 못 하셔도 괜찮아요. 다음 날 저녁 한 번만 살며시 다시 알려드리고, 못 한 이야기는 마지막에 한 번 더 열어드려요.</p>
           <button className="btn sm" onClick={sendNow}>지금 바로 하나 보내기</button>
           {msg && <p className="small" style={{ margin: "10px 0 0" }}>{msg}</p>}
         </div>
@@ -184,7 +191,7 @@ export default function Questions() {
                 <div key={p.id} className="row between" style={{ minHeight: 52, padding: "8px 0", borderTop: i ? "1px solid var(--ground)" : "none" }}>
                   <span style={{ fontSize: 15 }}>{p.text}</span>
                   <span className="tiny" style={{ flexShrink: 0, fontWeight: 700, color: p.status === "answered" ? "var(--primary)" : "var(--muted)" }}>
-                    {p.status === "answered" ? "대답 완료" : `대답 전${p.reminder_count ? ` · 알림 ${p.reminder_count}회` : ""}`}
+                    {p.status === "answered" ? "이야기 도착" : "준비 중"}
                   </span>
                 </div>
               ))}

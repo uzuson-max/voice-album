@@ -11,11 +11,22 @@ export const appUrl = () => {
   return "https://voice-album-9uvm.vercel.app";
 };
 
-// 가격 표시는 여기 한 곳에서 바꾼다 (확정 전)
+// 가격 표시는 여기 한 곳에서 바꾼다 — 단일 상품, 양장본 포함, 무료 체험 없음
 export const PRICE = {
-  digital: "30만 원대",
-  digitalNote: "12주 질문 + 매주 우리집 신문 + 디지털 완성판",
+  won: 500000,
+  label: "50만 원",
+  note: "12번의 이야기 + 매번 우리집 신문 + 양장본 1권",
+  extraCopy: "", // 형제용 추가 부수 1권 가격 — 확정되면 "권당 4만 원"처럼 적는다
+  keepYears: 1,   // 과정이 끝난 뒤 열람·원본 내려받기 기간(년)
 };
+
+// 형제가 나눠 낼 때 1인당 금액 — 3명이면 "약 16만 7천 원"
+export function perPerson(n: number) {
+  const v = Math.round(PRICE.won / n / 1000) * 1000;
+  const man = Math.floor(v / 10000);
+  const cheon = Math.round((v % 10000) / 1000);
+  return `약 ${man}만${cheon ? ` ${cheon}천` : ""} 원`;
+}
 
 // 사업자 정보 — 결제사 심사·법적 고지용 (화면 하단, 약관에 그대로 쓰인다)
 export const BIZ = {

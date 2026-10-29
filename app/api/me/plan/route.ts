@@ -6,7 +6,7 @@ import { APP_NAME } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 
-// 무료 체험 → 12주 이어가기 신청.
+// 정식 과정(50만 원, 양장본 포함) 신청.
 // 결제 연동 전까지는 신청만 받고, 운영자가 확인 후 vf_families.plan 을 'paid' 로 바꾼다.
 export async function POST(req: Request) {
   const uid = await userIdFrom(req);
@@ -22,8 +22,8 @@ export async function POST(req: Request) {
   if (to) {
     await sendText(
       to,
-      `[${APP_NAME}] 12주 이어가기 신청\n${family.child_name} → ${storyteller.label}\n가족 ID: ${family.id}`,
-      "이어가기 신청"
+      `[${APP_NAME}] 정식 과정 신청\n${family.child_name} → ${storyteller.label}\n가족 ID: ${family.id}`,
+      "정식 과정 신청"
     ).catch(() => {});
   }
   return NextResponse.json({ ok: true, plan: "trial", requested: true });
