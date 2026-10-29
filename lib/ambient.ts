@@ -138,9 +138,10 @@ export function startAmbient() {
 }
 
 /** 녹음 시작: 소리를 완전히 내린다 */
-export function quietAmbient(sec = 1.2) {
+export function quietAmbient(sec = 0) {
   wanted = 0;
   engine?.setLevel(0, sec);
+  if (sec === 0) engine?.stop(); // 아이폰은 볼륨 조절이 안 돼서 즉시 멈춘다
 }
 
 /** 녹음 끝: 다시 잔잔하게 */

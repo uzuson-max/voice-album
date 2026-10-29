@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { browserClient } from "@/lib/supabaseBrowser";
 import { Baby, Envelope, LP, Mic, MomOnSofa } from "@/components/Illust";
-import { quietAmbient, resumeAmbient, startAmbient, stopAmbient, toggleMute } from "@/lib/ambient";
+import { quietAmbient, startAmbient, stopAmbient, toggleMute } from "@/lib/ambient";
 import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
@@ -123,10 +123,10 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 음악은 장면을 읽는 동안에만. 녹음이 시작되면 바로 끄고 다시 틀지 않는다 (목소리·다시 듣기에 섞이지 않게)
   useEffect(() => {
-    if (r.recording) quietAmbient();
-    else if (phase !== "done" && phase !== "intro" && phase !== "loading") resumeAmbient();
-  }, [r.recording, phase]);
+    if (r.recording) quietAmbient(0);
+  }, [r.recording]);
 
   const [soundOff, setSoundOff] = useState(false);
 
@@ -143,6 +143,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   async function start() {
     setErr("");
+    quietAmbient(0); // 녹음 버튼을 누르는 순간 바로 끈다
     try {
       await r.start(kind, limit);
     } catch {
@@ -243,7 +244,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   const c = info.childName;
   const isVideo = kind === "video";
-  const toChild = unsealAt ? `${koDate(unsealAt)}에 ${c}에게 전해져요` : `${c}에게 바로 전해져요`;
+  const toChild = `${c}에게 바로 전해져요`; // 이야기 열리는 날 기능은 뺐음
 
   if (phase === "intro")
     return (
@@ -271,29 +272,38 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "done")
     return (
-      <main className="screen center" style={{ paddingTop: 100 }}>
-        <Envelope />
-        {host?.react && <p className="muted" style={{ margin: "32px 0 0", fontSize: 17 }}>{host.react}</p>}
-        <h1 className="serif" style={{ margin: "14px 0 0", fontSize: 28 }}>오늘 이야기, 잘 담았어요.</h1>
-        <p className="muted" style={{ margin: "14px 0 0", fontSize: 17, lineHeight: 1.7 }}>
-          {info.honorific}의 이야기는 소중히 봉해두었다가
-          <br />
-          {toChild}.
+      <main className="screen center" style={{ paddingTop: 48 }}>
+        <div style={{ transform: "scale(.72)", transformOrigin: "center top", marginBottom: -40 }}>
+          <Envelope />
+        </div>
+        {host?.react && <p className="muted" style={{ margin: "8px 0 0", fontSize: 17 }}>{host.react}</p>}
+        <h1 className="serif" style={{ margin: "10px 0 0", fontSize: 28 }}>오늘 이야기, 잘 담았어요.</h1>
+        <p className="muted" style={{ margin: "10px 0 0", fontSize: 18, lineHeight: 1.6 }}>
+          {info.honorific}의 이야기는 {toChild}.
         </p>
-        <div className="grow" />
         {info.next ? (
-          <div className="card stack" style={{ gap: 8, textAlign: "left", width: "100%", marginTop: 28 }}>
-            <span className="tiny muted">다음 이야기 · {info.next.day}에 문자로 보내드려요</span>
+          <div
+            className="card stack"
+            style={{ gap: 14, textAlign: "left", width: "100%", marginTop: 36, padding: "26px 22px", border: "2px solid var(--accent)" }}
+          >
+            <div className="row" style={{ gap: 10, alignItems: "baseline", flexWrap: "wrap" }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.04em" }}>다음 이야기</span>
+              <span style={{ fontSize: 22, fontWeight: 800 }}>{info.next.day}</span>
+              <span style={{ fontSize: 17 }}>에 문자로 와요</span>
+            </div>
             {info.next.lead ? (
-              <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.7, whiteSpace: "pre-line" }}>{info.next.lead}</p>
+              <p className="serif" style={{ margin: 0, fontSize: 22, lineHeight: 1.6, whiteSpace: "pre-line", wordBreak: "keep-all" }}>
+                {info.next.lead}
+              </p>
             ) : (
-              <p className="small" style={{ margin: 0 }}>{info.childName}의 다음 질문이 준비돼 있어요.</p>
+              <p style={{ margin: 0, fontSize: 20, lineHeight: 1.6 }}>{info.childName}의 다음 질문이 준비돼 있어요.</p>
             )}
-            <span className="tiny muted">그날까지 천천히 떠올려 두셔도 좋아요.</span>
+            <p style={{ margin: 0, fontSize: 17, lineHeight: 1.6, opacity: 0.8 }}>그날까지 천천히 떠올려 두세요.</p>
           </div>
         ) : (
-          <p className="small muted">{info.childName}에게 이야기가 잘 전해졌어요</p>
+          <p style={{ marginTop: 32, fontSize: 18 }}>{info.childName}에게 이야기가 잘 전해졌어요</p>
         )}
+        <div className="grow" />
       </main>
     );
 

@@ -157,8 +157,9 @@ export const ARTICLE_SYSTEM = (honorific: string, childName: string, answerChars
 - ${honorific}가 실제로 한 말만으로 만든다. 모든 문장은 대답 속에 근거가 있어야 한다.
 - 대답에 없는 사실·감정·교훈·당부·회상을 절대 덧붙이지 않는다. "~해야 해", "~가 소중하더라", "그 시절이 그리워" 같은 마무리 금지.
 - 군말(음, 그러니까)과 같은 말 반복만 정리한다. 사투리·어미·말버릇·말끝 흐림은 그대로 둔다.
-- 길이: 대답이 약 ${answerChars}자다. 본문은 그보다 길면 안 된다. 대답이 짧으면 본문도 짧게, 한 문단이어도 된다.
-- 문단 1~4개, 문단 사이 빈 줄.`;
+- 길이: 핵심만 담은 짧은 글. ${Math.min(450, Math.max(80, Math.round(answerChars * 0.6)))}자 이내. 전체 말씀은 따로 보관되니 다 옮기려 하지 않는다.
+- 대답 중 장면이 가장 선명하고 마음이 담긴 부분을 고른다. 곁가지·설명·반복은 뺀다.
+- 문단 1~3개, 문단 사이 빈 줄.`;
 
 const normText = (s: string) => String(s || "").replace(/[\s.,!?~…'"“”‘’·-]/g, "");
 
@@ -198,8 +199,11 @@ export async function writeArticle(input: {
   );
   let body = String(out.body || "").slice(0, 6000);
   // 안전장치 1: 기사가 대답보다 부풀면 부모님 말 원문으로
-  const fallback = !body.trim() || body.length > answerChars * 1.2 + 40;
-  if (fallback) body = input.turns.map((t) => tidyTranscript(t.transcript)).filter(Boolean).join("\n\n");
+  const fallback = !body.trim() || body.length > Math.min(answerChars * 1.2 + 40, 700);
+  if (fallback) {
+    const raw = input.turns.map((t) => tidyTranscript(t.transcript)).filter(Boolean).join("\n\n");
+    body = raw.length > 450 ? raw.slice(0, 440).replace(/\s+\S*$/, "") + "…" : raw;
+  }
   // 안전장치 2: 인용구가 대답에 그대로 없으면 뺀다
   let quote: string | null = out.quote ? String(out.quote).replace(/^["“]|["”]$/g, "").slice(0, 80) : null;
   if (quote && !normText(said).includes(normText(quote))) quote = null;

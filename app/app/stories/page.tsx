@@ -14,8 +14,26 @@ type Article = {
   photoUrl: string | null; reactionText: string | null; reactionAudioUrl: string | null; createdAt: string; turns: Turn[];
 };
 
+// 이야기 화면 보는 방식 — 자녀가 고르고, 이 기기에 기억된다
+const THEMES: { key: string; name: string; dot: string; vars: Record<string, string> | null }[] = [
+  { key: "paper", name: "신문", dot: "#b5462f", vars: null },
+  { key: "film", name: "필름", dot: "#12201f", vars: {
+    "--ground": "#12201f", "--card": "#1b2e2c", "--card2": "#223936", "--ink": "#eef6f2", "--muted": "#9ec2b5",
+    "--line": "rgba(238,246,242,.18)", "--accent": "#f2b59a", "--primary": "#f2b59a", "--on-primary": "#12201f", "--box": "#0b1514", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+  { key: "garden", name: "정원", dot: "#3d5a40", vars: {
+    "--ground": "#34503a", "--card": "#41613f", "--card2": "#4a6b4d", "--ink": "#f3f1e6", "--muted": "#c9d6c0",
+    "--line": "rgba(243,241,230,.2)", "--accent": "#f0c27b", "--primary": "#f0c27b", "--on-primary": "#24372a", "--box": "#24372a", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+  { key: "classic", name: "클래식", dot: "#1c2433", vars: {
+    "--ground": "#1c2433", "--card": "#263046", "--card2": "#2e3a54", "--ink": "#f1ede4", "--muted": "#a9b1c2",
+    "--line": "rgba(241,237,228,.18)", "--accent": "#d4b16a", "--primary": "#d4b16a", "--on-primary": "#1c2433", "--box": "#131a26", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+];
+
 export default function Stories() {
   const [d, setD] = useState<any>(null);
+  const [theme, setTheme] = useState("paper");
+  useEffect(() => { try { const t = localStorage.getItem("vf_story_theme"); if (t) setTheme(t); } catch {} }, []);
+  const pickTheme = (k: string) => { setTheme(k); try { localStorage.setItem("vf_story_theme", k); } catch {} };
+  const th = THEMES.find((x) => x.key === theme) || THEMES[0];
   const load = () =>
     api("/api/me/stories")
       .then((r) => { remember("stories", r); setD(r); })
@@ -36,13 +54,42 @@ export default function Stories() {
   const total = d.articles.length;
 
   return (
-    <main className="screen with-tabs">
+    <main
+      className="screen with-tabs"
+      data-story-theme={th.vars ? th.key : undefined}
+      style={th.vars ? ({ ...th.vars, background: "var(--ground)", color: "var(--ink)", minHeight: "100vh", transition: "background .4s" } as any) : undefined}
+    >
+      {th.vars && (
+        <style>{`[data-story-theme] .card{background:linear-gradient(180deg,var(--card2) 0%,var(--card) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 2px 0 rgba(0,0,0,.25),0 12px 22px -10px rgba(0,0,0,.55)}`}</style>
+      )}
       <div className="stack">
         <header className="masthead">
           <div className="tiny muted">우리집 신문</div>
           <h1 className="serif" style={{ margin: "4px 0 0", fontSize: 28 }}>{label}의 이야기</h1>
           {total > 0 && <div className="tiny muted" style={{ marginTop: 6 }}>지금까지 {total}편</div>}
         </header>
+
+        {total > 0 && (
+          <div className="row" style={{ gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+            <span className="tiny muted" style={{ marginRight: 2 }}>보는 방식</span>
+            {THEMES.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => pickTheme(t.key)}
+                className="row tiny"
+                style={{
+                  gap: 6, alignItems: "center", padding: "6px 12px", borderRadius: 999, cursor: "pointer", color: "inherit", font: "inherit",
+                  background: "transparent", border: theme === t.key ? "1.5px solid var(--accent)" : "1px solid var(--line)",
+                  fontWeight: theme === t.key ? 700 : 400,
+                }}
+              >
+                <span style={{ width: 12, height: 12, borderRadius: 6, background: t.dot, border: "1px solid rgba(255,255,255,.4)" }} />
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
 
         {d.sealed.map((s: any) => (
           <div key={s.unsealAt} className="card big">
@@ -74,7 +121,9 @@ function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: 
   const [pen, setPen] = useState(a.reactionText || "");
   const [saved, setSaved] = useState(!!a.reactionText);
   const [saving, setSaving] = useState(false);
-  const body = a.article || a.turns.map((t) => t.transcript).filter(Boolean).join("\n\n");
+  const full = a.turns.map((t) => t.transcript).filter(Boolean).join("\n\n");
+  const body = a.article || full;
+  const [showFull, setShowFull] = useState(false);
   const date = a.createdAt ? koDate(a.createdAt.slice(0, 10)) : "";
 
   async function savePen() {
@@ -110,6 +159,17 @@ function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: 
         </div>
       ) : (
         <p className="small muted" style={{ margin: 0 }}>글로 옮기는 중이에요. 먼저 목소리로 들어보세요.</p>
+      )}
+
+      {a.article && full && (
+        <div className="stack" style={{ gap: 8 }}>
+          <button type="button" className="link" style={{ alignSelf: "flex-start" }} onClick={() => setShowFull(!showFull)}>
+            {showFull ? "접기" : `${label}의 말씀 전체 보기`}
+          </button>
+          {showFull && (
+            <div className="small" style={{ lineHeight: 1.8, opacity: 0.85, whiteSpace: "pre-line" }}>{full}</div>
+          )}
+        </div>
       )}
 
       {a.turns.map((t, k) => (
