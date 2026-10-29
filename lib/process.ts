@@ -1,13 +1,15 @@
 import { admin, BUCKET } from "./supabaseAdmin";
 import { digestAnswer, transcribe, writeArticle } from "./ai";
 import { isOpen } from "./time";
+import { checkText } from "./check";
+import { notifyArrival } from "./notify";
 
 // 대답이 들어온 뒤 뒤에서: 받아쓰기 → (첫 대답이면) 제목·요약
 export async function processAnswer(answerId: string) {
   const db = admin();
   const { data: a, error } = await db
     .from("vf_answers")
-    .select("*, vf_prompts!vf_answers_prompt_id_fkey(text, ask), vf_storytellers(honorific)")
+    .select("*, vf_prompts!vf_answers_prompt_id_fkey(text, ask), vf_storytellers(honorific, vf_families(child_name))")
     .eq("id", answerId)
     .single();
   if (!a) {
@@ -41,8 +43,9 @@ export async function processAnswer(answerId: string) {
     if (transcript && transcript.trim().length > 10) {
       try {
         const d = await digestAnswer({ honorific, question, transcript });
-        patch.title = d.title || patch.title;
-        patch.summary = d.summary || null;
+        const childName = (a as any).vf_storytellers?.vf_families?.child_name || "";
+        patch.title = checkText(d.title || patch.title, { childName, honorific }).text;
+        patch.summary = d.summary ? checkText(d.summary, { childName, honorific }).text : null;
       } catch (e: any) {
         console.error("[process] 요약 실패", e?.message);
       }
@@ -103,10 +106,22 @@ export async function finishPrompt(promptId: string) {
       question: p.ask || p.text,
       turns,
     });
+    // 1차 검수: 이름 조사·3인칭을 고치고, 사람이 봐야 할 건 flags로 남긴다
+    const who = { childName: st?.vf_families?.child_name || "", honorific: st?.honorific || "부모님" };
+    const ct = checkText(art.title || "", who);
+    const cb = checkText(art.body || "", who);
+    const flags = [...ct.flags, ...cb.flags, ...(art.fallback ? ["기사 대신 원문 사용"] : [])];
     await db
       .from("vf_prompts")
-      .update({ article_title: art.title || null, article: art.body || null, article_quote: art.quote || null })
+      .update({
+        article_title: ct.text || null,
+        article: cb.text || null,
+        article_quote: art.quote || null,
+        article_flags: flags.length ? flags.join(" / ") : null,
+      })
       .eq("id", promptId);
+    // 자녀에게는 좋은 소식만: 기사가 처음 완성됐을 때 "이야기 도착" 문자 (번호를 적어둔 경우만)
+    if (!p.article) await notifyArrival(promptId).catch(() => {});
 
     // 12주 과정 질문은 순서가 정해져 있어서 AI 이어지는 질문을 끼워 넣지 않는다
     if (art.nextQuestion && !p.week) {

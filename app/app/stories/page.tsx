@@ -112,6 +112,9 @@ export default function Stories() {
         {d.articles.map((a: Article, i: number) => (
           <ArticleCard key={a.promptId} a={a} no={total - i} label={label} onSaved={load} onMediaError={onMediaError} />
         ))}
+        {total > 0 && (
+          <a href="/app/export" className="link" style={{ textAlign: "center" }}>목소리·영상 원본 전체 내려받기</a>
+        )}
       </div>
     </main>
   );

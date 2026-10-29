@@ -6,7 +6,7 @@ import { render, josa } from "@/lib/korean";
 import { buildCourse } from "@/lib/questions";
 
 const empty = {
-  childName: "", label: "엄마", honorific: "어머니", phone: "",
+  childName: "", label: "엄마", honorific: "어머니", phone: "", childPhone: "",
   sendWeekday: 2, sendHour: 9, unsealAt: "",
   born: "", school: "", hometown: "", job: "", likes: "", likeFood: "",
   childBorn: "", food: "", catchphrase: "", unsaid: "",
@@ -40,14 +40,16 @@ export default function Family() {
   const [saved, setSaved] = useState(false);
   const [agree, setAgree] = useState(false);
   const [step, setStep] = useState(0);
+  const [role, setRole] = useState<"owner" | "member" | null>(null);
 
   useEffect(() => {
-    api("/api/me/family").then(({ family, storyteller }) => {
+    api("/api/me/family").then(({ family, storyteller, role }) => {
+      setRole(role);
       if (family && storyteller) {
         setIsNew(false);
         const p = storyteller.profile || {};
         setF({
-          childName: family.child_name, label: storyteller.label, honorific: storyteller.honorific, phone: storyteller.phone,
+          childName: family.child_name, label: storyteller.label, honorific: storyteller.honorific, phone: storyteller.phone, childPhone: family.child_phone || "",
           sendWeekday: storyteller.send_weekday, sendHour: storyteller.send_hour, unsealAt: storyteller.unseal_at || "",
           born: p["태어난 해"] || "", school: p["학교·전공"] || "", hometown: p.고향 || "", job: p["결혼 전 했던 일"] || p["했던 일"] || "", likes: p["요즘 즐겨 하는 것"] || p["좋아하는 것"] || "", likeFood: p["좋아하는 음식"] || "",
           childBorn: p["내가 태어난 해"] || "", food: p["최애 음식"] || "", catchphrase: p["말버릇"] || "", unsaid: p["못 한 말"] || "",
@@ -79,6 +81,25 @@ export default function Family() {
 
   if (!loaded) return <main className="screen" />;
 
+  /* ───────── 초대받은 형제: 설정은 보기만 ───────── */
+  if (!isNew && role === "member") {
+    return (
+      <main className="screen with-tabs">
+        <div className="stack">
+          <h1 className="h1">가족</h1>
+          <div className="card stack" style={{ gap: 8 }}>
+            <div style={{ fontWeight: 700 }}>{josa(p, "과/와")} 함께하는 우리 가족 이야기에 들어와 있어요</div>
+            <div className="small muted" style={{ lineHeight: 1.7 }}>
+              질문과 발송 설정은 처음 시작한 가족이 관리해요. 이야기는 함께 듣고, 답장도 같이 남길 수 있어요.
+            </div>
+          </div>
+          <SiblingInvite label={p} />
+          <button type="button" className="link" onClick={async () => { await browserClient().auth.signOut(); router.replace("/"); }}>로그아웃</button>
+        </div>
+      </main>
+    );
+  }
+
   /* ───────── 기존 가족: 한 화면에서 고치기 ───────── */
   if (!isNew) {
     return (
@@ -91,6 +112,9 @@ export default function Family() {
             <Field label="문자 속 호칭"><input className="input" required value={f.honorific} onChange={set("honorific")} /></Field>
           </div>
           <Field label="부모님 휴대폰 번호"><input className="input" required inputMode="tel" value={f.phone} onChange={set("phone")} /></Field>
+          <Field label="내 휴대폰 번호 (선택)" hint="이야기가 도착하면 이 번호로 알려드려요. 다른 알림은 보내지 않아요.">
+            <input className="input" inputMode="tel" value={f.childPhone} onChange={set("childPhone")} placeholder="010-0000-0000" />
+          </Field>
           <Field label="질문이 가는 시간" hint="화요일과 토요일, 이 시간에 가요">
             <select className="input" value={f.sendHour} onChange={set("sendHour")}>
               {HOURS.map((h) => <option key={h} value={h}>{h}시</option>)}
@@ -110,6 +134,7 @@ export default function Family() {
           {err && <p className="err">{err}</p>}
           {saved && <p className="small" style={{ color: "var(--primary)" }}>저장했어요.</p>}
           <button className="btn" disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
+          <SiblingInvite label={p} />
           <button type="button" className="link" onClick={() => router.push("/app/pick")}>12번의 이야기 새로 설계하기</button>
           <button type="button" className="link" onClick={async () => { await browserClient().auth.signOut(); router.replace("/"); }}>로그아웃</button>
         </form>
@@ -219,6 +244,9 @@ export default function Family() {
           <Field label={`${p} 휴대폰 번호`} hint="첫 문자가 오면 이 번호를 '우리집 레코드'로 저장해 주세요. 그래야 링크가 바로 눌려요.">
             <input className="input" inputMode="tel" value={f.phone} onChange={set("phone")} placeholder="010-0000-0000" />
           </Field>
+          <Field label="내 휴대폰 번호 (선택)" hint={`${josa(p, "이/가")} 이야기를 들려주면 이 번호로 알려드려요. 다른 알림은 보내지 않아요.`}>
+            <input className="input" inputMode="tel" value={f.childPhone} onChange={set("childPhone")} placeholder="010-0000-0000" />
+          </Field>
           <Field label="받으시기 편한 시간">
             <select className="input" value={f.sendHour} onChange={set("sendHour")}>
               {HOURS.map((h) => <option key={h} value={h}>{h}시</option>)}
@@ -300,6 +328,51 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
       <label>{label}</label>
       {children}
       {hint && <span className="tiny muted">{hint}</span>}
+    </div>
+  );
+}
+
+// 형제 초대: 링크 하나로 같은 이야기칸을 함께 본다. 비용은 결제 화면의 "1인당" 안내로.
+function SiblingInvite({ label }: { label: string }) {
+  const [url, setUrl] = useState("");
+  const [members, setMembers] = useState(0);
+  const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function make() {
+    setBusy(true); setMsg("");
+    try {
+      const r = await api("/api/me/invite-sibling", { method: "POST" });
+      setUrl(r.url); setMembers(r.members);
+      return r.url as string;
+    } catch (e: any) {
+      setMsg(e.message);
+      return "";
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function share() {
+    const link = url || (await make());
+    if (!link) return;
+    const text = `${label} 이야기, 같이 듣자. 아래 링크 누르고 카카오로 들어오면 돼.\n${link}`;
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+    } catch { return; }
+    try { await navigator.clipboard.writeText(text); setMsg("복사했어요. 카톡에 붙여넣어 보내주세요."); }
+    catch { setMsg(link); }
+  }
+
+  return (
+    <div className="card stack" style={{ gap: 8 }}>
+      <div style={{ fontWeight: 700 }}>형제와 함께 듣기</div>
+      <div className="small muted" style={{ lineHeight: 1.7 }}>
+        링크를 받은 형제는 카카오로 들어오기만 하면 {label} 이야기를 같이 보고, 답장도 남길 수 있어요.
+        {members > 0 && ` 지금 ${members}명이 함께하고 있어요.`}
+      </div>
+      <button type="button" className="btn sm" disabled={busy} onClick={share}>{busy ? "링크 만드는 중…" : "형제에게 초대 링크 보내기"}</button>
+      {msg && <p className="small" style={{ margin: 0, wordBreak: "break-all" }}>{msg}</p>}
     </div>
   );
 }

@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { browserClient } from "@/lib/supabaseBrowser";
+import { api, browserClient } from "@/lib/supabaseBrowser";
 import QuizCard from "@/components/QuizCard";
 
 const TABS = [
@@ -20,12 +20,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const sb = browserClient();
     // 메일 링크로 들어오면 주소의 토큰을 세션으로 바꾸는 데 잠깐 걸린다
-    const { data: sub } = sb.auth.onAuthStateChange((_e, s) => s && setReady(true));
+    // 형제 초대 링크로 로그인하고 돌아온 경우: 기억해 둔 코드로 가족에 넣고 이야기 화면으로
+    const join = async () => {
+      let code: string | null = null;
+      try { code = localStorage.getItem("vf-join"); } catch {}
+      if (!code) return;
+      try { localStorage.removeItem("vf-join"); } catch {}
+      try {
+        await api("/api/join", { method: "POST", body: JSON.stringify({ code }) });
+        router.replace("/app/stories");
+      } catch {}
+    };
+    // 가족에 먼저 넣고 화면을 연다 — 순서가 바뀌면 초대받은 형제가 부모님 등록 화면으로 간다
+    let opened = false;
+    const open = () => { if (opened) return; opened = true; join().finally(() => setReady(true)); };
+    const { data: sub } = sb.auth.onAuthStateChange((_e, s) => s && open());
     sb.auth.getSession().then(({ data }) => {
-      if (data.session) setReady(true);
+      if (data.session) open();
       else setTimeout(async () => {
         const again = await sb.auth.getSession();
-        if (again.data.session) setReady(true);
+        if (again.data.session) open();
         else {
           // 만료된 로그인 흔적을 지워야 / ↔ /app 사이를 맴돌지 않는다
           try { localStorage.removeItem("vf-auth"); } catch {}

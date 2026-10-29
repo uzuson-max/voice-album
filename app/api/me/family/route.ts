@@ -22,16 +22,20 @@ export async function POST(req: Request) {
   const phone = normalizePhone(String(b.phone || ""));
   if (!childName || !label || !honorific) return bad("이름과 호칭을 적어주세요");
   if (!/^01\d{8,9}$/.test(phone)) return bad("전화번호를 확인해주세요");
+  // 자녀 번호는 선택 — "이야기 도착" 문자만 보낸다
+  const childPhone = b.childPhone ? normalizePhone(String(b.childPhone)) : "";
+  if (childPhone && !/^01\d{8,9}$/.test(childPhone)) return bad("내 휴대폰 번호를 확인해주세요");
 
   const db = admin();
-  let { family, storyteller } = await loadFamily(uid);
+  let { family, storyteller, role } = await loadFamily(uid);
+  if (role === "member") return bad("가족 설정은 처음 시작한 사람만 바꿀 수 있어요");
   if (family) {
-    await db.from("vf_families").update({ child_name: childName }).eq("id", family.id);
+    await db.from("vf_families").update({ child_name: childName, child_phone: childPhone || null }).eq("id", family.id);
   } else {
     if (!b.agree) return bad("약관과 개인정보처리방침에 동의해 주세요");
     const r = await db
       .from("vf_families")
-      .insert({ owner_id: uid, child_name: childName, agreed_at: new Date().toISOString() })
+      .insert({ owner_id: uid, child_name: childName, child_phone: childPhone || null, agreed_at: new Date().toISOString() })
       .select()
       .single();
     if (r.error) return bad("저장 실패", 500);
