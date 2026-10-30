@@ -16,10 +16,10 @@ type Article = {
 
 // 이야기 화면 보는 방식 — 자녀가 고르고, 이 기기에 기억된다
 const THEMES: { key: string; name: string; dot: string; vars: Record<string, string> | null }[] = [
-  { key: "paper", name: "와인", dot: "#4B2329", vars: null },
+  { key: "paper", name: "와인", dot: "#5E2A33", vars: null },
   { key: "film", name: "에스프레소", dot: "#2B1E1A", vars: {
-    "--ground": "#221815", "--card": "#33241F", "--card2": "#2B1E1A", "--ink": "#F4EEE6", "--muted": "#C6B3A6",
-    "--line": "rgba(216,184,126,.2)", "--accent": "#D8B87E", "--primary": "#D8B87E", "--on-primary": "#221815", "--gold-hi": "#EBD3A6", "--gold-lo": "#BC9858", "--box": "#17100E", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+    "--ground": "#2E211C", "--card": "#433029", "--card2": "#382821", "--ink": "#FBF6EF", "--muted": "#DCCABD",
+    "--line": "rgba(216,184,126,.2)", "--accent": "#F0C978", "--primary": "#ECC470", "--on-primary": "#2E211C", "--gold-hi": "#F8DFA4", "--gold-lo": "#CF9D48", "--box": "#17100E", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
   { key: "garden", name: "정원", dot: "#3d5a40", vars: {
     "--ground": "#34503a", "--card": "#41613f", "--card2": "#4a6b4d", "--ink": "#f3f1e6", "--muted": "#c9d6c0",
     "--line": "rgba(243,241,230,.2)", "--accent": "#D3A65E", "--primary": "#D3A65E", "--on-primary": "#16291F", "--gold-hi": "#E2BE80", "--gold-lo": "#B88B45", "--box": "#24372a", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
@@ -109,9 +109,11 @@ export default function Stories() {
           </div>
         )}
 
-        {d.articles.map((a: Article, i: number) => (
-          <ArticleCard key={a.promptId} a={a} no={total - i} label={label} onSaved={load} onMediaError={onMediaError} />
-        ))}
+        <div className="issues">
+          {d.articles.map((a: Article, i: number) => (
+            <ArticleCard key={a.promptId} a={a} no={total - i} label={label} onSaved={load} onMediaError={onMediaError} />
+          ))}
+        </div>
         {total > 0 && (
           <a href="/app/export" className="link" style={{ textAlign: "center" }}>목소리·영상 원본 전체 내려받기</a>
         )}
@@ -138,14 +140,25 @@ function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: 
     setSaving(false);
   }
 
+  // 한 호는 짧게: 목소리·영상 → 인용 한 줄 → 첫 문단. 나머지는 "이어서 읽기"로 접어둔다
+  const paras = body ? body.split(/\n{2,}/).filter((x) => x.trim()) : [];
+  const [open, setOpen] = useState(false);
+  const [penOpen, setPenOpen] = useState(!!a.reactionText);
+
   return (
-    <article className="card stack" style={{ gap: 12, padding: "20px 18px" }}>
-      <div className="row tiny muted" style={{ gap: 8 }}>
-        <span>제{a.week || no}호</span><span>·</span><span>{date}</span>
+    <article className="card issue">
+      <div className="issue-no">
+        <span>NO. {String(a.week || no).padStart(2, "0")}</span>
+        <span className="date">{date}</span>
       </div>
-      <h2 className="serif" style={{ margin: 0, fontSize: 22, lineHeight: 1.4 }}>{a.title}</h2>
-      {a.lead && <p className="small muted" style={{ margin: 0, lineHeight: 1.6 }}>{a.lead}</p>}
-      <p className="small muted" style={{ margin: 0 }}>Q. {a.question}</p>
+      <h2>{a.title}</h2>
+
+      {a.turns.map((t, k) => (
+        <div key={t.id} className="stack" style={{ gap: 6 }}>
+          {k > 0 && <span className="tiny muted">이어서 · {t.asked}</span>}
+          {t.url && (t.mediaType === "video" ? <Film src={t.url} onError={onMediaError} /> : <audio src={t.url} controls preload="metadata" onError={onMediaError} />)}
+        </div>
+      ))}
 
       {a.quote && (
         <blockquote className="pullquote">
@@ -156,44 +169,42 @@ function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: 
 
       {a.photoUrl && <img src={a.photoUrl} alt="" className="photo" />}
 
-      {body ? (
+      {paras.length ? (
         <div className="article">
-          {body.split(/\n{2,}/).map((para, k) => <p key={k}>{para}</p>)}
+          {(open ? paras : paras.slice(0, 1)).map((para, k) => <p key={k}>{para}</p>)}
         </div>
       ) : (
         <p className="small muted" style={{ margin: 0 }}>글로 옮기는 중이에요. 먼저 목소리로 들어보세요.</p>
       )}
 
-      {a.article && full && (
-        <div className="stack" style={{ gap: 8 }}>
-          <button type="button" className="link" style={{ alignSelf: "flex-start" }} onClick={() => setShowFull(!showFull)}>
-            {showFull ? "접기" : `${label}의 말씀 전체 보기`}
-          </button>
-          {showFull && (
-            <div className="small" style={{ lineHeight: 1.8, opacity: 0.85, whiteSpace: "pre-line" }}>{full}</div>
+      {open && (
+        <div className="stack" style={{ gap: 10 }}>
+          <p className="small muted" style={{ margin: 0, lineHeight: 1.7 }}>Q. {a.question}</p>
+          {a.article && full && (
+            <>
+              <button type="button" className="link" style={{ alignSelf: "flex-start", paddingLeft: 0 }} onClick={() => setShowFull(!showFull)}>
+                {showFull ? "말씀 전체 접기" : `${label}의 말씀 그대로 보기`}
+              </button>
+              {showFull && <div className="small" style={{ lineHeight: 1.9, opacity: 0.9, whiteSpace: "pre-line" }}>{full}</div>}
+            </>
           )}
         </div>
       )}
-
-      {a.turns.map((t, k) => (
-        <div key={t.id} className="stack" style={{ gap: 6 }}>
-          {k > 0 && <span className="tiny muted">이어서 · {t.asked}</span>}
-          {t.url && (t.mediaType === "video" ? <Film src={t.url} onError={onMediaError} /> : <audio src={t.url} controls preload="metadata" onError={onMediaError} />)}
-        </div>
-      ))}
+      {(paras.length > 1 || (a.article && full)) && (
+        <button type="button" className="more" onClick={() => setOpen(!open)}>{open ? "접기" : "이어서 읽기"}</button>
+      )}
 
       {a.replyAsk ? (
-        <div className="reply stack" style={{ gap: 8 }}>
+        <div className="reply stack" style={{ gap: 10 }}>
           <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>내 답장 차례 · {label}의 다음 링크에 먼저 도착해요</div>
-          {a.replyLead && <p className="small muted" style={{ margin: 0, whiteSpace: "pre-line" }}>{a.replyLead}</p>}
-          <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.55 }}>{a.replyAsk}</p>
+          <p className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.6 }}>{a.replyAsk}</p>
           <div className="row">
             <VoiceButton promptId={a.promptId} target="reaction" has={!!a.reactionAudioUrl} label="목소리로 답장하기" limit={120} onDone={onSaved} />
           </div>
         </div>
-      ) : (
-        <div className="reply stack" style={{ gap: 8 }}>
-          <div className="tiny muted" style={{ fontWeight: 700 }}>엮은이의 한 줄 · 선택</div>
+      ) : penOpen ? (
+        <div className="reply stack" style={{ gap: 10 }}>
+          <div className="tiny muted" style={{ fontWeight: 700 }}>엮은이의 한 줄</div>
           <textarea
             className="input"
             value={pen}
@@ -208,6 +219,8 @@ function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: 
             </button>
           </div>
         </div>
+      ) : (
+        <button type="button" className="link" style={{ alignSelf: "flex-start", paddingLeft: 0 }} onClick={() => setPenOpen(true)}>한 줄 남기기</button>
       )}
     </article>
   );

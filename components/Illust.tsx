@@ -2,9 +2,9 @@
 // 예전 이름(MomOnSofa, Baby, Envelope, GiftBox, RecordTea)은 화면 코드가 그대로 쓰도록 남겨둔다.
 const DISC = "#170809";
 const GROOVE = "#5A3238";
-const GOLD = "#D8B87E";
-const GOLD_HI = "#EBD3A6";
-const SLEEVE = "#4B2329";
+const GOLD = "#ECC470";
+const GOLD_HI = "#F8DFA4";
+const SLEEVE = "#62303A";
 
 // LP 로고 (웰컴·첫 화면·로딩)
 export function LP({ className, size = 132 }: { className?: string; size?: number }) {
