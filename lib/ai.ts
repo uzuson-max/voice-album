@@ -152,7 +152,11 @@ export const ARTICLE_SYSTEM = (honorific: string, childName: string, answerChars
 {"titles":["제목 후보 3개. 각각 16자 이내. 대답에 나온 물건·음식·장소·사람·말 그대로를 넣는다. 예) '고등어 굽던 화순 부엌', '88년 카세트 테이프', '밥은 먹고 다니냐'. 꿈·현실·추억·기억·따뜻한·소중한·응원·행복·사랑·중요성·이야기 같은 추상어 금지"],
  "quote":"대답에서 그대로 복사한 한 문장 (40자 이내). 한 글자도 바꾸지 않는다. 마땅한 문장이 없으면 null",
  "body":"${honorific}의 1인칭 글",
- "next":"다음 주에 이어서 물으면 좋을 질문 하나 (존댓말, 40자 안팎) 또는 null"}
+ "next":"다음 주에 이어서 물으면 좋을 질문 하나 (존댓말, 40자 안팎) 또는 null",
+ "points":[{"head":"소제목 14자 이내. 대답 속 물건·장소·사람·말 그대로","text":"한두 문장, 60자 이내, 3인칭 서술('${honorific}는 ~했다')"}],
+ "facts":[{"num":"대답에 나온 숫자 그대로 (나이·연도·기간·개수, 예: 20, 1986, 3)","unit":"살/년/개 등 짧은 단위","text":"그 숫자가 뜻하는 것 한 문장, 40자 이내"}]}
+points 규칙: 대답의 핵심을 시간 순서로 2~3개. 자녀가 이것만 읽어도 무슨 이야기였는지 알 수 있게. 대답에 없는 내용 금지. 대답이 짧으면 1~2개.
+facts 규칙: 대답에 숫자로 말한 것만 0~3개 (자녀가 "이건 몰랐네" 할 만한 것 우선). 숫자가 없으면 빈 배열 [].
 본문 규칙:
 - ${honorific}가 실제로 한 말만으로 만든다. 모든 문장은 대답 속에 근거가 있어야 한다.
 - 대답에 없는 사실·감정·교훈·당부·회상을 절대 덧붙이지 않는다. "~해야 해", "~가 소중하더라", "그 시절이 그리워" 같은 마무리 금지.
@@ -187,7 +191,10 @@ export async function writeArticle(input: {
   childName: string;
   question: string;
   turns: { asked: string; transcript: string }[];
-}): Promise<{ title: string; body: string; quote: string | null; nextQuestion: string | null; fallback: boolean }> {
+}): Promise<{
+  title: string; body: string; quote: string | null; nextQuestion: string | null; fallback: boolean;
+  points: { head: string; text: string }[]; facts: { num: string; unit: string; text: string }[];
+}> {
   const talk = input.turns.map((t) => `Q. ${t.asked}\nA. ${t.transcript}`).join("\n\n").slice(0, 9000);
   const said = input.turns.map((t) => t.transcript).join("\n");
   const answerChars = said.replace(/\s+/g, " ").trim().length;
@@ -207,12 +214,24 @@ export async function writeArticle(input: {
   // 안전장치 2: 인용구가 대답에 그대로 없으면 뺀다
   let quote: string | null = out.quote ? String(out.quote).replace(/^["“]|["”]$/g, "").slice(0, 80) : null;
   if (quote && !normText(said).includes(normText(quote))) quote = null;
+  // 잡지 칸: 핵심 2~3개, 숫자 칸 0~3개 (숫자가 대답에 실제로 있어야 남긴다)
+  const points = (Array.isArray(out.points) ? out.points : [])
+    .map((x: any) => ({ head: String(x?.head || "").trim().slice(0, 24), text: String(x?.text || "").trim().slice(0, 120) }))
+    .filter((x: any) => x.head && x.text)
+    .slice(0, 3);
+  const saidNums = said.replace(/\s+/g, "");
+  const facts = (Array.isArray(out.facts) ? out.facts : [])
+    .map((x: any) => ({ num: String(x?.num ?? "").trim().slice(0, 6), unit: String(x?.unit || "").trim().slice(0, 6), text: String(x?.text || "").trim().slice(0, 80) }))
+    .filter((x: any) => x.num && x.text && (!/\d/.test(x.num) || saidNums.includes(x.num.replace(/\D/g, ""))))
+    .slice(0, 3);
   return {
     title: pickTitle(out.titles ?? out.title, quote, input.question),
     body,
     quote,
     nextQuestion: out.next ? String(out.next).slice(0, 120) : null,
     fallback,
+    points,
+    facts,
   };
 }
 

@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     .from("vf_answers")
     .select(
       "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, process_error, unseal_at, created_at, " +
-        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, photo_path, cover_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
+        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, article_points, article_facts, photo_path, selfie_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
     )
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
@@ -53,7 +53,9 @@ export async function GET(req: Request) {
         replyAsk: p.reply_ask,
         summary: a.summary,
         photoUrl: await sign(p.photo_path),
-        coverUrl: await sign(p.cover_path),
+        selfieUrl: await sign(p.selfie_path),
+        points: p.article_points ?? null,
+        facts: p.article_facts ?? null,
         reactionText: p.reaction_text,
         reactionAudioUrl: await sign(p.reaction_audio_path),
         createdAt: a.created_at,
@@ -75,7 +77,8 @@ export async function GET(req: Request) {
   const retryable = (a: any) => a.transcript === null || /^(stt|download|read):/.test(a.process_error || "");
   const stuck = ((data || []) as any[]).filter((a) => retryable(a) && new Date(a.created_at).getTime() < twoMin);
   const noArticle = Object.values(byPrompt).filter(
-    (x: any) => !x.article && x.turns.some((t: any) => t.transcript) && x.finished
+    // 기사가 없거나, 잡지 칸(핵심·숫자)이 생기기 전에 만든 기사는 한 번 다시 엮는다
+    (x: any) => (!x.article || x.points === null) && x.turns.some((t: any) => t.transcript) && x.finished
   );
   if (stuck.length || noArticle.length) {
     const job = (async () => {

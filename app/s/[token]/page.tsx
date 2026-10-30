@@ -6,7 +6,7 @@ import { quietAmbient, startAmbient, stopAmbient, toggleMute } from "@/lib/ambie
 import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
-import CoverSelfie from "@/components/CoverSelfie";
+import SelfieMission from "@/components/SelfieMission";
 
 type Reaction = { about: string; text: string | null; audioUrl: string | null };
 type Info = {
@@ -23,11 +23,9 @@ type Info = {
   reactions: Reaction[];
   next?: { day: string; lead: string | null } | null;
   firstEver?: boolean;
-  week?: number | null;
-  hasCover?: boolean;
   demo?: boolean;
 };
-type Phase = "loading" | "error" | "welcome" | "intro" | "cover" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
+type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
 const MAX_TURNS = 2;
 
@@ -168,7 +166,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     if (isDemo) {
       r.reset();
       setHost({ react: "말씀 잘 들었어요.", followup: null });
-      setPhase("cover");
+      setPhase("done");
       return;
     }
     log("send", { turn, sec: r.sec, bytes: blob.size });
@@ -236,8 +234,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     stopAmbient(5);
     log("finish", { turn });
     if (!isDemo) fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
-    // 이야기를 마치면 표지 셀피 한 장 (이미 찍었으면 바로 끝 화면)
-    setPhase(info?.hasCover ? "done" : "cover");
+    setPhase("done");
   }
 
   async function later() {
@@ -314,18 +311,6 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       </main>
     );
 
-  if (phase === "cover")
-    return (
-      <CoverSelfie
-        token={params.token}
-        honorific={info.honorific}
-        childName={info.childName}
-        no={info.week}
-        demo={isDemo}
-        onDone={() => { log("cover_done"); setPhase("done"); }}
-      />
-    );
-
   if (phase === "done")
     return (
       <main className="screen center foil" style={{ paddingTop: 48 }}>
@@ -337,6 +322,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 18, lineHeight: 1.6 }}>
           {info.honorific}의 이야기는 {toChild}.
         </p>
+        <SelfieMission token={params.token} isDemo={isDemo} childName={info.childName} />
         {info.next ? (
           <div
             className="card stack"

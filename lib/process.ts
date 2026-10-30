@@ -118,13 +118,16 @@ export async function finishPrompt(promptId: string) {
         article: cb.text || null,
         article_quote: art.quote || null,
         article_flags: flags.length ? flags.join(" / ") : null,
+        article_points: art.points.map((x) => ({ head: checkText(x.head, who).text, text: checkText(x.text, who).text })),
+        article_facts: art.facts.map((x) => ({ ...x, text: checkText(x.text, who).text })),
       })
       .eq("id", promptId);
     // 자녀에게는 좋은 소식만: 기사가 처음 완성됐을 때 "이야기 도착" 문자 (번호를 적어둔 경우만)
     if (!p.article) await notifyArrival(promptId).catch(() => {});
 
     // 12주 과정 질문은 순서가 정해져 있어서 AI 이어지는 질문을 끼워 넣지 않는다
-    if (art.nextQuestion && !p.week) {
+    // 처음 엮을 때만 (잡지 칸을 채우려고 다시 엮을 땐 질문이 또 생기지 않게)
+    if (art.nextQuestion && !p.week && !p.article) {
       const { data: first } = await db
         .from("vf_prompts")
         .select("position")

@@ -15,7 +15,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
 
   const m = String(mime || "audio/webm");
-  const ext = m.includes("mp4") ? "mp4" : m.includes("ogg") ? "ogg" : "webm";
+  const ext = m.startsWith("image/") ? (m.includes("png") ? "png" : "jpg") : m.includes("mp4") ? "mp4" : m.includes("ogg") ? "ogg" : "webm";
   const path = `${p.storyteller_id}/${p.id}/${Date.now()}.${ext}`;
   const { data, error } = await db.storage.from(BUCKET).createSignedUploadUrl(path);
   if (error || !data) return NextResponse.json({ error: "업로드 준비 실패" }, { status: 500 });
