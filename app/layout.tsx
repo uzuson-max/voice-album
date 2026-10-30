@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: "부모님의 목소리를, 지금부터 모아두세요.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#173a38" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#2E1418" };
 
 const BOOT = `(function(){try{
 var p=location.pathname,d=document.documentElement;
@@ -21,11 +21,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* 첫 화면이 그려지기 전에 실행: 로그인돼 있으면 바로 /app으로, 스플래시는 세션당 한 번 */}
         <script dangerouslySetInnerHTML={{ __html: BOOT }} />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* 본문 Pretendard(쓰는 글자만 받는 버전), 명조 마루 부리는 /public/fonts 에서 */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@600&family=Nanum+Pen+Script&display=swap"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css"
         />
+        <link rel="preload" href="/fonts/MaruBuri-SemiBold.woff2" as="font" type="font/woff2" crossOrigin="" />
       </head>
       <body>
         <Splash />

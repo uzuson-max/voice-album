@@ -16,16 +16,16 @@ type Article = {
 
 // 이야기 화면 보는 방식 — 자녀가 고르고, 이 기기에 기억된다
 const THEMES: { key: string; name: string; dot: string; vars: Record<string, string> | null }[] = [
-  { key: "paper", name: "신문", dot: "#b5462f", vars: null },
-  { key: "film", name: "필름", dot: "#12201f", vars: {
-    "--ground": "#12201f", "--card": "#1b2e2c", "--card2": "#223936", "--ink": "#eef6f2", "--muted": "#9ec2b5",
-    "--line": "rgba(238,246,242,.18)", "--accent": "#f2b59a", "--primary": "#f2b59a", "--on-primary": "#12201f", "--box": "#0b1514", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+  { key: "paper", name: "와인", dot: "#4B2329", vars: null },
+  { key: "film", name: "에스프레소", dot: "#2B1E1A", vars: {
+    "--ground": "#221815", "--card": "#33241F", "--card2": "#2B1E1A", "--ink": "#F4EEE6", "--muted": "#C6B3A6",
+    "--line": "rgba(216,184,126,.2)", "--accent": "#D8B87E", "--primary": "#D8B87E", "--on-primary": "#221815", "--gold-hi": "#EBD3A6", "--gold-lo": "#BC9858", "--box": "#17100E", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
   { key: "garden", name: "정원", dot: "#3d5a40", vars: {
     "--ground": "#34503a", "--card": "#41613f", "--card2": "#4a6b4d", "--ink": "#f3f1e6", "--muted": "#c9d6c0",
-    "--line": "rgba(243,241,230,.2)", "--accent": "#f0c27b", "--primary": "#f0c27b", "--on-primary": "#24372a", "--box": "#24372a", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+    "--line": "rgba(243,241,230,.2)", "--accent": "#D3A65E", "--primary": "#D3A65E", "--on-primary": "#16291F", "--gold-hi": "#E2BE80", "--gold-lo": "#B88B45", "--box": "#24372a", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
   { key: "classic", name: "클래식", dot: "#1c2433", vars: {
     "--ground": "#1c2433", "--card": "#263046", "--card2": "#2e3a54", "--ink": "#f1ede4", "--muted": "#a9b1c2",
-    "--line": "rgba(241,237,228,.18)", "--accent": "#d4b16a", "--primary": "#d4b16a", "--on-primary": "#1c2433", "--box": "#131a26", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
+    "--line": "rgba(241,237,228,.18)", "--accent": "#D4B37A", "--primary": "#D4B37A", "--on-primary": "#141C30", "--gold-hi": "#E8D0A2", "--gold-lo": "#B8955A", "--box": "#131a26", "--box-ink": "var(--ink)", "--box-muted": "var(--muted)", "--box-accent": "var(--accent)" } },
 ];
 
 export default function Stories() {

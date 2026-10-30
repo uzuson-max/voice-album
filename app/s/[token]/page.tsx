@@ -242,10 +242,10 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     setPhase("later");
   }
 
-  if (phase === "loading") return <main className="screen center"><p className="muted">잠시만요…</p></main>;
+  if (phase === "loading") return <main className="screen center foil"><p className="muted">잠시만요…</p></main>;
   if (phase === "error" || !info)
     return (
-      <main className="screen center">
+      <main className="screen center foil">
         <div className="grow" />
         <p className="serif q">{err || "링크를 열 수 없어요"}</p>
         <div className="grow" />
@@ -264,7 +264,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       "글은 안 쓰셔도 돼요. 말로만 하시면 돼요.",
     ];
     return (
-      <main className="screen center boxed" style={{ paddingTop: 96 }}>
+      <main className="screen center foil boxed" style={{ paddingTop: 96 }}>
         <LP size={92} className="intro-lp" />
         <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
         <div className="lead" style={{ marginTop: 26 }}>
@@ -288,7 +288,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "intro")
     return (
-      <main className="screen center boxed" style={{ paddingTop: 96 }}>
+      <main className="screen center foil boxed" style={{ paddingTop: 96 }}>
         <LP size={92} className="intro-lp" />
         <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
         <h1 className="serif" style={{ margin: "14px 0 0", fontSize: 26, lineHeight: 1.5 }}>
@@ -312,7 +312,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "done")
     return (
-      <main className="screen center" style={{ paddingTop: 48 }}>
+      <main className="screen center foil" style={{ paddingTop: 48 }}>
         <div style={{ transform: "scale(.72)", transformOrigin: "center top", marginBottom: -40 }}>
           <Envelope />
         </div>
@@ -359,7 +359,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "later")
     return (
-      <main className="screen center" style={{ paddingTop: 110 }}>
+      <main className="screen center foil" style={{ paddingTop: 110 }}>
         <MomOnSofa />
         <h1 className="serif" style={{ margin: "32px 0 0", fontSize: 26 }}>괜찮아요.</h1>
         <p className="muted" style={{ fontSize: 17, lineHeight: 1.7 }}>
@@ -372,7 +372,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "thinking")
     return (
-      <main className="screen center" style={{ paddingTop: 140 }}>
+      <main className="screen center foil" style={{ paddingTop: 140 }}>
         <span className="rec-dot pulse" />
         <p className="serif" style={{ margin: "28px 0 0", fontSize: 22, lineHeight: 1.6 }}>
           {info.honorific}의 이야기를
@@ -385,7 +385,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "host" && host)
     return (
-      <main className="screen center" style={{ paddingTop: 90 }}>
+      <main className="screen center foil" style={{ paddingTop: 90 }}>
         <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.6 }}>{host.react}</p>
         <h1 className="serif q" style={{ marginTop: 26 }}>{splitLead(host.followup || "").map((line, i) => <span key={i} className="qline">{line}</span>)}</h1>
         <div className="grow" style={{ minHeight: 28 }} />
@@ -399,7 +399,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   const first = turn === 0;
   return (
-    <main className="screen center">
+    <main className="screen center foil">
       <button
         className="sound-toggle"
         aria-label={soundOff ? "음악 켜기" : "음악 끄기"}
@@ -436,7 +436,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       ) : phase === "review" && r.blob ? (
         <div style={{ marginTop: 28, width: "100%" }}>
           {isVideo ? (
-            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#173a38" }} />
+            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#170809" }} />
           ) : (
             <audio src={URL.createObjectURL(r.blob)} controls />
           )}
