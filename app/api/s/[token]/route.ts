@@ -20,6 +20,8 @@ function demo(req: Request) {
   return NextResponse.json({
     demo: true,
     firstEver: true,
+    week: 1,
+    hasCover: false,
     next: { day: "토요일", lead: "스무 살의 그 사람이 거울 앞에 서 있어요." },
     text: "그 소식을 들은 순간, 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.",
     lead: "아직 누구의 부모도 아니던 때가 있어요. 그리고 어느 날, 제가 생겼다는 걸 알게 됐어요.",
@@ -41,7 +43,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   const db = admin();
   const { data: p } = await db
     .from("vf_prompts")
-    .select("id, storyteller_id, text, format, status, sent_at, unseal_at, child_audio_path, photo_path, hint, vf_storytellers(honorific, unseal_at, vf_families(child_name))")
+    .select("id, storyteller_id, text, format, status, week, cover_path, sent_at, unseal_at, child_audio_path, photo_path, hint, vf_storytellers(honorific, unseal_at, vf_families(child_name))")
     .eq("token", params.token)
     .maybeSingle();
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
@@ -101,6 +103,8 @@ export async function GET(req: Request, { params }: { params: { token: string } 
 
   return NextResponse.json({
     firstEver: !earlier,
+    week: (p as any).week ?? null,
+    hasCover: !!(p as any).cover_path,
     next,
     text: t.ask || p.text,
     lead: t.lead,

@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const db = admin();
   const { data } = await db
     .from("vf_answers")
-    .select("id, turn, media_path, media_type, mime, transcript, unseal_at, created_at, vf_prompts!vf_answers_prompt_id_fkey(text, ask, article_title, article)")
+    .select("id, turn, media_path, media_type, mime, transcript, unseal_at, created_at, vf_prompts!vf_answers_prompt_id_fkey(text, ask, article_title, article, cover_path)")
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
 
@@ -51,6 +51,11 @@ export async function GET(req: Request) {
     const key = String(n);
     if (!seen.has(key)) {
       seen.add(key);
+      if (p.cover_path) {
+        const coverName = `${String(n).padStart(2, "0")}_${date}_${title}_표지.jpg`;
+        const { data: c } = await db.storage.from(BUCKET).createSignedUrl(p.cover_path, 60 * 60 * 12, { download: coverName });
+        files.push({ name: coverName, type: "photo", url: c?.signedUrl || null, date });
+      }
       parts.push(`${n}. ${p.article_title || p.ask || p.text || ""} (${date})\n\n질문: ${p.ask || p.text || ""}\n\n${p.article || a.transcript || ""}`);
     }
   }

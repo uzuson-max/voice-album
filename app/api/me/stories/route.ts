@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     .from("vf_answers")
     .select(
       "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, process_error, unseal_at, created_at, " +
-        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, photo_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
+        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, photo_path, cover_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
     )
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
@@ -53,6 +53,7 @@ export async function GET(req: Request) {
         replyAsk: p.reply_ask,
         summary: a.summary,
         photoUrl: await sign(p.photo_path),
+        coverUrl: await sign(p.cover_path),
         reactionText: p.reaction_text,
         reactionAudioUrl: await sign(p.reaction_audio_path),
         createdAt: a.created_at,

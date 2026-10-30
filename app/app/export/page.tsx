@@ -48,7 +48,7 @@ export default function Export() {
             {d.files.map((f, i) => (
               <div key={f.name} className="row between" style={{ minHeight: 52, padding: "8px 0", gap: 12, borderTop: i ? "1px solid var(--ground)" : "none" }}>
                 <span className="small" style={{ lineHeight: 1.5, wordBreak: "keep-all" }}>
-                  {f.type === "video" ? "영상" : "음성"} · {f.name.replace(/\.[^.]+$/, "").replace(/_/g, " ")}
+                  {f.type === "video" ? "영상" : f.type === "photo" ? "표지" : "음성"} · {f.name.replace(/\.[^.]+$/, "").replace(/_/g, " ")}
                 </span>
                 {f.url ? (
                   <a className="textbtn" href={f.url} download={f.name} style={{ flexShrink: 0 }}>내려받기</a>

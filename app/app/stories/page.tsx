@@ -11,7 +11,7 @@ type Turn = { id: string; asked: string; mediaType: "audio" | "video"; duration:
 type Article = {
   promptId: string; question: string; lead: string | null; week: number | null; title: string; article: string | null;
   quote: string | null; replyLead: string | null; replyAsk: string | null; summary: string | null;
-  photoUrl: string | null; reactionText: string | null; reactionAudioUrl: string | null; createdAt: string; turns: Turn[];
+  photoUrl: string | null; coverUrl?: string | null; reactionText: string | null; reactionAudioUrl: string | null; createdAt: string; turns: Turn[];
 };
 
 // 이야기 화면 보는 방식 — 자녀가 고르고, 이 기기에 기억된다
@@ -147,6 +147,12 @@ function ArticleCard({ a, no, label, onSaved, onMediaError }: { a: Article; no: 
 
   return (
     <article className="card issue">
+      {a.coverUrl && (
+        <figure className="cover">
+          <img src={a.coverUrl} alt={`${label}의 그날 모습`} />
+          <figcaption><span>NO. {String(a.week || no).padStart(2, "0")}</span><span>{date}</span></figcaption>
+        </figure>
+      )}
       <div className="issue-no">
         <span>NO. {String(a.week || no).padStart(2, "0")}</span>
         <span className="date">{date}</span>
