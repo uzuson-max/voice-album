@@ -12,7 +12,7 @@ export async function notifyArrival(promptId: string) {
   const db = admin();
   const { data: p } = await db
     .from("vf_prompts")
-    .select("id, article_title, notified_at, vf_storytellers(label, vf_families(child_phone))")
+    .select("id, storyteller_id, article_title, notified_at, vf_storytellers(label, vf_families(child_phone))")
     .eq("id", promptId)
     .maybeSingle();
   if (!p || (p as any).notified_at) return;
@@ -32,10 +32,25 @@ export async function notifyArrival(promptId: string) {
   const label = st?.label || "부모님";
   const who = josa(label, "이/가");
   const title = p.article_title || "새 이야기";
+
+  // 몇 번째 이야기인지: 이 부모님에게 지금까지 도착 알림이 나간 이야기 수 (이번 것 포함)
+  const { count } = await db
+    .from("vf_prompts")
+    .select("id", { count: "exact", head: true })
+    .eq("storyteller_id", (p as any).storyteller_id)
+    .not("notified_at", "is", null);
+  const nth = String(count || 1);
+
+  // 변수 이름은 솔라피에 등록한 템플릿과 똑같아야 한다 (#{부모호칭} #{회차} #{질문제목} #{링크경로})
   await sendKakao(
     to,
     "arrival",
-    { "#{부모님}": who, "#{제목}": title },
+    {
+      "#{부모호칭}": label,
+      "#{회차}": nth,
+      "#{질문제목}": title,
+      "#{링크경로}": "app/stories",
+    },
     `[${APP_NAME}] ${who} 들려준 이야기가 도착했어요.\n\n‘${title}’\n\n${appUrl()}/app/stories`,
     "이야기 도착"
   );
