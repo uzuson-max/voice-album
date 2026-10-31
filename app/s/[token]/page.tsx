@@ -7,6 +7,11 @@ import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
 import SelfieMission from "@/components/SelfieMission";
+import { useHost } from "@/lib/useHost";
+
+// 진행자 영상 자리: 질문할 땐 크게, 얼굴 녹화 중엔 오른쪽 위 작은 동그라미
+const STAGE: React.CSSProperties = { width: "100%", aspectRatio: "1 / 1", borderRadius: 20, overflow: "hidden", background: "#170809", marginTop: 20 };
+const PIP: React.CSSProperties = { position: "fixed", top: 16, right: 16, width: 92, height: 92, borderRadius: "50%", overflow: "hidden", zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,.4)" };
 
 type Reaction = { about: string; text: string | null; audioUrl: string | null };
 type Info = {
@@ -23,6 +28,7 @@ type Info = {
   reactions: Reaction[];
   next?: { day: string; lead: string | null } | null;
   firstEver?: boolean;
+  week?: number | null;
   demo?: boolean;
 };
 type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
@@ -62,6 +68,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean; song?: boolean } | null>(null);
   const [ready, setReady] = useState(false);
   const r = useRecorder();
+  const mc = useHost(); // 진행자
   const live = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -141,7 +148,14 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
     const n = info?.lead ? splitLead(info.lead).length : 0;
-    setTimeout(() => setReady(true), n ? (0.6 + n * BEAT + 1.6) * 1000 : 400);
+    const noHost = () => setTimeout(() => setReady(true), n ? (0.6 + n * BEAT + 1.6) * 1000 : 400);
+    // 그 주 진행자 영상이 있으면: 진행자가 질문을 읽고 → 마이크를 넘기는 순간 녹음 버튼이 나온다
+    if (info?.week) {
+      mc.open(info.week, () => setReady(true)).then((ok) => {
+        if (ok) quietAmbient(1.5);
+        else noHost();
+      });
+    } else noHost();
   }
 
   const limit = turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
@@ -149,6 +163,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   async function start() {
     setErr("");
     quietAmbient(0); // 녹음 버튼을 누르는 순간 바로 끈다
+    if (mc.on) mc.listen(); // 진행자는 소리 없이 듣기만
     try {
       await r.start(kind, limit);
     } catch {
@@ -165,6 +180,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     const blob = r.blob;
     if (isDemo) {
       r.reset();
+      mc.stop();
       setHost({ react: "말씀 잘 들었어요.", followup: null });
       setPhase("done");
       return;
@@ -228,9 +244,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     setKind(host.video ? "video" : "audio");
     setTurn((t) => t + 1);
     setPhase("ask");
+    if (mc.on) mc.handOver();
   }
 
   function finish() {
+    mc.stop();
     stopAmbient(5);
     log("finish", { turn });
     if (!isDemo) fetch(`/api/s/${params.token}/finish`, { method: "POST" }).catch(() => {});
@@ -239,6 +257,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   async function later() {
     log("later");
+    mc.stop();
     if (!isDemo) await fetch(`/api/s/${params.token}/later`, { method: "POST" }).catch(() => {});
     setPhase("later");
   }
@@ -387,7 +406,8 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "host" && host)
     return (
-      <main className="screen center foil" style={{ paddingTop: 90 }}>
+      <main className="screen center foil" style={{ paddingTop: mc.on ? 24 : 90 }}>
+        {mc.on && <div ref={mc.mount} style={{ ...STAGE, width: "62%", marginTop: 0, marginBottom: 22 }} />}
         <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.6 }}>{host.react}</p>
         <h1 className="serif q" style={{ marginTop: 26 }}>{splitLead(host.followup || "").map((line, i) => <span key={i} className="qline">{line}</span>)}</h1>
         <div className="grow" style={{ minHeight: 28 }} />
@@ -433,6 +453,8 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>조금만 더 들려주세요</p>
       )}
 
+      {mc.on && phase !== "review" && phase !== "sending" && <div ref={mc.mount} style={r.recording && isVideo ? PIP : STAGE} />}
+
       {r.recording && isVideo ? (
         <video ref={live} className="preview" muted playsInline style={{ marginTop: 24 }} />
       ) : phase === "review" && r.blob ? (
@@ -443,7 +465,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
             <audio src={URL.createObjectURL(r.blob)} controls />
           )}
         </div>
-      ) : first && info.photoUrl ? (
+      ) : mc.on ? null : first && info.photoUrl ? (
         <img src={info.photoUrl} alt="" className="photo" style={{ marginTop: 24 }} />
       ) : (
         <div style={{ marginTop: isVideo ? 20 : 32 }}>{isVideo ? <Baby /> : <MomOnSofa />}</div>
@@ -454,7 +476,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           {splitLead(info.lead).map((line, i, arr) => (
             <p
               key={i}
-              style={{
+              style={mc.on ? { opacity: 0.75 } : {
                 animation:
                   `rise 1.6s ease ${0.6 + i * BEAT}s forwards` +
                   (i < arr.length - 1 ? `, dim 1.4s ease ${0.6 + (i + 1) * BEAT}s forwards` : ""),
@@ -467,8 +489,8 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       )}
 
       <h1
-        className={`serif q${first && info.lead && phase === "ask" && !r.recording ? " reveal" : ""}`}
-        style={{ marginTop: 22, animationDelay: info.lead ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
+        className={`serif q${first && info.lead && phase === "ask" && !r.recording && !mc.on ? " reveal" : ""}`}
+        style={{ marginTop: 22, animationDelay: info.lead && !mc.on ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
       >
         {splitLead(asked).map((line, i) => (
           <span key={i} className="qline">{line}</span>
@@ -496,7 +518,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       {err && <p className="err">{err}</p>}
 
       {phase === "ask" && !r.recording && !ready && (
-        <button className="link" onClick={() => setReady(true)}>바로 대답할게요</button>
+        <button className="link" onClick={() => { setReady(true); if (mc.on) mc.listen(); }}>바로 대답할게요</button>
       )}
 
       {phase === "ask" && ready && !r.recording && (
