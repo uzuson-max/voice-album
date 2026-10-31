@@ -7,11 +7,8 @@ import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
 import SelfieMission from "@/components/SelfieMission";
+import HostSquirrel from "@/components/HostSquirrel";
 import { useHost } from "@/lib/useHost";
-
-// 진행자 영상 자리: 질문할 땐 크게, 얼굴 녹화 중엔 오른쪽 위 작은 동그라미
-const STAGE: React.CSSProperties = { width: "100%", aspectRatio: "1 / 1", borderRadius: 20, overflow: "hidden", background: "#170809", marginTop: 20 };
-const PIP: React.CSSProperties = { position: "fixed", top: 16, right: 16, width: 92, height: 92, borderRadius: "50%", overflow: "hidden", zIndex: 20, boxShadow: "0 4px 16px rgba(0,0,0,.4)" };
 
 type Reaction = { about: string; text: string | null; audioUrl: string | null };
 type Info = {
@@ -28,7 +25,6 @@ type Info = {
   reactions: Reaction[];
   next?: { day: string; lead: string | null } | null;
   firstEver?: boolean;
-  week?: number | null;
   demo?: boolean;
 };
 type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
@@ -68,7 +64,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean; song?: boolean } | null>(null);
   const [ready, setReady] = useState(false);
   const r = useRecorder();
-  const mc = useHost(); // 진행자
+  const mc = useHost(params.token); // 다람쥐 진행자
   const live = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -145,17 +141,12 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   // "이야기 시작하기": 이 누름이 있어야 휴대폰이 소리를 허락한다
   function begin(withSound: boolean) {
     if (withSound) startAmbient();
+    mc.unlock(); // 이 누름 안에서 소리 재생 허락
     log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
-    const n = info?.lead ? splitLead(info.lead).length : 0;
-    const noHost = () => setTimeout(() => setReady(true), n ? (0.6 + n * BEAT + 1.6) * 1000 : 400);
-    // 그 주 진행자 영상이 있으면: 진행자가 질문을 읽고 → 마이크를 넘기는 순간 녹음 버튼이 나온다
-    if (info?.week) {
-      mc.open(info.week, () => setReady(true)).then((ok) => {
-        if (ok) quietAmbient(1.5);
-        else noHost();
-      });
-    } else noHost();
+    // 다람쥐가 장면과 질문을 읽어주고 → 듣는 자세로 바뀌면 녹음 버튼이 나온다
+    quietAmbient(1.5);
+    mc.say([info?.lead, info?.text].filter(Boolean).join("\n"), () => setReady(true));
   }
 
   const limit = turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
@@ -163,7 +154,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   async function start() {
     setErr("");
     quietAmbient(0); // 녹음 버튼을 누르는 순간 바로 끈다
-    if (mc.on) mc.listen(); // 진행자는 소리 없이 듣기만
+    mc.listen();
     try {
       await r.start(kind, limit);
     } catch {
@@ -227,6 +218,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       if (h.followup && turn < MAX_TURNS) {
         setHost(h);
         setPhase("host");
+        mc.say(`${h.react || ""} ${h.followup}`);
       } else {
         setHost(h);
         finish();
@@ -239,12 +231,12 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   function continueTalk() {
     setReady(true);
+    mc.listen();
     if (!host?.followup) return;
     setAsked(host.followup);
     setKind(host.video ? "video" : "audio");
     setTurn((t) => t + 1);
     setPhase("ask");
-    if (mc.on) mc.handOver();
   }
 
   function finish() {
@@ -407,7 +399,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   if (phase === "host" && host)
     return (
       <main className="screen center foil" style={{ paddingTop: mc.on ? 24 : 90 }}>
-        {mc.on && <div ref={mc.mount} style={{ ...STAGE, width: "62%", marginTop: 0, marginBottom: 22 }} />}
+        {mc.on && <div style={{ marginBottom: 22, width: "100%" }}><HostSquirrel mode={mc.mode} /></div>}
         <p className="muted" style={{ margin: 0, fontSize: 18, lineHeight: 1.6 }}>{host.react}</p>
         <h1 className="serif q" style={{ marginTop: 26 }}>{splitLead(host.followup || "").map((line, i) => <span key={i} className="qline">{line}</span>)}</h1>
         <div className="grow" style={{ minHeight: 28 }} />
@@ -453,7 +445,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="small muted" style={{ margin: 0, fontWeight: 500 }}>조금만 더 들려주세요</p>
       )}
 
-      {mc.on && phase !== "review" && phase !== "sending" && <div ref={mc.mount} style={r.recording && isVideo ? PIP : STAGE} />}
+      {mc.on && phase !== "review" && phase !== "sending" && (
+        <HostSquirrel mode={mc.mode} small={(r.recording && isVideo) || (first && !!info.photoUrl)} />
+      )}
 
       {r.recording && isVideo ? (
         <video ref={live} className="preview" muted playsInline style={{ marginTop: 24 }} />
@@ -465,9 +459,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
             <audio src={URL.createObjectURL(r.blob)} controls />
           )}
         </div>
-      ) : mc.on ? null : first && info.photoUrl ? (
+      ) : first && info.photoUrl ? (
         <img src={info.photoUrl} alt="" className="photo" style={{ marginTop: 24 }} />
-      ) : (
+      ) : mc.on ? null : (
         <div style={{ marginTop: isVideo ? 20 : 32 }}>{isVideo ? <Baby /> : <MomOnSofa />}</div>
       )}
 
@@ -518,7 +512,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       {err && <p className="err">{err}</p>}
 
       {phase === "ask" && !r.recording && !ready && (
-        <button className="link" onClick={() => { setReady(true); if (mc.on) mc.listen(); }}>바로 대답할게요</button>
+        <button className="link" onClick={() => { setReady(true); mc.listen(); }}>바로 대답할게요</button>
       )}
 
       {phase === "ask" && ready && !r.recording && (
