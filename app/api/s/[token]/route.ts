@@ -16,18 +16,18 @@ async function signed(path?: string | null) {
 // /s/demo?c=재빈이&h=어머니
 function demo(req: Request) {
   const q = new URL(req.url).searchParams;
-  const childName = (q.get("c") || "지은이").slice(0, 12);
-  const honorific = (q.get("h") || "어머니").slice(0, 8);
+  const childName = (q.get("c") || "큰딸").slice(0, 12);
+  const honorific = (q.get("h") || "엄마").slice(0, 8);
   return NextResponse.json({
     demo: true,
     firstEver: true,
     week: 1,
     hasCover: false,
     next: { day: "토요일", lead: "스무 살의 그 사람이 거울 앞에 서 있어요." },
-    text: "그 소식을 들은 순간, 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.",
+    text: buildCourse({ childName, label: honorific, profile: {} })[0].ask,
     steps: buildCourse({ childName, label: honorific, profile: {} })[0].steps,
     encore: null,
-    lead: "아직 누구의 부모도 아니던 때가 있어요. 그리고 어느 날, 제가 생겼다는 걸 알게 됐어요.",
+    lead: buildCourse({ childName, label: honorific, profile: {} })[0].lead,
     hint: null,
     format: "audio",
     answered: false,
@@ -106,12 +106,14 @@ export async function GET(req: Request, { params }: { params: { token: string } 
 
   // 3단계 질문: 12주 과정이면 지금 질문표에서 다시 꺼낸다 (예전에 보낸 링크도 적용)
   let steps: string[] | null = null;
+  let courseLead: string | null = null; // 질문표의 장면을 고치면 이미 보낸 링크에도 바로 반영
   const wk = (p as any).week as number | null;
   if (wk && COURSE.some((w) => w.week === wk && w.steps)) {
     try {
       const row = buildCourse({ childName: st?.vf_families?.child_name || "", label: st?.honorific || "엄마", profile: st?.profile || {} })
         .find((r) => r.week === wk);
       steps = row?.steps || null;
+      courseLead = row?.lead || null;
     } catch {}
   }
 
@@ -124,7 +126,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     coverName: String(st?.profile?.["표지 이름"] || "").trim() || null,
     next,
     text: t.ask || p.text,
-    lead: t.lead,
+    lead: courseLead || t.lead,
     hint: (p as any).hint || null,
     format: p.format,
     answered: p.status === "answered",

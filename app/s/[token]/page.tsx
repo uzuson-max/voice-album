@@ -48,7 +48,7 @@ function glue(t: string) {
 }
 
 function splitLead(lead: string) {
-  return lead.replace(/([.?!요])\s+/g, "$1\n").split("\n").map((x) => x.trim()).filter(Boolean).map(glue);
+  return lead.replace(/([.?!요])\s+/g, "$1\n").split("\n").map((x) => x.trim().replace(/\.$/, "")).filter(Boolean).map(glue);
 } // 첫 대답 뒤 이어 말하기 최대 2번
 
 export default function ParentPage({ params }: { params: { token: string } }) {
@@ -101,8 +101,14 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     }
   }, [r.stream, kind]);
 
+  // '다 말했어요' 한 번이면 끝: 다시 듣기·보내기 누름 없이 바로 보낸다 (60~70대, 누르는 건 최소로)
+  const sentBlob = useRef<Blob | null>(null);
   useEffect(() => {
-    if (r.blob && !r.recording) setPhase("review");
+    if (r.blob && !r.recording && sentBlob.current !== r.blob) {
+      sentBlob.current = r.blob;
+      send();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [r.blob, r.recording]);
 
   // 녹음이 끊겼는데 담긴 게 없으면: 보내기 대신 다시 녹음하도록
@@ -187,6 +193,16 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     const blob = r.blob;
     if (isDemo) {
       r.reset();
+      // 체험도 3단계를 그대로 이어서 보여준다
+      if (steps && turn < steps.length - 1) {
+        const nq = steps[turn + 1];
+        setAsked(nq);
+        setTurn((t) => t + 1);
+        setReady(false);
+        setPhase("ask");
+        mc.say(`네, 잘 들었어요.\n${nq}`, (spoken) => { setReady(true); if (spoken) start(); });
+        return;
+      }
       mc.stop();
       setHost({ react: "말씀 잘 들었어요.", followup: null });
       setPhase("done");
@@ -241,7 +257,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           setTurn((t) => t + 1);
           setReady(false);
           setPhase("ask");
-          mc.say(`${react}\n${nq}`, () => setReady(true));
+          mc.say(`${react}\n${nq}`, (spoken) => { setReady(true); if (spoken) start(); }); // 읽고 나면 녹음이 저절로 시작
         } else if (info?.encore) {
           setHost({ react, followup: info.encore, song: /노래|자장가/.test(info.encore) });
           setPhase("host");
@@ -317,10 +333,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "welcome") {
     const lines = [
-      `${josa(c, "이/가")} 보낸 초대예요.`,
-      `앞으로 12번, ${info.honorific} 이야기를 듣고 싶어요.`,
-      "한 번에 10분이면 충분해요.",
-      "글은 안 쓰셔도 돼요. 말로만 하시면 돼요.",
+      `${josa(c, "이/가")} 보낸 초대장이에요`,
+      `앞으로 12번, ${info.honorific}의 이야기를\n듣고 싶대요`,
+      "한 번에 10분, 말로만 하시면 돼요",
+      "오늘부터 남기는 이야기는\n자녀들과 평생 나눌 소중한 기억이 될 거예요",
+      "준비되셨나요?",
     ];
     return (
       <main className="screen center foil boxed" style={{ paddingTop: 96 }}>
@@ -328,7 +345,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
         <div className="lead" style={{ marginTop: 26 }}>
           {lines.map((line, i) => (
-            <p key={i} className="serif" style={{ fontSize: i === 0 ? 24 : 19, animation: `rise 1.6s ease ${0.4 + i * 1.6}s forwards` }}>
+            <p key={i} className="serif" style={{ fontSize: i === 0 || i === lines.length - 1 ? 24 : 19, whiteSpace: "pre-line", animation: `rise 1.6s ease ${0.4 + i * 1.6}s forwards` }}>
               {line}
             </p>
           ))}
@@ -339,7 +356,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           style={{ opacity: 0, animation: `rise 1.2s ease ${0.4 + lines.length * 1.6}s forwards` }}
           onClick={() => { log("welcome"); setPhase("intro"); }}
         >
-          첫 이야기 들어가기
+          네, 시작할게요
         </button>
       </main>
     );
@@ -347,7 +364,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   if (phase === "intro")
     return (
-      <main className="screen center foil boxed" style={{ paddingTop: 96 }}>
+      <main className="screen center foil boxed" style={{ paddingTop: 120 }}>
         <LP size={92} className="intro-lp" />
         <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
         <h1 className="serif" style={{ margin: "14px 0 0", fontSize: 26, lineHeight: 1.5 }}>
@@ -356,16 +373,17 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           이번 주 질문이 도착했어요
         </h1>
         <p className="muted" style={{ margin: "18px 0 0", fontSize: 16, lineHeight: 1.7 }}>
-          조용한 곳에서 소리를 켜고 들어주세요.
+          조용한 곳에서 소리를 켜고 들어주세요
           <br />
-          {MUSIC ? "잔잔한 음악과 함께 천천히 시작해요." : "질문은 읽어드려요. 천천히 들어주세요."}
+          {MUSIC ? "잔잔한 음악과 함께 천천히 시작해요" : "질문은 읽어드려요, 천천히 들어주세요"}
         </p>
-        <div className="grow" />
+        <div style={{ height: 56 }} />
         <button className="btn" onClick={() => begin(true)}>이야기 시작하기</button>
         {MUSIC && <button className="link" style={{ marginTop: 6 }} onClick={() => begin(false)}>음악 없이 시작할게요</button>}
         <p className="tiny muted" style={{ margin: "10px 0 0", lineHeight: 1.6 }}>
-          남겨주신 이야기는 가족에게만 전해져요. <a href="/privacy">개인정보처리방침</a>
+          남겨주신 이야기는 가족에게만 전해져요 · <a href="/privacy">개인정보처리방침</a>
         </p>
+        <div className="grow" />
       </main>
     );
 
@@ -376,9 +394,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           <Envelope />
         </div>
         {host?.react && <p className="muted" style={{ margin: "8px 0 0", fontSize: 17 }}>{host.react}</p>}
-        <h1 className="serif" style={{ margin: "10px 0 0", fontSize: 28 }}>오늘 이야기, 잘 담았어요.</h1>
+        <h1 className="serif" style={{ margin: "10px 0 0", fontSize: 28 }}>오늘 이야기, 잘 담았어요</h1>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 18, lineHeight: 1.6 }}>
-          {info.honorific}의 이야기는 {toChild}.
+          {info.honorific}의 이야기는 {toChild}
         </p>
         <SelfieMission
           token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}

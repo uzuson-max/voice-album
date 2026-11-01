@@ -28,17 +28,18 @@ export function useHost(token: string) {
   }
 
   // 문장을 읽고, 다 읽으면(또는 실패하면) 듣기 자세로 바꾼 뒤 onDone
-  async function say(text: string, onDone?: () => void) {
+  async function say(text: string, onDone?: (spoken: boolean) => void) {
     const my = ++seq.current;
     const a = el.current;
     // 다 읽으면: LP(마이크)를 내밀고 → 잠시 뒤 듣는 자세
-    const done = () => {
+    // spoken: 목소리로 끝까지 읽었는지 (실패해서 글자만 보였으면 false)
+    const done = (spoken = false) => {
       if (my !== seq.current) return;
       setMode("pass");
-      onDone?.();
+      onDone?.(spoken);
       setTimeout(() => { if (my === seq.current) setMode("listen"); }, 1600);
     };
-    if (!a || !text.trim()) return done();
+    if (!a || !text.trim()) return done(false);
     setMode("load");
     try {
       const j = await fetch(`/api/s/${token}/tts`, {
@@ -48,13 +49,13 @@ export function useHost(token: string) {
       }).then((r) => r.json());
       if (my !== seq.current) return;
       if (!j.url) throw new Error();
-      a.onended = done;
-      a.onerror = done;
+      a.onended = () => done(true);
+      a.onerror = () => done(false);
       a.src = j.url;
       await a.play();
       if (my === seq.current) setMode("talk");
     } catch {
-      done();
+      done(false);
     }
   }
 
