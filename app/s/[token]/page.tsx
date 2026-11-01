@@ -406,7 +406,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <button
           className="btn"
           style={{ opacity: 0, animation: `rise 1.2s ease ${0.4 + lines.length * 1.6}s forwards` }}
-          onClick={() => { log("welcome"); setPhase("intro"); }}
+          onClick={() => { log("welcome"); begin(true); }} // 첫 링크는 안내 화면을 한 번 더 거치지 않고 바로 질문으로
         >
           네, 시작할게요
         </button>
