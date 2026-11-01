@@ -173,7 +173,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
     // 음악이 몇 초 흐르며 장면이 떠오르고 → 음악이 잦아들면 다람쥐가 장면과 질문을 읽고 → 마이크를 넘기면 녹음 버튼
-    const q = steps ? steps[0] : info?.text;
+    const q = steps ? steps[0] : info?.steps?.[0] || info?.text;
     // 다 읽고 나면 버튼 없이 바로 녹음이 시작된다 — 다람쥐가 먼저 말로 알려준다
     const cue = kind === "video" ? "지금부터 녹화할게요. 편하게 말씀해 주세요" : "지금부터 녹음할게요. 편하게 말씀해 주세요";
     const line = [info?.lead, q, cue].filter(Boolean).join("\n");
@@ -186,11 +186,13 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     } else go();
   }
 
-  const steps = info?.steps && info.steps.length > 1 ? info.steps : null;
+  // 자녀 체험(demo)은 '어떻게 오는지' 느끼면 충분 — 3단계 대신 첫 이야기 하나만, 30초면 저절로 끝난다
+  const DEMO_SEC = 30;
+  const steps = !isDemo && info?.steps && info.steps.length > 1 ? info.steps : null;
   const inStep = !!steps && turn < steps.length; // 3단계 중
   const lastStep = !!steps && turn === steps.length - 1;
   const GUIDE = 120; // 단계마다 권장 2분 (끊지는 않는다)
-  const limit = inStep ? (kind === "video" ? 180 : 600) : turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
+  const limit = isDemo ? DEMO_SEC : inStep ? (kind === "video" ? 180 : 600) : turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
 
   async function start() {
     setErr("");
@@ -700,6 +702,15 @@ export default function ParentPage({ params }: { params: { token: string } }) {
               ? lastStep ? "천천히 하셔도 돼요 · 마지막 이야기예요" : `천천히 하셔도 돼요 · 이야기 ${steps!.length - turn - 1}개가 더 남았어요`
               : lastStep ? "충분히 들었어요. 다 하셨으면 '다 말했어요'를 눌러주세요" : "충분히 들었어요. 다 하셨으면 '다 말했어요'를 눌러 다음 이야기로 가요"}
           </p>
+        </div>
+      )}
+
+      {r.recording && isDemo && (
+        <div style={{ width: "100%", margin: "0 0 14px" }}>
+          <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,.14)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${Math.min(100, (r.sec / DEMO_SEC) * 100)}%`, background: "var(--accent)", transition: "width 1s linear" }} />
+          </div>
+          <p className="small muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>체험은 30초면 저절로 끝나요 · 실제로는 부모님이 편하게 10분 남짓 이야기하세요</p>
         </div>
       )}
 
