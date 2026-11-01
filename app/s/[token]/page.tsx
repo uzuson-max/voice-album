@@ -488,6 +488,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       );
     return (
       <main className="screen center foil" style={{ paddingTop: 48 }}>
+        {!tour && <div className="grow" />}
         <div style={{ transform: "scale(.72)", transformOrigin: "center top", marginBottom: -40 }}>
           <Envelope />
         </div>
@@ -518,7 +519,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           <p style={{ marginTop: 32, fontSize: 18 }}>{info.childName}에게 이야기가 잘 전해졌어요</p>
         )}
         {isDemo && !tour && (
-          <div className="stack" style={{ marginTop: 72, alignItems: "center", gap: 10, width: "100%" }}>
+          <div className="stack" style={{ marginTop: 56, alignItems: "center", gap: 10, width: "100%" }}>
             <p className="tiny muted" style={{ margin: 0, letterSpacing: "0.08em" }}>여기까지가 부모님이 보시는 화면이에요</p>
             <button
               className="btn"
