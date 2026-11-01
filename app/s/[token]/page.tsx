@@ -354,21 +354,44 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       "준비되셨나요?",
     ];
     return (
-      <main className="screen center foil boxed" style={{ paddingTop: 96 }}>
-        <LP size={92} className="intro-lp" />
-        <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
+      <main className="screen center foil boxed" style={{ paddingTop: opened ? 96 : 40 }}>
+        {opened && <LP size={92} className="intro-lp" />}
+        {opened && <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>}
         {!opened ? (
           <>
-            <p className="serif" style={{ margin: "26px 0 0", fontSize: 24, lineHeight: 1.5 }}>
-              {josa(c, "이/가")} 보낸
-              <br />
-              초대장이 도착했어요
-            </p>
-            <p className="muted" style={{ margin: "18px 0 0", fontSize: 16, lineHeight: 1.7 }}>
-              소리를 켜고 열어주세요
-            </p>
             <div className="grow" />
-            <button className="btn" onClick={openInvite}>초대장 열어보기</button>
+            {/* 봉인된 초대장 카드: 금박 이중 테두리 + 위에 걸친 LP 봉인 */}
+            <div
+              style={{
+                position: "relative",
+                width: "100%",
+                maxWidth: 330,
+                margin: "0 auto",
+                padding: "62px 26px 34px",
+                borderRadius: 18,
+                background: "linear-gradient(160deg, #6A3540 0%, #4E222A 55%, #3E1A21 100%)",
+                border: "1px solid rgba(240,201,120,0.55)",
+                boxShadow: "inset 0 0 0 6px #4E222A, inset 0 0 0 7px rgba(240,201,120,0.35), 0 18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,235,200,0.18)",
+                animation: "rise 1.2s ease forwards",
+              }}
+            >
+              <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", filter: "drop-shadow(0 6px 10px rgba(0,0,0,0.5))" }}>
+                <LP size={80} className="intro-lp" />
+              </div>
+              <p style={{ margin: 0, fontSize: 12, letterSpacing: "0.32em", color: "var(--gold-hi)" }}>INVITATION</p>
+              <p className="serif" style={{ margin: "18px 0 0", fontSize: 25, lineHeight: 1.55 }}>
+                {josa(c, "이/가")} 보낸
+                <br />
+                초대장이 도착했어요
+              </p>
+              <div style={{ width: 44, height: 1, margin: "22px auto", background: "linear-gradient(90deg, transparent, var(--gold-hi), transparent)" }} />
+              <p className="muted" style={{ margin: 0, fontSize: 16, lineHeight: 1.7 }}>
+                소리를 켜고 열어주세요
+              </p>
+            </div>
+            <button className="btn" style={{ marginTop: 30 }} onClick={openInvite}>초대장 열어보기</button>
+            <p className="tiny muted" style={{ margin: "14px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
+            <div className="grow" />
           </>
         ) : (
         <>
