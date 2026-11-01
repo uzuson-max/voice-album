@@ -112,7 +112,7 @@ function CoverFrame({ name, first, guide }: { name: string; first: boolean; guid
         <span style={{ fontFamily: "Georgia,serif", fontSize: 11, letterSpacing: ".14em" }}>OUR HOUSE RECORD</span>
       </div>
       <div style={{ position: "absolute", top: 54, right: 12, writingMode: "vertical-rl", fontFamily: "var(--serif)", fontWeight: 700, fontSize: big, lineHeight: 1, letterSpacing: ".04em" }}>{name}</div>
-      {first && <span style={{ position: "absolute", top: 56, left: 14, background: "#5E7482", fontSize: 12, fontWeight: 700, letterSpacing: ".14em", padding: "5px 9px", textShadow: "none" }}>창간호</span>}
+      {first && <span style={{ position: "absolute", top: 56, left: 14, background: "#9A4E2A", fontSize: 12, fontWeight: 700, letterSpacing: ".14em", padding: "5px 9px", textShadow: "none" }}>창간호</span>}
       {guide && (
         <div style={{ position: "absolute", left: "50%", top: "50%", width: "54%", height: "48%", transform: "translate(-58%,-42%)", border: "2px dashed rgba(255,255,255,.8)", borderRadius: "50%" }} />
       )}

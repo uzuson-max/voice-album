@@ -1,10 +1,10 @@
 // 우리집 레코드 — 그림은 캐릭터 대신 "레코드" 하나로 통일한다 (와인 가죽 + 금박).
 // 예전 이름(MomOnSofa, Baby, Envelope, GiftBox, RecordTea)은 화면 코드가 그대로 쓰도록 남겨둔다.
-const DISC = "#232B32";
-const GROOVE = "#3A464F";
-const GOLD = "#9FB3A8";
-const GOLD_HI = "#D3DFD8";
-const SLEEVE = "#5E7482";
+const DISC = "#2F2B28";
+const GROOVE = "#4A443F";
+const GOLD = "#C8774A";
+const GOLD_HI = "#EADBCB";
+const SLEEVE = "#9A4E2A";
 
 // LP 로고 (웰컴·첫 화면·로딩)
 export function LP({ className, size = 132 }: { className?: string; size?: number }) {

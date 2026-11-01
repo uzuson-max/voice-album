@@ -391,13 +391,13 @@ export default function ParentPage({ params }: { params: { token: string } }) {
                 margin: "0 auto",
                 padding: "62px 26px 34px",
                 borderRadius: 18,
-                background: "linear-gradient(160deg, #FFFFFF 0%, #FFFFFF 55%, #FFFFFF 100%)",
-                border: "1px solid rgba(143,163,176,0.55)",
-                boxShadow: "inset 0 0 0 6px #FFFFFF, inset 0 0 0 7px rgba(143,163,176,0.35), 0 18px 40px -16px rgba(35,43,50,0.22), inset 0 1px 0 rgba(255,255,255,0)",
+                background: "linear-gradient(160deg, #F5F0E8 0%, #F5F0E8 55%, #F5F0E8 100%)",
+                border: "1px solid rgba(181,101,58,0.55)",
+                boxShadow: "inset 0 0 0 6px #F5F0E8, inset 0 0 0 7px rgba(181,101,58,0.35), 0 18px 40px -16px rgba(47,43,40,0.22), inset 0 1px 0 rgba(255,255,255,0)",
                 animation: "rise 1.2s ease forwards",
               }}
             >
-              <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", filter: "drop-shadow(0 6px 10px rgba(35,43,50,0.2))" }}>
+              <div style={{ position: "absolute", top: -40, left: "50%", transform: "translateX(-50%)", filter: "drop-shadow(0 6px 10px rgba(47,43,40,0.2))" }}>
                 <LP size={80} className="intro-lp" />
               </div>
               <p style={{ margin: 0, fontSize: 12, letterSpacing: "0.32em", color: "var(--gold-hi)" }}>INVITATION</p>
@@ -635,7 +635,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       ) : phase === "review" && r.blob ? (
         <div style={{ marginTop: 28, width: "100%" }}>
           {isVideo ? (
-            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#232B32" }} />
+            <video src={URL.createObjectURL(r.blob)} controls playsInline style={{ aspectRatio: "3/4", background: "#2F2B28" }} />
           ) : (
             <audio src={URL.createObjectURL(r.blob)} controls />
           )}
@@ -716,7 +716,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
       {r.recording && inStep && (
         <div style={{ width: "100%", margin: "0 0 14px" }}>
-          <div style={{ height: 6, borderRadius: 3, background: "#E2E7E5", overflow: "hidden" }}>
+          <div style={{ height: 6, borderRadius: 3, background: "#D6CDBF", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.min(100, (r.sec / GUIDE) * 100)}%`, background: "var(--sage)", transition: "width 1s linear" }} />
           </div>
           <p className="small muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
@@ -729,7 +729,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
       {r.recording && isDemo && (
         <div style={{ width: "100%", margin: "0 0 14px" }}>
-          <div style={{ height: 6, borderRadius: 3, background: "#E2E7E5", overflow: "hidden" }}>
+          <div style={{ height: 6, borderRadius: 3, background: "#D6CDBF", overflow: "hidden" }}>
             <div style={{ height: "100%", width: `${Math.min(100, (r.sec / demoSec) * 100)}%`, background: "var(--sage)", transition: "width 1s linear" }} />
           </div>
           <p className="small muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>{`체험은 ${demoSec}초면 저절로 끝나요 · 실제로는 부모님이 편하게 10분 남짓 이야기하세요`}</p>

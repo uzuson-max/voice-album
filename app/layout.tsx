@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   title: APP_NAME,
   description: "부모님의 목소리를, 지금부터 모아두세요.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#F4F6F5" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#E8E1D6" };
 
 const BOOT = `(function(){try{
 var p=location.pathname,d=document.documentElement;

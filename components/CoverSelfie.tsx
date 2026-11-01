@@ -135,7 +135,7 @@ export default function CoverSelfie({ token, honorific, childName, no, demo, onD
       <div
         style={{
           position: "relative", marginTop: 24, width: "100%", maxWidth: 300, aspectRatio: "4 / 5", borderRadius: 18, overflow: "hidden",
-          background: "#232B32", border: "1px solid var(--foil)", boxShadow: "0 24px 40px -18px rgba(0,0,0,.7)",
+          background: "#2F2B28", border: "1px solid var(--foil)", boxShadow: "0 24px 40px -18px rgba(0,0,0,.7)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >

@@ -1,38 +1,48 @@
-/* 우리집 레코드 — Nordic Memory (미스티 하버 × 소프트 세이지)
+/* 우리집 레코드 — Urban Archive (번트 오커 × 웜 차콜)
    종이(읽고 쓰는 화면) = --ground/--card/--ink, 상자(제호·탭바·첫 화면·가격) = --box* */
 :root {
-  /* Nordic Memory — 맑고 차분한 북유럽풍 오디오 아카이브 */
-  --misty: #8FA3B0;        /* Primary · Misty Harbor (PANTONE 15-4305) — 버튼·활성 탭 면 */
-  --misty-ink: #5E7482;    /* Misty Harbor 딥 톤 — 흰 바탕 위 글씨·작은 포인트 (원색은 글씨로 쓰면 흐려서) */
-  --sage: #9FB3A8;         /* Secondary · Soft Sage (PANTONE 14-6312) — 파형·재생 막대·뱃지 */
-  --sage-ink: #5F7A6C;
-  --bg: #F4F6F5;           /* Background · Pure Clean White (PANTONE 11-4800) */
-  --surface: #FFFFFF;      /* Surface / Card */
-  --border: #E2E7E5;       /* Border / Divider */
-  --text: #232B32;         /* Text Primary · Navy Charcoal (PANTONE 19-3920) */
-  --text-muted: #6C7A84;   /* Text Muted */
+  /* Urban Archive — 세련되고 온기 있는 도시 아카이브 (번트 오커 · 더스티 로즈 · 오프화이트 · 웜 차콜) */
+  --ochre: #B5653A;        /* Burnt Ochre (PANTONE 18-1242) — 포인트·LP 라벨·재생 막대·창간호 딱지 */
+  --ochre-ink: #9A4E2A;    /* 오커 딥 톤 — 밝은 바탕 위 글씨 포인트 */
+  --ochre-hi: #E2A37A;     /* 오커 밝은 톤 — 어두운 바탕 위 포인트 */
+  --ochre-tint: #F0E2D4;   /* 오커 옅은 면 — 정보 카드 */
+  --rose: #C27B78;         /* Dusty Rose (PANTONE 17-1718) — 감정적인 자리에만 조금 */
+  --rose-tint: #EED8D4;
+  --offwhite: #F5F0E8;     /* Off-white — 카드·종이 */
+  --bg: #E8E1D6;           /* 웜 그레이지 바탕 (오프화이트를 넓게 깔면 하얘서 한 톤 깊게) */
+  --charcoal: #2F2B28;     /* Warm Charcoal (PANTONE 18-1242) — 글씨·주요 버튼·의식 같은 순간 */
+  --border: #D6CDBF;
+  --text: #2F2B28;
+  --text-muted: #77706A;
 
-  /* 기존 이름 → Nordic 매핑 (컴포넌트는 그대로) */
+  /* 이전 테마 이름 호환 */
+  --paper: var(--offwhite);
+  --navy: var(--charcoal);
+  --sage: var(--ochre);
+  --misty: var(--charcoal);
+  --misty-tint: var(--ochre-tint);
+
+  /* 기존 이름 → Urban Archive 매핑 (컴포넌트는 그대로) */
   --ground: var(--bg);
-  --card: var(--surface);
-  --card2: #F4F6F5;
-  --tab: var(--surface);
+  --card: var(--offwhite);
+  --card2: var(--ochre-tint);
+  --tab: var(--offwhite);
   --ink: var(--text);
   --muted: var(--text-muted);
   --line: var(--border);
-  --primary: var(--misty);
-  --on-primary: var(--text);
-  --accent: var(--misty-ink);
+  --primary: var(--charcoal);
+  --on-primary: var(--offwhite);
+  --accent: var(--ochre-ink);
   --danger: #B5503F;
-  --gold-hi: var(--sage-ink);
-  --gold-lo: var(--misty);
-  --foil: #D5DDDA;
+  --gold-hi: var(--ochre-ink);
+  --gold-lo: var(--ochre);
+  --foil: #CBBFAE;
 
-  --box: #E9EEEC;
-  --box2: var(--surface);
+  --box: var(--offwhite);
+  --box2: var(--offwhite);
   --box-ink: var(--text);
   --box-muted: var(--text-muted);
-  --box-accent: var(--misty-ink);
+  --box-accent: var(--ochre-ink);
 
   --sans: "Pretendard", system-ui, -apple-system, sans-serif;
   --serif: "MaruBuri", "Noto Serif KR", serif;
@@ -70,7 +80,7 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 .btn {
   width: 100%; min-height: 58px; border: none; border-radius: 999px;
   background: var(--primary); color: var(--on-primary);
-  box-shadow: 0 8px 18px -10px rgba(35, 43, 50, 0.35);
+  box-shadow: 0 8px 18px -10px rgba(47, 43, 40, 0.35);
   font-size: 18px; font-weight: 700; cursor: pointer;
   display: flex; align-items: center; justify-content: center; gap: 10px;
   text-decoration: none;
@@ -83,9 +93,9 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 
 /* 벨벳 양각 카드: 한 톤 밝은 면 + 위 하이라이트 + 아래 두께감 */
 .card {
-  background: var(--surface); border: 1px solid var(--border);
+  background: var(--card);
   border-radius: 22px; padding: 20px 22px;
-  box-shadow: 0 10px 24px -18px rgba(35, 43, 50, 0.25);
+  box-shadow: 0 10px 24px -20px rgba(47, 43, 40, 0.35);
 }
 .card.big { border-radius: 24px; padding: 24px 20px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
 .chip { display: inline-block; font-size: 13px; font-weight: 500; color: var(--primary); }
@@ -95,7 +105,7 @@ button, input, textarea, select { font-family: inherit; font-size: 16px; color: 
 .field label { font-size: 14px; font-weight: 500; color: var(--muted); }
 .input {
   width: 100%; min-height: 52px; padding: 0 16px; border-radius: 14px;
-  border: 1.5px solid var(--line); background: var(--surface); outline: none;
+  border: 1.5px solid var(--line); background: var(--paper); outline: none;
 }
 .input:focus { border-color: var(--primary); }
 textarea.input { min-height: 90px; padding: 14px 16px; resize: vertical; }
@@ -103,7 +113,7 @@ textarea.input { min-height: 90px; padding: 14px 16px; resize: vertical; }
 .tabbar {
   position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
   width: calc(100% - 40px); max-width: 440px; display: flex; gap: 4px; padding: 6px;
-  border-radius: 999px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 10px 26px -10px rgba(35, 43, 50, 0.25);
+  border-radius: 999px; background: var(--paper); border: 1px solid var(--border); box-shadow: 0 10px 26px -10px rgba(47, 43, 40, 0.25);
 }
 .tabbar a {
   flex: 1; min-height: 50px; border-radius: 999px; display: flex; align-items: center; justify-content: center;
@@ -121,8 +131,8 @@ video.preview { aspect-ratio: 3 / 4; object-fit: cover; background: var(--text);
 audio { color-scheme: light; }
 select.input { color-scheme: light; }
 input[type="date"].input { color-scheme: light; }
-.input::placeholder { color: #A3AFB6; }
-.card.insight { border: 1px solid var(--foil); }
+.input::placeholder { color: #A79E95; }
+.card.insight { background: var(--misty-tint); }
 
 /* 웰컴 화면 */
 .splash {
@@ -140,10 +150,10 @@ input[type="date"].input { color-scheme: light; }
 
 /* 우리집 신문 · 빨간펜 */
 /* 제호 = 상자: 화면 폭까지 딥틸, 아래 그림자로 종이가 나오는 느낌 */
-.masthead { margin: -52px -22px 6px; padding: 56px 26px 26px; background: var(--box); color: var(--box-ink);
+.masthead { margin: -52px -22px 6px; padding: 56px 26px 26px; background: var(--charcoal); color: var(--offwhite);
   border-bottom: 1px solid var(--border); }
-.masthead .muted { color: var(--box-muted); }
-.masthead h1 { color: var(--box-accent); }
+.masthead .muted { color: #C9BFB4; }
+.masthead h1 { color: var(--ochre-hi); }
 .article p { margin: 0 0 20px; font-family: var(--serif); font-size: 17px; line-height: 2; letter-spacing: 0.01em; white-space: pre-wrap; color: var(--ink); }
 .article p:last-child { margin-bottom: 0; }
 .photo { width: 100%; max-height: 360px; object-fit: cover; border-radius: 16px; display: block; }
@@ -172,7 +182,9 @@ textarea.hand { font-size: 17px; }
 .reply { margin-top: 4px; padding: 14px 16px; border-radius: 16px; background: var(--card2); border: 1px solid var(--border); }
 
 /* 상자 카드: 가격·완성판처럼 비싸 보여야 하는 자리 */
-.card.box { background: var(--box); color: var(--box-ink); border: 1px solid var(--border); box-shadow: none; }
+.card.box { background: var(--charcoal); color: var(--offwhite); border: none; box-shadow: 0 14px 26px -16px rgba(47,43,40,.5); }
+.card.box .muted, .card.box .small.muted { color: #C9BFB4 !important; }
+.card.box .chip { color: var(--ochre-hi) !important; }
 .card.box .muted, .card.box .small.muted { color: var(--box-muted); }
 .card.box .chip { color: var(--box-accent); }
 
@@ -192,7 +204,7 @@ body:has(.boxed) { background-color: var(--box); }
 /* 부모님 링크: 시작 화면 LP는 천천히 돌고, 질문 화면엔 작은 음악 끄기 */
 .intro-lp { animation: spin 6s linear infinite; }
 .sound-toggle { position: fixed; top: 14px; right: 14px; z-index: 5; min-height: 44px; padding: 0 16px; border-radius: 999px;
-  border: 1px solid var(--border); background: rgba(255, 255, 255, 0.85); color: var(--muted); font-size: 15px; cursor: pointer; }
+  border: 1px solid var(--border); background: rgba(247, 243, 234, 0.9); color: var(--muted); font-size: 15px; cursor: pointer; }
 
 /* 줄바꿈: 단어 중간에서 끊지 않고(keep-all), 제목·질문은 줄 길이를 고르게, 본문은 한 단어만 떨어지지 않게 */
 h1, h2, .q, .lead p, .serif { text-wrap: balance; }
@@ -208,7 +220,7 @@ p, .article p, .small, .tiny { text-wrap: pretty; }
 .legal-body th, .legal-body td { border: 1px solid var(--line); padding: 8px; text-align: left; vertical-align: top; line-height: 1.55; }
 .nw { white-space: nowrap; }
 
-/* 바탕: 맑은 쿨 그레이시 화이트 (그라데이션·그레인 없이) */
+/* 바탕: 웜 그레이지 (그라데이션·그레인 없이) */
 body { background: var(--ground); }
 body:has(.boxed) { background: var(--bg); }
 
@@ -235,6 +247,6 @@ body:has(.boxed) { background: var(--bg); }
 .issue .more { align-self: flex-start; min-height: 44px; padding: 0; border: none; background: none; color: var(--accent); font-size: 15px; font-weight: 600; cursor: pointer; }
 
 /* 호 표지: 부모님이 녹음 직후 찍은 셀피 — 잡지 표지처럼 4:5, 금박 테두리 */
-.cover { position: relative; margin: -6px -4px 0; border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 5; border: 1px solid var(--border); box-shadow: 0 16px 28px -18px rgba(35, 43, 50, 0.35); }
+.cover { position: relative; margin: -6px -4px 0; border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 5; border: 1px solid var(--border); box-shadow: 0 16px 28px -18px rgba(47, 43, 40, 0.35); }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cover figcaption { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; color: #FBF6EF; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }

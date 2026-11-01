@@ -6,7 +6,7 @@ export default function Know() {
   return (
     <main className="screen with-tabs">
       <a href="/app" className="link" style={{ alignSelf: "flex-start", margin: "0 0 10px" }}>← 질문함</a>
-      <div style={{ background: "#F4F6F5", color: "#232B32", margin: "0 -22px", paddingBottom: 24, minHeight: "70vh" }}>
+      <div style={{ background: "#E8E1D6", color: "#2F2B28", margin: "0 -22px", paddingBottom: 24, minHeight: "70vh" }}>
         <KnowSection />
       </div>
     </main>
