@@ -9,9 +9,10 @@ type Props = {
   token: string; isDemo: boolean; childName: string; honorific: string;
   coverName: string | null; first: boolean; hasCover: boolean;
   onShot?: (url: string) => void; // 체험: 찍은 셀피를 예시 잡지 표지로
+  onDone?: () => void; // 표지를 실었거나 넘어가면 → 다음 화면('잘 담았어요')
 };
 
-export default function SelfieMission({ token, isDemo, childName, honorific, coverName, first, hasCover, onShot }: Props) {
+export default function SelfieMission({ token, isDemo, childName, honorific, coverName, first, hasCover, onShot, onDone }: Props) {
   const [state, setState] = useState<"idle" | "camera" | "preview" | "saving" | "done" | "skip" | "error">(hasCover ? "done" : "idle");
   const [shot, setShot] = useState<Blob | null>(null);
   const [shotUrl, setShotUrl] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
       }
       if (shotUrl) onShot?.(shotUrl);
       setState("done");
+      if (onDone) setTimeout(onDone, 2200); // '표지로 실었어요'를 잠깐 보여주고 넘어간다
     } catch {
       setState("error");
     }
@@ -91,7 +93,7 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
         <>
           {state === "error" && <p style={{ margin: 0, fontSize: 17, color: "var(--accent)" }}>카메라를 열지 못했어요. 다시 눌러주세요.</p>}
           <button className="btn" style={{ fontSize: 20, padding: "17px 0" }} onClick={() => setState("camera")}>표지 사진 찍기</button>
-          <button className="link" style={{ fontSize: 17 }} onClick={() => setState("skip")}>오늘은 사진 없이 할게요</button>
+          <button className="link" style={{ fontSize: 17 }} onClick={() => { setState("skip"); onDone?.(); }}>오늘은 사진 없이 할게요</button>
         </>
       )}
       <input ref={fileInput} type="file" accept="image/*" capture="user" hidden onChange={onFile} />

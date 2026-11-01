@@ -66,6 +66,14 @@ export default function SampleStory({ clips, childName, steps }: Props) {
   };
   const mag: Mag = { coverUrl: cover, custom: false, name: `우리 ${label}`, born: null, hometown: null };
   const noop = () => {};
+  // 12호가 모인 잡지 (마지막 실물 예시): 창간호와 같은 표지 틀에 12호까지의 제목이 실린다
+  const TITLES = ["엄마의 자장가", "김치, 처음부터 끝까지", "스무 살, 거울 앞의 나", "아빠를 처음 만난 날"];
+  const full: Article[] = Array.from({ length: 12 }, (_, i) => ({
+    ...article,
+    promptId: `sample-v${12 - i}`,
+    week: 12 - i,
+    title: TITLES[i] || article.title,
+  }));
 
   return (
     <div className="mz-wrap tour" style={{ "--mz": WINE } as any}>
@@ -119,17 +127,10 @@ export default function SampleStory({ clips, childName, steps }: Props) {
         {DAD_FILMS.map((f) => <FilmThumb key={f.img} f={f} />)}
       </div>
 
-      <Step n={6} title="12호가 모이면, 양장본이 집으로 가요" desc="손에 잡히는 한 권으로 평생 남겨요" />
-      <div className="tour-book">
-        <div className="book">
-          <div className="spine" />
-          <div className="face">
-            <img src={cover} alt="" />
-            <div className="mast">우리집 레코드</div>
-            <div className="nm">우리 {label}</div>
-            <div className="vol">VOL. 01–12</div>
-          </div>
-        </div>
+      <Step n={6} title="12호가 모이면, 한 권의 잡지로 집에 도착해요" desc={`창간호부터 12호까지, ${label}만의 잡지를 손에 잡히는 책으로 엮어 보내드려요`} />
+      <div className="tour-mag">
+        <div className="back"><div className="in"><Cover mag={mag} label={label} arts={[article]} onSaved={noop} sample /></div></div>
+        <div className="front"><div className="in"><Cover mag={mag} label={label} arts={full} onSaved={noop} sample /></div></div>
       </div>
       <ul className="tour-list">
         <li>장마다 QR이 있어 {label} 목소리를 다시 들을 수 있어요</li>
@@ -173,16 +174,13 @@ const TOUR = `
 .tour-empty,.tour-note{margin:4px 20px 0;font-size:14px;line-height:1.7;color:#8A827B}
 .tour-note{margin-bottom:-8px}
 .tour .mz-art{margin-top:18px}
-.tour-book{display:flex;justify-content:center;padding:28px 20px 10px;perspective:900px}
-.tour-book .book{position:relative;width:200px;aspect-ratio:3/4.2;transform:rotateY(-22deg);transform-style:preserve-3d;box-shadow:24px 26px 34px -18px rgba(0,0,0,.55)}
-.tour-book .spine{position:absolute;left:-16px;top:0;bottom:0;width:16px;background:linear-gradient(90deg,#3D1019,#5A1C27);transform:rotateY(-90deg);transform-origin:right}
-.tour-book .face{position:absolute;inset:0;background:var(--mz);overflow:hidden;color:#F3E2C6;border-radius:2px 4px 4px 2px}
-.tour-book .face img{position:absolute;inset:14px;width:calc(100% - 28px);height:calc(100% - 28px);object-fit:cover;opacity:.9}
-.tour-book .face::after{content:"";position:absolute;inset:8px;border:1px solid rgba(243,226,198,.55)}
-.tour-book .face>div{position:absolute;left:0;right:0;text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.45)}
-.tour-book .mast{top:24px;font-family:var(--serif);font-size:12px;letter-spacing:.24em}
-.tour-book .nm{top:44%;font-family:var(--serif);font-weight:700;font-size:26px;letter-spacing:.06em}
-.tour-book .vol{bottom:22px;font-family:Georgia,serif;font-size:10px;letter-spacing:.2em}
+.tour-mag{position:relative;height:420px;margin:24px 20px 6px;perspective:1100px}
+.tour-mag>div{position:absolute;top:10px;width:260px;height:364px;overflow:hidden;border-radius:2px 5px 5px 2px;box-shadow:0 1px 0 #fff,1px 2px 0 #E9E3DA,2px 4px 0 #fff,3px 6px 0 #E3DCD2,22px 26px 34px -16px rgba(0,0,0,.5)}
+.tour-mag .back{left:calc(50% - 175px);transform:rotate(-7deg) scale(.9);opacity:.92}
+.tour-mag .front{left:calc(50% - 110px);transform:rotateY(-14deg) rotate(2deg)}
+.tour-mag .front::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 22%,rgba(0,0,0,0) 80%,rgba(0,0,0,.12) 100%);pointer-events:none}
+.tour-mag .in{width:390px;transform:scale(.6667);transform-origin:top left}
+.tour-mag .in .mz-cover{margin:0}
 .tour-list{margin:22px 20px 0;padding:0;list-style:none}
 .tour-list li{padding:12px 0 12px 22px;border-top:1px solid #D9D3CB;font-size:15px;line-height:1.6;color:#3A3431;position:relative;word-break:keep-all}
 .tour-list li::before{content:"";position:absolute;left:4px;top:21px;width:7px;height:7px;border-radius:50%;background:var(--mz)}
