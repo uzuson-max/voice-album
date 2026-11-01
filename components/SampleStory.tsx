@@ -10,12 +10,12 @@ type Props = { clips: Clip[]; childName: string; steps: string[] | null };
 // 예시 사진: public/sample/ (가상의 부모님, AI 생성)
 const IMG = "/sample/";
 const MOM_FILMS: SampleFilm[] = [
-  { img: IMG + "kimchi.jpg", cap: "김치 담그면서 · 엄마 김치, 처음부터 끝까지", dur: "12:40" },
-  { img: IMG + "lullaby.jpg", cap: "자장가 · 어릴 때 매일 밤 불러주던 노래", dur: "3:12" },
+  { img: IMG + "kimchi.jpg", cap: "김치 담그면서", dur: "12:40", title: "엄마 김치, 처음부터 끝까지", note: "제일 좋아하는 엄마 음식을 엄마가 직접 만들며 알려줘요. 언젠가 혼자 만들어볼 날이 오겠죠" },
+  { img: IMG + "lullaby.jpg", cap: "자장가", dur: "3:12", title: "어릴 때 매일 밤 듣던 자장가", note: "엄마가 직접 불러주는 자장가를 남겨요. 유난히 마음이 무거운 날, 이 목소리가 나를 달래줄 거예요" },
 ];
 const DAD_FILMS: SampleFilm[] = [
-  { img: IMG + "bike.jpg", cap: "자전거 고치면서 · 체인 빠졌을 때 거는 법", dur: "6:05" },
-  { img: IMG + "bathroom.jpg", cap: "화장실 고치면서 · 세면대 물 샐 때 이렇게 해", dur: "8:20" },
+  { img: IMG + "bike.jpg", cap: "자전거 고치면서", dur: "6:05", title: "체인 빠졌을 때 거는 법", note: "뭐든 뚝딱 고쳐주던 아빠의 손을 그대로 남겨요. 우리가 기억하는 든든한 아빠예요" },
+  { img: IMG + "bathroom.jpg", cap: "화장실 고치면서", dur: "8:20", title: "세면대 물 샐 땐 이렇게", note: "전구 갈기, 수도 고치기. 이제는 내가 해야 할 때, 아빠 목소리를 따라 해봐요" },
 ];
 
 const WINE = "#6A2232";
@@ -83,18 +83,17 @@ export default function SampleStory({ clips, childName, steps }: Props) {
       <div className="t-band"><span>SAMPLE ISSUE</span><span>우리집 레코드 · 견본호</span></div>
       <header className="t-hero paper">
         <div className="t-hero-rule" />
-        <p className="k">체험은 여기까지예요</p>
         <h2>
-          이 목소리가
+          {label}의 목소리와 모습이
           <br />
-          <em>{childName}</em>에게
+          <em>{childName} 님</em>에게
           <br />
           이렇게 도착해요
         </h2>
-        <p className="d">녹음 한 번이 기사 한 편이 되고,
+        <p className="d">말로, 영상으로 남긴 이야기가 매번 한 편의 기사가 되고
           <br />열두 번이 모여 한 권의 잡지가 돼요</p>
         <ol className="t-index">
-          <li><b>01</b>목소리</li>
+          <li><b>01</b>목소리·영상</li>
           <li><b>02</b>창간호 표지</li>
           <li><b>03</b>목차</li>
           <li><b>04</b>기사</li>
@@ -105,12 +104,12 @@ export default function SampleStory({ clips, childName, steps }: Props) {
       </header>
 
       <section className="t-sec">
-        <Step n={1} title="방금 남긴 목소리예요" desc="이 화면을 닫으면 사라지고, 어디에도 저장되지 않아요" />
+        <Step n={1} title="방금 남긴 이야기예요" desc="이 화면을 닫으면 사라지고, 어디에도 저장되지 않아요" />
         {clips.length > 0 ? (
           <div className="tour-clips">
             {clips.map((c, i) => (
               <div key={i} className="clip">
-                <span className="pill">{steps?.[i] ? ["장면", "사람", "마음"][i] || `이야기 ${i + 1}` : `VOICE ${num2(i + 1)}`}</span>
+                <span className="pill">{steps?.[i] ? ["장면", "사람", "마음"][i] || `이야기 ${i + 1}` : c.video ? "영상" : "목소리"}</span>
                 {c.video ? <video src={c.url} controls playsInline /> : <audio src={c.url} controls />}
               </div>
             ))}
@@ -145,7 +144,7 @@ export default function SampleStory({ clips, childName, steps }: Props) {
       </section>
 
       <section className="t-sec dark">
-        <Step n={5} title="인터뷰가 아니라, 평소 모습 그대로 남아요" desc="김치를 담그다가, 공구를 들고 고치다가. 그 손길과 목소리가 영상으로 남아요" />
+        <Step n={5} title="인터뷰가 아니라, 평소 모습 그대로 남아요" desc="군대 이야기, 전구 가는 법, 고장 난 걸 고치던 손. 인터뷰 영상이 아니라 우리가 기억하는 그 모습 그대로예요" />
         <div className="tour-films">
           {DAD_FILMS.map((f) => <FilmThumb key={f.img} f={f} />)}
         </div>
@@ -194,7 +193,7 @@ const TOUR = `
 .t-hero::after{content:"";position:absolute;right:-70px;top:-60px;width:220px;height:220px;border-radius:50%;background:repeating-radial-gradient(circle,rgba(106,34,50,.13) 0 1px,transparent 1px 7px);pointer-events:none}
 .t-hero-rule{height:5px;border-top:2px solid #141211;border-bottom:1px solid #141211;margin-bottom:22px}
 .t-hero .k{margin:0;display:inline-block;background:#141211;color:#EFE5D3;font-size:12px;font-weight:700;letter-spacing:.14em;padding:5px 10px}
-.t-hero h2{margin:18px 0 0;font-family:var(--serif);font-weight:700;font-size:33px;line-height:1.38;color:#141211;letter-spacing:-.01em;word-break:keep-all}
+.t-hero h2{margin:4px 0 0;font-family:var(--serif);font-weight:700;font-size:29px;line-height:1.42;color:#141211;letter-spacing:-.01em;word-break:keep-all}
 .t-hero h2 em{font-style:normal;color:var(--mz);box-shadow:inset 0 -11px 0 rgba(106,34,50,.14)}
 .t-hero .d{margin:16px 0 0;font-size:15px;line-height:1.75;color:#4A423D}
 .t-index{list-style:none;margin:26px 0 0;padding:0;display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid #141211;border-left:1px solid #141211}
@@ -235,7 +234,9 @@ const TOUR = `
 .tour-list li{padding:13px 14px 13px 36px;border-top:1px solid #D9D3CB;font-size:14.5px;line-height:1.6;color:#3A3431;position:relative;word-break:keep-all}
 .tour-list li:first-child{border-top:0}
 .tour-list li::before{content:"";position:absolute;left:14px;top:20px;width:9px;height:9px;background:var(--mz);transform:rotate(45deg)}
-.tour-films{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 20px 0}
+.tour-films{display:flex;flex-direction:column;gap:18px;padding:6px 20px 0}
+.t-sec.dark .mz-frow .tx b{color:#F8EAD2}
+.t-sec.dark .mz-frow .tx p{color:#CDB9A6}
 .tour-films .mz-cap{font-size:12px;line-height:1.5;word-break:keep-all;color:#E6D5C0}
 .tour-cta{background:var(--mz);color:#F3E2C6;padding:36px 22px 40px;text-align:center}
 .tour-cta .k{margin:0;font-family:Georgia,serif;font-size:11px;letter-spacing:.24em;opacity:.8}

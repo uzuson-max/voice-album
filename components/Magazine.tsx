@@ -90,7 +90,7 @@ export function Cover({ mag, label, arts, onSaved, sample }: { mag: Mag; label: 
 }
 
 // 한 호 = 질문 하나. 사진·세로 제목 → 엄마의 말 → 핵심 → 글 → 사진 → 영상 → 숫자 → 목소리
-export type SampleFilm = { img: string; cap: string; dur: string };
+export type SampleFilm = { img: string; cap: string; dur: string; title?: string; note?: string }; // title·note가 있으면 작은 사진 + 설명(체험용)
 
 export function Issue({ a, n, label, name, onSaved, onMediaError, sample, films }: { a: Article; n: number; label: string; name: string | null; onSaved: () => void; onMediaError: () => void; sample?: boolean; films?: SampleFilm[] }) {
   const [pen, setPen] = useState(a.reactionText || "");
@@ -244,6 +244,21 @@ export function FilmThumb({ f }: { f: SampleFilm }) {
   const [hit, setHit] = useState(false);
   const [gone, setGone] = useState(false);
   if (gone) return null;
+  if (f.note)
+    return (
+      <div className="mz-frow">
+        <div className="mz-fthumb" onClick={() => setHit(true)} role="button">
+          <img src={f.img} alt="" onError={() => setGone(true)} />
+          <span className="play" />
+          <span className="dur">{f.dur}</span>
+        </div>
+        <div className="tx">
+          <b>{f.title}</b>
+          <p>{f.note}</p>
+          {hit && <small>실제로는 이 자리에서 영상이 재생돼요</small>}
+        </div>
+      </div>
+    );
   return (
     <div className="stack" style={{ gap: 6 }}>
       <div className="mz-fthumb" onClick={() => setHit(true)} role="button">
@@ -397,6 +412,13 @@ export const CSS = `
 .mz-fthumb .dur{position:absolute;right:10px;bottom:10px;padding:3px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;font-variant-numeric:tabular-nums}
 .mz-fthumb .hit{position:absolute;left:10px;right:10px;top:10px;padding:8px 10px;background:rgba(0,0,0,.7);color:#fff;font-size:13px;text-align:center;border-radius:6px}
 .mz-cap{font-size:12.5px;color:#8A827B}
+.mz-frow{display:grid;grid-template-columns:118px 1fr;gap:14px;align-items:start}
+.mz-frow .mz-fthumb{border-radius:3px}
+.mz-frow .mz-fthumb .play{transform:scale(.6);transform-origin:center}
+.mz-frow .mz-fthumb .dur{right:6px;bottom:6px;font-size:10.5px;padding:2px 6px}
+.mz-frow .tx b{display:block;font-family:var(--serif);font-weight:700;font-size:16.5px;line-height:1.45;color:#141211;word-break:keep-all}
+.mz-frow .tx p{margin:6px 0 0;font-size:14px;line-height:1.7;color:#4A423D;word-break:keep-all}
+.mz-frow .tx small{display:block;margin-top:6px;font-size:12px;color:var(--mz)}
 .mz-facts{margin:30px 20px 0;display:grid;border-top:2px solid #141211;border-bottom:1px solid #D9D3CB}
 .mz-facts>div{padding:14px 8px 14px 0}
 .mz-facts>div+div{border-left:1px solid #D9D3CB;padding-left:10px}
