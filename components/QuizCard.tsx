@@ -10,6 +10,11 @@ type Missed = Next & { label: string; phone: string };
 
 const MISSED = "wr-quiz-missed";
 const REMIND_AFTER_MS = 45_000;
+// 하루에 한 질문: 답하거나 닫으면 오늘은 다시 안 뜬다 (이 기기 기준, 자정에 초기화)
+const DAY_KEY = "wr-quiz-day";
+const today = () => new Date().toLocaleDateString("sv-SE");
+const doneToday = () => { try { return localStorage.getItem(DAY_KEY) === today(); } catch { return false; } };
+const markToday = () => { try { localStorage.setItem(DAY_KEY, today()); } catch {} };
 
 const CSS = `
 @keyframes wrUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
@@ -42,6 +47,7 @@ export default function QuizCard() {
   const [pct, setPct] = useState<number | null>(null);
 
   useEffect(() => {
+    if (doneToday()) return;
     try { if (sessionStorage.getItem("wr-quiz-shown")) return; } catch {}
     api("/api/me/quiz").then((r: any) => {
       if (r.next) setD(r);
@@ -60,9 +66,10 @@ export default function QuizCard() {
   function Card() {
     const n = d!.next!;
     const L = d!.label;
-    const close = () => setD(null);
+    const close = () => { markToday(); setD(null); };
 
     async function answer(known: boolean) {
+      markToday();
       setStep(known ? "known" : "unknown");
       if (!known) {
         try { sessionStorage.setItem(MISSED, JSON.stringify({ ...n, label: L, phone: d!.phone })); } catch {}
