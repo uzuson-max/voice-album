@@ -35,6 +35,9 @@ type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sen
 
 const MAX_TURNS = 2;
 
+// 배경 음악: public/ambient/bgm.mp3 (Pixabay 잔잔한 피아노). false로 바꾸면 음악 없이 시작
+const MUSIC = true;
+
 // 장면은 한 문장씩, 이 간격(초)으로 천천히 떠오른다
 const BEAT = 2.8;
 
@@ -144,18 +147,17 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   // "이야기 시작하기": 이 누름이 있어야 휴대폰이 소리를 허락한다
   function begin(withSound: boolean) {
-    if (withSound) startAmbient();
+    if (MUSIC && withSound) startAmbient();
     mc.unlock(); // 이 누름 안에서 소리 재생 허락
     log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
     // 음악이 몇 초 흐르며 장면이 떠오르고 → 음악이 잦아들면 다람쥐가 장면과 질문을 읽고 → 마이크를 넘기면 녹음 버튼
     const q = steps ? steps[0] : info?.text;
     const go = () => mc.say([info?.lead, q].filter(Boolean).join("\n"), () => setReady(true));
-    if (withSound) {
-      setTimeout(() => {
-        stopAmbient(1.5);
-        setTimeout(go, 1600);
-      }, 4500);
+    if (!MUSIC) setTimeout(go, 1500); // 장면 첫 줄이 떠오를 시간만 주고 바로 읽는다
+    else if (withSound) {
+      // 피아노가 4초 먼저 흐르고, 다람쥐 목소리 밑에 작게 그대로 깔린다 (녹음 버튼을 누르면 꺼짐)
+      setTimeout(go, 4000);
     } else go();
   }
 
@@ -356,11 +358,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="muted" style={{ margin: "18px 0 0", fontSize: 16, lineHeight: 1.7 }}>
           조용한 곳에서 소리를 켜고 들어주세요.
           <br />
-          잔잔한 음악과 함께 천천히 시작해요.
+          {MUSIC ? "잔잔한 음악과 함께 천천히 시작해요." : "질문은 읽어드려요. 천천히 들어주세요."}
         </p>
         <div className="grow" />
         <button className="btn" onClick={() => begin(true)}>이야기 시작하기</button>
-        <button className="link" style={{ marginTop: 6 }} onClick={() => begin(false)}>음악 없이 시작할게요</button>
+        {MUSIC && <button className="link" style={{ marginTop: 6 }} onClick={() => begin(false)}>음악 없이 시작할게요</button>}
         <p className="tiny muted" style={{ margin: "10px 0 0", lineHeight: 1.6 }}>
           남겨주신 이야기는 가족에게만 전해져요. <a href="/privacy">개인정보처리방침</a>
         </p>
@@ -462,13 +464,15 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const first = turn === 0;
   return (
     <main className="screen center foil">
-      <button
-        className="sound-toggle"
-        aria-label={soundOff ? "음악 켜기" : "음악 끄기"}
-        onClick={() => setSoundOff(toggleMute())}
-      >
-        {soundOff ? "음악 켜기" : "음악 끄기"}
-      </button>
+      {MUSIC && (
+        <button
+          className="sound-toggle"
+          aria-label={soundOff ? "음악 켜기" : "음악 끄기"}
+          onClick={() => setSoundOff(toggleMute())}
+        >
+          {soundOff ? "음악 켜기" : "음악 끄기"}
+        </button>
+      )}
       {first && info.reactions.length > 0 && (
         <div className="card redpen" style={{ width: "100%", textAlign: "left", marginBottom: 22 }}>
           <div className="tiny" style={{ color: "var(--accent)", fontWeight: 700 }}>
