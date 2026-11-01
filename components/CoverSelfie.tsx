@@ -135,7 +135,7 @@ export default function CoverSelfie({ token, honorific, childName, no, demo, onD
       <div
         style={{
           position: "relative", marginTop: 24, width: "100%", maxWidth: 300, aspectRatio: "4 / 5", borderRadius: 18, overflow: "hidden",
-          background: "#2A0F14", border: "1px solid var(--foil)", boxShadow: "0 24px 40px -18px rgba(0,0,0,.7)",
+          background: "#232B32", border: "1px solid var(--foil)", boxShadow: "0 24px 40px -18px rgba(0,0,0,.7)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
       >
@@ -149,12 +149,12 @@ export default function CoverSelfie({ token, honorific, childName, no, demo, onD
           <video ref={video} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)", borderRadius: 0 }} />
         )}
         {state === "count" && (
-          <span style={{ position: "absolute", fontFamily: "var(--serif)", fontSize: 96, fontWeight: 600, color: "#FBF6EF", textShadow: "0 4px 18px rgba(0,0,0,.6)" }}>{count}</span>
+          <span style={{ position: "absolute", fontFamily: "var(--serif)", fontSize: 96, fontWeight: 600, color: "#FFFFFF", textShadow: "0 4px 18px rgba(0,0,0,.6)" }}>{count}</span>
         )}
         {(state === "shot" || state === "saving") && shot && (
           <img src={shot.url} alt="찍은 표지 사진" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
         )}
-        <span aria-hidden="true" style={{ position: "absolute", left: 12, right: 12, bottom: 10, display: "flex", justifyContent: "space-between", fontSize: 11, letterSpacing: "0.14em", color: "rgba(251,246,239,.85)" }}>
+        <span aria-hidden="true" style={{ position: "absolute", left: 12, right: 12, bottom: 10, display: "flex", justifyContent: "space-between", fontSize: 11, letterSpacing: "0.14em", color: "rgba(255,255,255,.85)" }}>
           <span>우리집 레코드</span>
           <span>{honorific}</span>
         </span>

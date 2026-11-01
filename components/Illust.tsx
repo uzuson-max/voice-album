@@ -1,10 +1,10 @@
 // 우리집 레코드 — 그림은 캐릭터 대신 "레코드" 하나로 통일한다 (와인 가죽 + 금박).
 // 예전 이름(MomOnSofa, Baby, Envelope, GiftBox, RecordTea)은 화면 코드가 그대로 쓰도록 남겨둔다.
-const DISC = "#170809";
-const GROOVE = "#5A3238";
-const GOLD = "#ECC470";
-const GOLD_HI = "#F8DFA4";
-const SLEEVE = "#62303A";
+const DISC = "#232B32";
+const GROOVE = "#3A464F";
+const GOLD = "#9FB3A8";
+const GOLD_HI = "#D3DFD8";
+const SLEEVE = "#5E7482";
 
 // LP 로고 (웰컴·첫 화면·로딩)
 export function LP({ className, size = 132 }: { className?: string; size?: number }) {
@@ -20,7 +20,7 @@ export function LP({ className, size = 132 }: { className?: string; size?: numbe
       <circle cx="50" cy="50" r="40" fill="none" stroke={GROOVE} strokeWidth="0.8" />
       <circle cx="50" cy="50" r="33" fill="none" stroke={GROOVE} strokeWidth="0.8" />
       <circle cx="50" cy="50" r="26" fill="none" stroke={GROOVE} strokeWidth="0.8" />
-      <path d="M22 30 A34 34 0 0 1 40 17" fill="none" stroke="rgba(235,211,166,0.35)" strokeWidth="2" strokeLinecap="round" />
+      <path d="M22 30 A34 34 0 0 1 40 17" fill="none" stroke="rgba(211,223,216,0.4)" strokeWidth="2" strokeLinecap="round" />
       <circle cx="50" cy="50" r="16" fill="url(#lpLabel)" />
       <circle cx="50" cy="50" r="2.5" fill={DISC} />
     </svg>
@@ -37,7 +37,7 @@ function Sleeve({ label }: { label: string }) {
       <circle cx="104" cy="64" r="18" fill={GOLD} />
       <circle cx="104" cy="64" r="2.5" fill={DISC} />
       <rect x="10" y="10" width="108" height="108" rx="6" fill={SLEEVE} />
-      <rect x="18" y="18" width="92" height="92" rx="3" fill="none" stroke="rgba(216,184,126,0.45)" strokeWidth="1" />
+      <rect x="18" y="18" width="92" height="92" rx="3" fill="none" stroke="rgba(159,179,168,0.5)" strokeWidth="1" />
       <circle cx="64" cy="64" r="10" fill="none" stroke={GOLD} strokeWidth="1.2" />
       <circle cx="64" cy="64" r="2.5" fill={GOLD} />
     </svg>

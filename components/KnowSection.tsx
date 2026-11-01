@@ -42,7 +42,7 @@ export default function KnowSection() {
   return (
     <section className="kq">
       <style>{CSS}</style>
-      <div className="kq-hrow"><span className="kq-latin">QUIZ</span><small>{d.records.length} / {d.total}</small></div>
+      <div className="kq-hrow"><span className="kq-latin" style={{ fontFamily: "var(--serif)", letterSpacing: ".04em", fontSize: 18, fontWeight: 700 }}>알아가는 중</span><small>{d.records.length} / {d.total}</small></div>
       <h2 className="kq-title">아직 모르는 {L}</h2>
 
       <div className="kq-score">
@@ -100,28 +100,28 @@ export default function KnowSection() {
 
 const CSS = `
 .kq{padding:34px 20px 4px}
-.kq-hrow{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #141211;padding-bottom:10px}
+.kq-hrow{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #232B32;padding-bottom:10px}
 .kq-latin{font-family:Georgia,serif;font-size:36px;letter-spacing:.14em;line-height:1}
-.kq-hrow small{font-size:12px;color:#8A827B}
+.kq-hrow small{font-size:12px;color:#6C7A84}
 .kq-title{margin:16px 0 0;font-family:var(--serif);font-weight:700;font-size:22px;line-height:1.4}
-.kq-score{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px;border-top:1px solid #141211;border-bottom:1px solid #D9D3CB}
+.kq-score{display:grid;grid-template-columns:repeat(3,1fr);margin-top:14px;border-top:1px solid #232B32;border-bottom:1px solid #E2E7E5}
 .kq-score>div{padding:12px 0 12px 10px;display:flex;flex-direction:column;gap:4px}
 .kq-score>div:first-child{padding-left:0}
-.kq-score>div+div{border-left:1px solid #D9D3CB}
-.kq-score b{font-family:Georgia,serif;font-weight:400;font-size:30px;line-height:1;color:#141211}
-.kq-score b.w{color:var(--mz,#6A2232)}
-.kq-score span{font-size:12px;color:#46403C}
-.kq-empty{margin:16px 0 0;font-size:14px;line-height:1.7;color:#8A827B;word-break:keep-all}
-.kq-item{padding:16px 0;border-bottom:1px solid #D9D3CB}
-.kq-item .q{margin:0;font-family:var(--serif);font-weight:600;font-size:16.5px;line-height:1.55;color:#141211;word-break:keep-all}
-.kq-item .note{margin:6px 0 0;font-size:14px;line-height:1.7;color:#46403C;white-space:pre-line}
-.kq-item .badge{display:inline-block;font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--mz,#6A2232);border:1px solid currentColor;padding:1px 6px;margin-right:8px;vertical-align:2px}
+.kq-score>div+div{border-left:1px solid #E2E7E5}
+.kq-score b{font-family:Georgia,serif;font-weight:400;font-size:30px;line-height:1;color:#232B32}
+.kq-score b.w{color:var(--mz,#5E7482)}
+.kq-score span{font-size:12px;color:#3A464F}
+.kq-empty{margin:16px 0 0;font-size:14px;line-height:1.7;color:#6C7A84;word-break:keep-all}
+.kq-item{padding:16px 0;border-bottom:1px solid #E2E7E5}
+.kq-item .q{margin:0;font-family:var(--serif);font-weight:600;font-size:16.5px;line-height:1.55;color:#232B32;word-break:keep-all}
+.kq-item .note{margin:6px 0 0;font-size:14px;line-height:1.7;color:#3A464F;white-space:pre-line}
+.kq-item .badge{display:inline-block;font-family:inherit;font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--mz,#5E7482);border:1px solid currentColor;padding:1px 6px;margin-right:8px;vertical-align:2px}
 .kq-item.done .q{font-size:15px;font-weight:500}
 .kq-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.kq-acts button{min-height:38px;padding:0 14px;border-radius:2px;border:1.5px solid #141211;background:transparent;color:#141211;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
-.kq-acts button.main{background:#141211;color:#fff}
+.kq-acts button{min-height:38px;padding:0 14px;border-radius:2px;border:1.5px solid #232B32;background:transparent;color:#232B32;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.kq-acts button.main{background:#232B32;color:#fff}
 .kq-acts button:disabled{opacity:.4}
-.kq-edit textarea{width:100%;min-height:70px;margin-top:10px;background:#fff;color:#141211;border:1px solid #D9D3CB}
-.kq-sent{margin:8px 0 0;font-size:13.5px;line-height:1.6;color:var(--mz,#6A2232);word-break:keep-all}
-.kq-more{display:block;margin-top:12px;padding:0;border:0;background:none;color:#46403C;font:inherit;font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.kq-edit textarea{width:100%;min-height:70px;margin-top:10px;background:#fff;color:#232B32;border:1px solid #E2E7E5}
+.kq-sent{margin:8px 0 0;font-size:13.5px;line-height:1.6;color:var(--mz,#5E7482);word-break:keep-all}
+.kq-more{display:block;margin-top:12px;padding:0;border:0;background:none;color:#3A464F;font:inherit;font-size:13.5px;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 `;

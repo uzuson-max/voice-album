@@ -5,7 +5,6 @@ import Loader from "@/components/Loader";
 import { GiftBox } from "@/components/Illust";
 import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
-import KnowSection from "@/components/KnowSection";
 
 import { Article, Mag, THEMES, num2, issueNo, Cover, Issue, CSS } from "@/components/Magazine";
 
@@ -53,7 +52,6 @@ export default function Stories() {
             <div style={{ fontSize: 18, fontWeight: 700 }}>아직 도착한 이야기가 없어요</div>
             <div className="muted small">{josa(label, "이/가")} 첫 이야기를 마치면 잡지 창간호가 만들어져요</div>
           </div>
-          <div style={{ background: "#F5F3EF", color: "#141211", margin: "0 -22px", paddingBottom: 20 }}><KnowSection /></div>
         </div>
       ) : (
         <div className="mz-wrap">
@@ -61,7 +59,7 @@ export default function Stories() {
 
           {/* 목차 */}
           <section className="mz-toc">
-            <div className="mz-hrow"><span className="mz-latin">CONTENTS</span><small>{total} / 12호 도착</small></div>
+            <div className="mz-hrow"><span className="mz-hk">이야기</span><small>{total} / 12호 도착</small></div>
             <ul>
               {[...arts].reverse().map((a) => {
                 const i = arts.indexOf(a);
@@ -93,8 +91,6 @@ export default function Stories() {
               )}
             </ul>
           </section>
-
-          <KnowSection />
 
           <div className="mz-themes">
             <span>포인트 색</span>

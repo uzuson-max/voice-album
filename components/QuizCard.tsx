@@ -26,9 +26,9 @@ const CSS = `
 .wr-noti {
   position: fixed; left: 10px; right: 10px; top: calc(10px + env(safe-area-inset-top)); z-index: 60;
   max-width: 460px; margin: 0 auto; padding: 12px 14px 12px; border-radius: 22px;
-  background: rgba(36, 14, 18, 0.82); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4);
-  border: 1px solid rgba(216, 184, 126, 0.28);
-  color: #f3ede2; --ink: #f3ede2; --muted: rgba(243, 237, 226, 0.62);
+  background: rgba(35,43,50,0.82); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid rgba(143,163,176,0.3);
+  color: #F4F6F5; --ink: #F4F6F5; --muted: rgba(244,246,245,0.7);
   box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.7);
   touch-action: pan-x; transition: transform .25s ease, opacity .25s ease;
 }
@@ -84,7 +84,7 @@ export default function QuizCard() {
       close();
     }
 
-    const ink = "#141211", gray = "#8A827B", wine = "#6A2232", rule = "#D9D3CB";
+    const ink = "#232B32", gray = "#6C7A84", wine = "#5E7482", rule = "#E2E7E5";
     const d8 = new Date();
     const date = `${d8.getMonth() + 1}.${String(d8.getDate()).padStart(2, "0")}`;
     const btnFill: React.CSSProperties = { minHeight: 56, borderRadius: 2, border: `1.5px solid ${ink}`, background: ink, color: "#fff", fontSize: 17, fontWeight: 700, cursor: "pointer" };
@@ -93,7 +93,7 @@ export default function QuizCard() {
     // 이야기 탭과 같은 잡지 지면: 밝은 종이, 검은 글씨, 와인은 작은 강조에만
     return (
       <div role="dialog" aria-modal="true" className="wr-in" style={{
-        position: "fixed", inset: 0, zIndex: 50, background: "#F5F3EF", color: ink, overflowY: "auto",
+        position: "fixed", inset: 0, zIndex: 50, background: "#F4F6F5", color: ink, overflowY: "auto",
         display: "flex", flexDirection: "column", padding: "calc(18px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom))",
         maxWidth: 480, margin: "0 auto",
       }}>
@@ -131,12 +131,12 @@ export default function QuizCard() {
               {pct !== null ? (
                 <div className="row" style={{ gap: 14, alignItems: "center" }}>
                   <span style={{ fontFamily: "Georgia,serif", fontSize: 46, lineHeight: 1, color: wine }}>{pct}<small style={{ fontSize: 18, color: ink }}>%</small></span>
-                  <span style={{ fontSize: 15, lineHeight: 1.6, color: "#46403C", wordBreak: "keep-all" }}>우리집 레코드를 쓰는 분들 중<br />이만큼이 몰랐어요</span>
+                  <span style={{ fontSize: 15, lineHeight: 1.6, color: "#3A464F", wordBreak: "keep-all" }}>우리집 레코드를 쓰는 분들 중<br />이만큼이 몰랐어요</span>
                 </div>
               ) : (
                 <p style={{ margin: 0, fontFamily: "var(--serif)", fontSize: 19, fontWeight: 600 }}>몰라도 괜찮아요.</p>
               )}
-              <p style={{ margin: "14px 0 0", fontSize: 16, lineHeight: 1.75, color: "#46403C", wordBreak: "keep-all" }}>
+              <p style={{ margin: "14px 0 0", fontSize: 16, lineHeight: 1.75, color: "#3A464F", wordBreak: "keep-all" }}>
                 {(UNKNOWN_NOTE[n.key] || "다음 통화 때 물어보세요.").replaceAll("{L}", L)}
               </p>
             </div>

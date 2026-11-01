@@ -75,7 +75,13 @@ export default function Questions() {
   return (
     <main className="screen with-tabs">
       <div className="stack">
-        <h1 className="h1" style={{ margin: "0 4px" }}>질문함</h1>
+        <div className="row" style={{ justifyContent: "space-between", alignItems: "center", margin: "0 4px" }}>
+          <h1 className="h1" style={{ margin: 0 }}>질문함</h1>
+          {/* '몰라요'를 누른 질문들이 모이는 곳 — 이야기 탭에서 여기로 옮김 */}
+          <a href="/app/know" className="chip" style={{ textDecoration: "none", color: "var(--accent)", fontSize: 13, padding: "6px 11px" }}>
+            아직 모르는 {st?.label || "부모님"} ›
+          </a>
+        </div>
         {d.family?.plan === "trial" && d.sent.length > 0 && (
           <a href="/app/plan" className="card stack" style={{ gap: 6, textDecoration: "none", color: "inherit" }}>
             <span className="chip" style={{ color: "var(--accent)" }}>정식 과정</span>
