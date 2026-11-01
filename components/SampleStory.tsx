@@ -67,7 +67,9 @@ export default function SampleStory({ clips, childName, steps }: Props) {
   const mag: Mag = { coverUrl: cover, custom: false, name: `우리 ${label}`, born: null, hometown: null };
   const noop = () => {};
   // 12호가 모인 잡지 (마지막 실물 예시): 창간호와 같은 표지 틀에 12호까지의 제목이 실린다
-  const TITLES = ["엄마의 자장가", "김치, 처음부터 끝까지", "스무 살, 거울 앞의 나", "아빠를 처음 만난 날"];
+  const TITLES = ["체인 빠졌을 때 거는 법", "아빠의 군대 이야기", "스무 살, 거울 앞의 나", "엄마를 처음 만난 날"];
+  // 맨 끝 잡지는 아빠 편 — 엄마 사진이 처음부터 끝까지 반복되지 않게
+  const dadMag: Mag = { coverUrl: IMG + "bike.jpg", custom: false, name: "우리 아빠", born: null, hometown: null };
   const full: Article[] = Array.from({ length: 12 }, (_, i) => ({
     ...article,
     promptId: `sample-v${12 - i}`,
@@ -154,7 +156,7 @@ export default function SampleStory({ clips, childName, steps }: Props) {
         <Step n={6} title="12호가 모이면, 한 권의 잡지로 집에 도착해요" desc={`창간호부터 12호까지, ${label}만의 잡지를 손에 잡히는 책으로 엮어 보내드려요`} />
         <div className="tour-mag">
           <div className="back"><div className="in"><Cover mag={mag} label={label} arts={[article]} onSaved={noop} sample /></div></div>
-          <div className="front"><div className="in"><Cover mag={mag} label={label} arts={full} onSaved={noop} sample /></div></div>
+          <div className="front"><div className="in"><Cover mag={dadMag} label="아빠" arts={full} onSaved={noop} sample /></div></div>
         </div>
         <ul className="tour-list">
           <li>장마다 QR이 있어 {label} 목소리를 다시 들을 수 있어요</li>
