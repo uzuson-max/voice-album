@@ -456,6 +456,14 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <main className="screen center foil" style={{ paddingTop: 56 }}>
           {host?.react && <p className="muted" style={{ margin: 0, fontSize: 17 }}>{host.react}</p>}
           <h1 className="serif" style={{ margin: "10px 0 0", fontSize: 26 }}>녹음을 마쳤어요</h1>
+          {isDemo && demoClips.length > 0 && (
+            <div style={{ width: "100%", marginTop: 20, textAlign: "left" }}>
+              <p className="small muted" style={{ margin: "0 0 8px" }}>방금 남긴 목소리, 들어보세요</p>
+              {demoClips[demoClips.length - 1].video
+                ? <video src={demoClips[demoClips.length - 1].url} controls playsInline style={{ width: "100%", borderRadius: 12 }} />
+                : <audio src={demoClips[demoClips.length - 1].url} controls style={{ width: "100%" }} />}
+            </div>
+          )}
           <SelfieMission
             token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}
             coverName={info.coverName || null} first={!!info.firstEver} hasCover={!!info.hasCover}
