@@ -61,9 +61,9 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
     return <Camera name={name} first={first} onShot={keepShot} onFallback={() => { setState("idle"); fileInput.current?.click(); }} onClose={() => setState("idle")} />;
 
   return (
-    <div className="card stack" style={{ gap: 16, textAlign: "left", width: "100%", marginTop: 28, padding: "24px 20px", border: "2px solid var(--accent)" }}>
+    <div className="card stack" style={{ gap: 16, textAlign: "left", width: "100%", marginTop: 28, padding: "24px 20px", border: "1px solid var(--accent)" }}>
       <span style={{ fontSize: 16, fontWeight: 700, color: "var(--accent)", letterSpacing: "0.04em" }}>
-        {first ? "마지막으로, 창간호 표지" : "마지막으로, 오늘의 표지"}
+        {first ? "마지막으로, 우리의 첫 번째 기록" : "마지막으로, 오늘의 표지"}
       </span>
 
       {shotUrl && (state === "preview" || state === "saving" || state === "done" || state === "error") ? (
@@ -73,7 +73,7 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
         </div>
       ) : state !== "done" ? (
         <p className="serif" style={{ margin: 0, fontSize: 23, lineHeight: 1.6, wordBreak: "keep-all" }}>
-          {first ? <>어디에도 적힌 적 없던<br />{name}의 이야기가<br />오늘 처음 남아요<span style={{ display: "block", marginTop: 10, fontSize: 18, opacity: 0.85, fontFamily: "var(--sans)" }}>그 첫 장에 실을 얼굴을 한 장 찍어주세요</span></> : <>오늘 이야기의 표지로<br />지금 얼굴을 한 장 남겨주세요</>}
+          {first ? <>어디에도 적힌 적 없던<br />{name}의 이야기가 오늘 처음 남아요<span style={{ display: "block", marginTop: 14, fontSize: 18, lineHeight: 1.65, opacity: 0.85, fontFamily: "var(--sans)" }}>이 소중한 이야기를 담을 첫 페이지에,<br />{name}의 가장 따뜻한 얼굴을 담아주세요</span></> : <>오늘 이야기의 표지로<br />지금 얼굴을 한 장 남겨주세요</>}
         </p>
       ) : null}
 
@@ -92,7 +92,7 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
       ) : (
         <>
           {state === "error" && <p style={{ margin: 0, fontSize: 17, color: "var(--accent)" }}>카메라를 열지 못했어요. 다시 눌러주세요.</p>}
-          <button className="btn" style={{ fontSize: 20, padding: "17px 0" }} onClick={() => setState("camera")}>표지 사진 찍기</button>
+          <button className="btn" style={{ fontSize: 20, padding: "17px 0" }} onClick={() => setState("camera")}>{first ? "표지에 들어갈 사진 찍기" : "표지 사진 찍기"}</button>
           <button className="link" style={{ fontSize: 17 }} onClick={() => { setState("skip"); onDone?.(); }}>오늘은 사진 없이 할게요</button>
         </>
       )}
