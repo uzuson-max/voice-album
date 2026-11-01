@@ -71,7 +71,6 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [asked, setAsked] = useState("");
   const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean; song?: boolean } | null>(null);
   const [ready, setReady] = useState(false);
-  const [demoSelfie, setDemoSelfie] = useState<string | null>(null);
   const [demoClips, setDemoClips] = useState<{ url: string; video: boolean }[]>([]); // 체험 녹음: 이 화면 안에서만 다시 듣고 저장하지 않음
   const r = useRecorder();
   const mc = useHost(params.token); // 다람쥐 진행자
@@ -402,11 +401,10 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 18, lineHeight: 1.6 }}>
           {info.honorific}의 이야기는 {toChild}
         </p>
-        <SelfieMission
+        {!isDemo && <SelfieMission
           token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}
           coverName={info.coverName || null} first={!!info.firstEver} hasCover={!!info.hasCover}
-          onShot={isDemo ? setDemoSelfie : undefined}
-        />
+        />}
         {info.next ? (
           <div
             className="card stack"
@@ -430,7 +428,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           <p style={{ marginTop: 32, fontSize: 18 }}>{info.childName}에게 이야기가 잘 전해졌어요</p>
         )}
         {isDemo && (
-          <SampleStory clips={demoClips} selfie={demoSelfie} honorific={info.honorific} childName={info.childName} steps={steps} />
+          <SampleStory clips={demoClips} childName={info.childName} steps={steps} />
         )}
         <div className="grow" />
       </main>

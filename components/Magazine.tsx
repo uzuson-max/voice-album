@@ -90,7 +90,9 @@ export function Cover({ mag, label, arts, onSaved, sample }: { mag: Mag; label: 
 }
 
 // 한 호 = 질문 하나. 사진·세로 제목 → 엄마의 말 → 핵심 → 글 → 사진 → 영상 → 숫자 → 목소리
-export function Issue({ a, n, label, name, onSaved, onMediaError, sample }: { a: Article; n: number; label: string; name: string | null; onSaved: () => void; onMediaError: () => void; sample?: boolean }) {
+export type SampleFilm = { img: string; cap: string; dur: string };
+
+export function Issue({ a, n, label, name, onSaved, onMediaError, sample, films }: { a: Article; n: number; label: string; name: string | null; onSaved: () => void; onMediaError: () => void; sample?: boolean; films?: SampleFilm[] }) {
   const [pen, setPen] = useState(a.reactionText || "");
   const [saved, setSaved] = useState(!!a.reactionText);
   const [saving, setSaving] = useState(false);
@@ -173,6 +175,15 @@ export function Issue({ a, n, label, name, onSaved, onMediaError, sample }: { a:
         </section>
       )}
 
+      {films && films.length > 0 && (
+        <section className="mz-sec">
+          <div className="mz-kicker">영상으로 남긴 장면</div>
+          <div className="stack" style={{ gap: 18 }}>
+            {films.map((f) => <FilmThumb key={f.img} f={f} />)}
+          </div>
+        </section>
+      )}
+
       {facts.length > 0 && (
         <div className="mz-facts" style={{ gridTemplateColumns: `repeat(${facts.length},1fr)` }}>
           {facts.map((f, k) => (
@@ -225,6 +236,24 @@ export function Issue({ a, n, label, name, onSaved, onMediaError, sample }: { a:
 
       <footer className="mz-folio"><span>OUR HOUSE RECORD</span><span>{num2(n)}{a.week ? " / 12" : ""}</span></footer>
     </article>
+  );
+}
+
+// 예시 영상 칸: 실제 영상 대신 장면 사진 + 재생 표시. 누르면 '실제로는 재생돼요'
+export function FilmThumb({ f }: { f: SampleFilm }) {
+  const [hit, setHit] = useState(false);
+  const [gone, setGone] = useState(false);
+  if (gone) return null;
+  return (
+    <div className="stack" style={{ gap: 6 }}>
+      <div className="mz-fthumb" onClick={() => setHit(true)} role="button">
+        <img src={f.img} alt="" onError={() => setGone(true)} />
+        <span className="play" />
+        <span className="dur">{f.dur}</span>
+        {hit && <span className="hit">실제로는 이 자리에서 영상이 재생돼요</span>}
+      </div>
+      <span className="mz-cap">{f.cap}</span>
+    </div>
   );
 }
 
@@ -361,6 +390,12 @@ export const CSS = `
 .mz-photo figcaption{padding:8px 20px 0;font-size:12px;color:#8A827B}
 .mz-sec{padding:30px 20px 0}
 .mz-kicker{font-size:11px;letter-spacing:.2em;font-weight:700;color:var(--mz);border-bottom:1px solid #D9D3CB;padding-bottom:8px;margin-bottom:14px}
+.mz-fthumb{position:relative;aspect-ratio:3/4;overflow:hidden;background:#141211;cursor:pointer}
+.mz-fthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.mz-fthumb .play{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(20,18,17,.55);border:2px solid rgba(255,255,255,.85);backdrop-filter:blur(2px)}
+.mz-fthumb .play::before{content:"";position:absolute;left:25px;top:19px;border-left:20px solid #fff;border-top:13px solid transparent;border-bottom:13px solid transparent}
+.mz-fthumb .dur{position:absolute;right:10px;bottom:10px;padding:3px 8px;border-radius:4px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;font-variant-numeric:tabular-nums}
+.mz-fthumb .hit{position:absolute;left:10px;right:10px;top:10px;padding:8px 10px;background:rgba(0,0,0,.7);color:#fff;font-size:13px;text-align:center;border-radius:6px}
 .mz-cap{font-size:12.5px;color:#8A827B}
 .mz-facts{margin:30px 20px 0;display:grid;border-top:2px solid #141211;border-bottom:1px solid #D9D3CB}
 .mz-facts>div{padding:14px 8px 14px 0}

@@ -1,16 +1,28 @@
 "use client";
 // 체험 끝: 방금 남긴 목소리 → 창간호 표지 → 목차 → 기사 → 양장본까지 한 번에 내려보는 안내
 // 녹음·셀피는 이 화면 안에서만 쓰고 어디에도 올리지 않는다
-import { Article, Mag, Cover, Issue, CSS, num2 } from "@/components/Magazine";
+import { Article, Mag, Cover, Issue, CSS, num2, FilmThumb, type SampleFilm } from "@/components/Magazine";
 import { josa } from "@/lib/korean";
 
 type Clip = { url: string; video: boolean };
-type Props = { clips: Clip[]; selfie: string | null; honorific: string; childName: string; steps: string[] | null };
+type Props = { clips: Clip[]; childName: string; steps: string[] | null };
+
+// 예시 사진: public/sample/ (가상의 부모님, AI 생성)
+const IMG = "/sample/";
+const MOM_FILMS: SampleFilm[] = [
+  { img: IMG + "kimchi.jpg", cap: "김치 담그면서 · 엄마 김치, 처음부터 끝까지", dur: "12:40" },
+  { img: IMG + "lullaby.jpg", cap: "자장가 · 어릴 때 매일 밤 불러주던 노래", dur: "3:12" },
+];
+const DAD_FILMS: SampleFilm[] = [
+  { img: IMG + "bike.jpg", cap: "자전거 고치면서 · 체인 빠졌을 때 거는 법", dur: "6:05" },
+  { img: IMG + "bathroom.jpg", cap: "화장실 고치면서 · 세면대 물 샐 때 이렇게 해", dur: "8:20" },
+];
 
 const WINE = "#6A2232";
 
-export default function SampleStory({ clips, selfie, honorific, childName, steps }: Props) {
-  const label = honorific || "엄마";
+export default function SampleStory({ clips, childName, steps }: Props) {
+  const label = "엄마"; // 예시 잡지는 엄마 편으로 고정 (표지·영상 사진이 엄마)
+  const cover = IMG + "cover.jpg";
   const now = new Date().toISOString();
 
   const article: Article = {
@@ -29,7 +41,7 @@ export default function SampleStory({ clips, selfie, honorific, childName, steps
     replyAsk: null,
     summary: null,
     photoUrl: null,
-    selfieUrl: selfie,
+    selfieUrl: cover,
     points: [
       { head: "혼자 찾아간 동네 병원", text: "의사 선생님 말이 한 번에 안 들어와서 두 번을 되물었다." },
       { head: "제일 먼저 건 전화", text: "병원 앞 공중전화로 외할머니께. 아빠한테는 저녁상 앞에서 말했다." },
@@ -52,7 +64,7 @@ export default function SampleStory({ clips, selfie, honorific, childName, steps
       url: c.url,
     })),
   };
-  const mag: Mag = { coverUrl: selfie, custom: false, name: `우리 ${label}`, born: null, hometown: null };
+  const mag: Mag = { coverUrl: cover, custom: false, name: `우리 ${label}`, born: null, hometown: null };
   const noop = () => {};
 
   return (
@@ -83,7 +95,7 @@ export default function SampleStory({ clips, selfie, honorific, childName, steps
       <Step
         n={2}
         title="첫 이야기를 마치면, 창간호 표지가 만들어져요"
-        desc={selfie ? "방금 찍은 사진이 표지가 됐어요" : `녹음을 마치고 ${josa(label, "이/가")} 찍은 셀피가 표지가 돼요`}
+        desc="녹음을 마친 날 찍은 엄마 사진 한 장이, 엄마만의 잡지 표지가 돼요"
       />
       <Cover mag={mag} label={label} arts={[article]} onSaved={noop} sample />
 
@@ -100,14 +112,19 @@ export default function SampleStory({ clips, selfie, honorific, childName, steps
 
       <Step n={4} title="10분 남짓한 녹음이, 한 편의 기사가 돼요" desc={`${label}의 말 · 핵심 정리 · 글 · 숫자로 엮어요. 목소리는 기사 안에서 바로 다시 들을 수 있어요`} />
       <p className="tour-note">아래 글은 예시로 꾸민 기사예요. 실제로는 {josa(label, "이/가")} 하신 말씀으로 채워져요</p>
-      <Issue a={article} n={1} label={label} name={mag.name} onSaved={noop} onMediaError={noop} sample />
+      <Issue a={article} n={1} label={label} name={mag.name} onSaved={noop} onMediaError={noop} sample films={MOM_FILMS} />
 
-      <Step n={5} title="12호가 모이면, 양장본이 집으로 가요" desc="손에 잡히는 한 권으로 평생 남겨요" />
+      <Step n={5} title="인터뷰가 아니라, 평소 모습 그대로 남아요" desc="김치를 담그다가, 공구를 들고 고치다가. 그 손길과 목소리가 영상으로 남아요" />
+      <div className="tour-films">
+        {DAD_FILMS.map((f) => <FilmThumb key={f.img} f={f} />)}
+      </div>
+
+      <Step n={6} title="12호가 모이면, 양장본이 집으로 가요" desc="손에 잡히는 한 권으로 평생 남겨요" />
       <div className="tour-book">
         <div className="book">
           <div className="spine" />
           <div className="face">
-            {selfie && <img src={selfie} alt="" />}
+            <img src={cover} alt="" />
             <div className="mast">우리집 레코드</div>
             <div className="nm">우리 {label}</div>
             <div className="vol">VOL. 01–12</div>
@@ -169,5 +186,7 @@ const TOUR = `
 .tour-list{margin:22px 20px 0;padding:0;list-style:none}
 .tour-list li{padding:12px 0 12px 22px;border-top:1px solid #D9D3CB;font-size:15px;line-height:1.6;color:#3A3431;position:relative;word-break:keep-all}
 .tour-list li::before{content:"";position:absolute;left:4px;top:21px;width:7px;height:7px;border-radius:50%;background:var(--mz)}
+.tour-films{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:6px 20px 0}
+.tour-films .mz-cap{font-size:12px;line-height:1.5;word-break:keep-all}
 .tour-cta{padding:30px 20px 0}
 `;
