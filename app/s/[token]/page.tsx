@@ -7,6 +7,7 @@ import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
 import SelfieMission from "@/components/SelfieMission";
+import SampleStory from "@/components/SampleStory";
 import HostSquirrel from "@/components/HostSquirrel";
 import { useHost } from "@/lib/useHost";
 
@@ -70,6 +71,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [asked, setAsked] = useState("");
   const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean; song?: boolean } | null>(null);
   const [ready, setReady] = useState(false);
+  const [demoSelfie, setDemoSelfie] = useState<string | null>(null);
   const [demoClips, setDemoClips] = useState<{ url: string; video: boolean }[]>([]); // 체험 녹음: 이 화면 안에서만 다시 듣고 저장하지 않음
   const r = useRecorder();
   const mc = useHost(params.token); // 다람쥐 진행자
@@ -403,6 +405,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <SelfieMission
           token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}
           coverName={info.coverName || null} first={!!info.firstEver} hasCover={!!info.hasCover}
+          onShot={isDemo ? setDemoSelfie : undefined}
         />
         {info.next ? (
           <div
@@ -427,27 +430,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           <p style={{ marginTop: 32, fontSize: 18 }}>{info.childName}에게 이야기가 잘 전해졌어요</p>
         )}
         {isDemo && (
-          <div className="card stack" style={{ gap: 8, textAlign: "left", width: "100%", marginTop: 20 }}>
-            <span className="chip" style={{ color: "var(--accent)" }}>체험은 여기까지예요</span>
-            {demoClips.length > 0 && (
-              <div className="stack" style={{ gap: 8 }}>
-                <p className="small" style={{ margin: 0, fontWeight: 700 }}>방금 남긴 목소리예요</p>
-                {demoClips.map((x, i) =>
-                  x.video ? (
-                    <video key={i} src={x.url} controls playsInline style={{ width: "100%", borderRadius: 12 }} />
-                  ) : (
-                    <audio key={i} src={x.url} controls style={{ width: "100%" }} />
-                  )
-                )}
-                <p className="tiny muted" style={{ margin: 0 }}>이 화면을 닫으면 사라지고, 어디에도 저장되지 않아요</p>
-              </div>
-            )}
-            <p className="small" style={{ margin: 0, lineHeight: 1.7 }}>
-              실제로는 이 목소리가 바로 자녀에게 전해지고, 이야기칸에 한 편의 기사로 올라와요.
-              12번이 모이면 장마다 QR로 목소리를 다시 들을 수 있는 양장본이 집으로 가요.
-            </p>
-            <a href="/app/plan" className="btn sm" style={{ alignSelf: "flex-start" }}>구성과 가격 보기</a>
-          </div>
+          <SampleStory clips={demoClips} selfie={demoSelfie} honorific={info.honorific} childName={info.childName} steps={steps} />
         )}
         <div className="grow" />
       </main>

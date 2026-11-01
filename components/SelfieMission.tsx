@@ -8,9 +8,10 @@ import { browserClient } from "@/lib/supabaseBrowser";
 type Props = {
   token: string; isDemo: boolean; childName: string; honorific: string;
   coverName: string | null; first: boolean; hasCover: boolean;
+  onShot?: (url: string) => void; // 체험: 찍은 셀피를 예시 잡지 표지로
 };
 
-export default function SelfieMission({ token, isDemo, childName, honorific, coverName, first, hasCover }: Props) {
+export default function SelfieMission({ token, isDemo, childName, honorific, coverName, first, hasCover, onShot }: Props) {
   const [state, setState] = useState<"idle" | "camera" | "preview" | "saving" | "done" | "skip" | "error">(hasCover ? "done" : "idle");
   const [shot, setShot] = useState<Blob | null>(null);
   const [shotUrl, setShotUrl] = useState<string | null>(null);
@@ -46,6 +47,7 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
         }).then((x) => x.json());
         if (!s.ok) throw new Error(s.error);
       }
+      if (shotUrl) onShot?.(shotUrl);
       setState("done");
     } catch {
       setState("error");
