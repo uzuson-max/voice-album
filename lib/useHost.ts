@@ -5,7 +5,7 @@
 // 목소리는 /api/s/{token}/tts 에서 받아온다. 실패하면 조용히 글자만 보여준다.
 import { useRef, useState } from "react";
 
-export type HostMode = "off" | "load" | "talk" | "listen";
+export type HostMode = "off" | "load" | "talk" | "pass" | "listen";
 
 // 아주 짧은 무음 — 첫 누름 안에서 재생해 휴대폰 소리 재생을 미리 허락받는다 (아이폰)
 const SILENT = "/host/silent.mp3";
@@ -31,10 +31,12 @@ export function useHost(token: string) {
   async function say(text: string, onDone?: () => void) {
     const my = ++seq.current;
     const a = el.current;
+    // 다 읽으면: LP(마이크)를 내밀고 → 잠시 뒤 듣는 자세
     const done = () => {
       if (my !== seq.current) return;
-      setMode("listen");
+      setMode("pass");
       onDone?.();
+      setTimeout(() => { if (my === seq.current) setMode("listen"); }, 1600);
     };
     if (!a || !text.trim()) return done();
     setMode("load");

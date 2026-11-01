@@ -25,6 +25,8 @@ type Info = {
   reactions: Reaction[];
   next?: { day: string; lead: string | null } | null;
   firstEver?: boolean;
+  steps?: string[] | null; // 3단계(장면 → 사람 → 마음)
+  encore?: string | null;
   demo?: boolean;
 };
 type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
@@ -75,7 +77,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         setInfo(j);
         setUnsealAt(j.unsealAt);
         setKind(j.format);
-        setAsked(j.text);
+        setAsked(j.steps?.length > 1 ? j.steps[0] : j.text);
         setPhase(j.answered ? "done" : j.firstEver ? "welcome" : "intro");
         log("open", { answered: !!j.answered });
         // 빌드업을 한 줄씩 천천히 보여준 뒤 질문과 버튼이 나온다 (시간여행)
@@ -144,12 +146,22 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     mc.unlock(); // 이 누름 안에서 소리 재생 허락
     log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
-    // 다람쥐가 장면과 질문을 읽어주고 → 듣는 자세로 바뀌면 녹음 버튼이 나온다
-    quietAmbient(1.5);
-    mc.say([info?.lead, info?.text].filter(Boolean).join("\n"), () => setReady(true));
+    // 음악이 몇 초 흐르며 장면이 떠오르고 → 음악이 잦아들면 다람쥐가 장면과 질문을 읽고 → 마이크를 넘기면 녹음 버튼
+    const q = steps ? steps[0] : info?.text;
+    const go = () => mc.say([info?.lead, q].filter(Boolean).join("\n"), () => setReady(true));
+    if (withSound) {
+      setTimeout(() => {
+        stopAmbient(1.5);
+        setTimeout(go, 1600);
+      }, 4500);
+    } else go();
   }
 
-  const limit = turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
+  const steps = info?.steps && info.steps.length > 1 ? info.steps : null;
+  const inStep = !!steps && turn < steps.length; // 3단계 중
+  const lastStep = !!steps && turn === steps.length - 1;
+  const GUIDE = 120; // 단계마다 권장 2분 (끊지는 않는다)
+  const limit = inStep ? (kind === "video" ? 180 : 600) : turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
 
   async function start() {
     setErr("");
@@ -205,6 +217,37 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       setUnsealAt(c.unsealAt);
       log("sent", { turn });
       r.reset();
+
+      // 3단계: AI 한마디(최대 9초 기다림) 뒤 다음 단계 질문을 다람쥐가 읽는다
+      if (steps && turn < steps.length) {
+        setPhase("thinking");
+        const fallback = { react: "네, 잘 들었어요." };
+        const h: any = await Promise.race([
+          fetch(`/api/s/${params.token}/next`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ answerId: c.answerId }),
+          }).then((x) => x.json()).catch(() => fallback),
+          new Promise((res) => setTimeout(() => res(fallback), 9000)),
+        ]);
+        const react = h?.react || fallback.react;
+        if (turn < steps.length - 1) {
+          const nq = steps[turn + 1];
+          setAsked(nq);
+          setTurn((t) => t + 1);
+          setReady(false);
+          setPhase("ask");
+          mc.say(`${react}\n${nq}`, () => setReady(true));
+        } else if (info?.encore) {
+          setHost({ react, followup: info.encore, song: /노래|자장가/.test(info.encore) });
+          setPhase("host");
+          mc.say(`${react}\n${info.encore}`);
+        } else {
+          setHost({ react, followup: null });
+          finish();
+        }
+        return;
+      }
 
       // 진행자 한마디 + 이어지는 질문
       setPhase("thinking");
@@ -435,7 +478,15 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         </div>
       )}
 
-      {first ? (
+      {inStep ? (
+        <div className="row" style={{ gap: 14, justifyContent: "center" }}>
+          {["장면", "사람", "마음"].slice(0, steps!.length).map((l, i) => (
+            <span key={i} style={{ fontSize: 15, fontWeight: i === turn ? 700 : 400, color: i === turn ? "var(--accent)" : "var(--muted)", opacity: i > turn ? 0.6 : 1 }}>
+              {i < turn ? "✓" : i + 1} {l}
+            </span>
+          ))}
+        </div>
+      ) : first ? (
         isVideo ? (
           <span className="pill">조금 특별한 질문이에요</span>
         ) : (
@@ -470,7 +521,8 @@ export default function ParentPage({ params }: { params: { token: string } }) {
           {splitLead(info.lead).map((line, i, arr) => (
             <p
               key={i}
-              style={mc.on ? { opacity: 0.75 } : {
+              style={{
+                ...(mc.on ? { fontSize: 17, marginBottom: 12 } : {}),
                 animation:
                   `rise 1.6s ease ${0.6 + i * BEAT}s forwards` +
                   (i < arr.length - 1 ? `, dim 1.4s ease ${0.6 + (i + 1) * BEAT}s forwards` : ""),
@@ -484,7 +536,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
       <h1
         className={`serif q${first && info.lead && phase === "ask" && !r.recording && !mc.on ? " reveal" : ""}`}
-        style={{ marginTop: 22, animationDelay: info.lead && !mc.on ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
+        style={{ marginTop: mc.on ? 14 : 22, ...(mc.on ? { fontSize: 22 } : {}), animationDelay: info.lead && !mc.on ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
       >
         {splitLead(asked).map((line, i) => (
           <span key={i} className="qline">{line}</span>
@@ -532,6 +584,19 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         </>
       )}
 
+      {r.recording && inStep && (
+        <div style={{ width: "100%", margin: "0 0 14px" }}>
+          <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,.14)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${Math.min(100, (r.sec / GUIDE) * 100)}%`, background: "var(--accent)", transition: "width 1s linear" }} />
+          </div>
+          <p className="small muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
+            {r.sec < GUIDE
+              ? lastStep ? "천천히 하셔도 돼요 · 마지막 이야기예요" : `천천히 하셔도 돼요 · 이야기 ${steps!.length - turn - 1}개가 더 남았어요`
+              : lastStep ? "충분히 들었어요. 다 하셨으면 '다 말했어요'를 눌러주세요" : "충분히 들었어요. 다 하셨으면 '다 말했어요'를 눌러 다음 이야기로 가요"}
+          </p>
+        </div>
+      )}
+
       {r.recording && (
         <>
           <p className="row" style={{ justifyContent: "center", fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>
@@ -545,7 +610,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       {(phase === "review" || phase === "sending") && (
         <>
           <button className="btn" onClick={send} disabled={phase === "sending"}>
-            {phase === "sending" ? "보내는 중이에요…" : `${c}에게 보내기`}
+            {phase === "sending" ? "보내는 중이에요…" : inStep && !lastStep ? "보내고 다음 이야기로" : `${c}에게 보내기`}
           </button>
           <button className="link" onClick={() => { r.reset(); setPhase("ask"); }} disabled={phase === "sending"}>
             다시 하기

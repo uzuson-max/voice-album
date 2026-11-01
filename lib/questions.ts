@@ -75,6 +75,7 @@ export type Week = Text & {
   hint?: string;
   skipIf?: string;          // flags 키가 true 면 alt
   alt?: Text;
+  steps?: string[];         // 3단계(장면 → 사람 → 마음). 있으면 ask 대신 하나씩 나눠 묻고, 단계마다 따로 녹음
   encore?: string;          // 대답이 끝나면 한 번 더 남기는 것. 이 주는 녹음이 두 번
   encoreDad?: string;       // 아빠일 때 encore
   reply?: Text;             // 이 주 대답을 들은 뒤 자녀가 남기는 답장 (자녀 화면)
@@ -90,6 +91,11 @@ export const COURSE: Week[] = [
     why: '부모님이 처음 부모가 된 순간에서 시작해요. 내가 등장하는 이야기라, 첫 녹음부터 끝까지 듣게 돼요.',
     lead: '{age@childBirth:살}의 {parent:이/가} 있어요. 아직 누구의 {parent}도 아니던 때예요. 그리고 어느 날, 제가 생겼다는 걸 알게 됐어요.',
     ask: '그 소식을 들은 순간, 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.',
+    steps: [
+      '그 소식을 처음 알게 된 날로 가볼게요. 그날 어디에 있었고, 어떻게 알게 됐어요?',
+      '그 소식을 제일 먼저 누구랑 나눴어요? 그때 그 사람 얼굴이랑 반응도 기억나는 대로요.',
+      '그 순간 {parent} 마음은 어땠어요? 기뻤는지, 겁났는지, 솔직하게요.',
+    ],
     skipIf: 'noYears',
     alt: {
       lead: '아직 누구의 {parent}도 아니던 {parent:이/가} 있어요. 그리고 어느 날, 제가 생겼다는 걸 알게 됐어요.',
@@ -101,6 +107,11 @@ export const COURSE: Week[] = [
     why: '그 시절 노래 한 곡이면 기억이 줄줄이 따라 나와요. {parent:이/가} {parent}이기 전, 한 사람이던 시절을 처음 들어보는 회차예요.',
     lead: '{teenYear}년, {parent:은/는} 중학생이었어요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
     ask: '그때 {parent:은/는} 어떤 아이였어요? 제일 많이 따라 부른 노래 한 곡이랑, 그 노래를 들으면 떠오르는 사람 얘기를 해주세요.',
+    steps: [
+      '그 시절 제일 많이 따라 부른 노래가 뭐였어요? 그 노래가 흘러나오던 곳이랑, 그때 {parent} 모습을 떠올려서 얘기해주세요.',
+      '그 노래를 들으면 떠오르는 사람이 있어요? 그 사람이랑 있었던 일 하나만 들려주세요.',
+      '그때 {parent:은/는} 어떤 아이였어요? 그 시절의 {parent}에게 지금 한마디 해준다면요?',
+    ],
     skipIf: 'noParentYear',
     alt: {
       lead: '{parent:이/가} 중학생이던 시절이에요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
@@ -227,6 +238,7 @@ export type CourseRow = {
   why: string;
   lead: string | null;
   ask: string;
+  steps: string[] | null;  // 3단계 질문 (없으면 ask 하나)
   encore: string | null;   // 대답 뒤 한 번 더 (노래)
   hint: string | null;
   replyLead: string | null;
@@ -254,6 +266,7 @@ export function buildCourse(input: CourseInput): CourseRow[] {
       why: r(w.why) as string,
       lead: r(t.lead),
       ask: r(t.ask) as string,
+      steps: w.steps ? w.steps.map((x) => r(x) as string) : null,
       encore: r(v.flags.isDad && w.encoreDad ? w.encoreDad : w.encore),
       hint: r(w.hint),
       replyLead: reply ? r(reply.lead) : null,

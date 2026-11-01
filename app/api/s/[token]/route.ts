@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { admin, BUCKET } from "@/lib/supabaseAdmin";
 import { ensureLead } from "@/lib/lead";
 import { kstParts, SEND_DAYS, WEEKDAYS } from "@/lib/time";
+import { buildCourse, COURSE } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ function demo(req: Request) {
     hasCover: false,
     next: { day: "토요일", lead: "스무 살의 그 사람이 거울 앞에 서 있어요." },
     text: "그 소식을 들은 순간, 제일 먼저 든 마음이 뭐였어요? 기뻤는지, 겁났는지, 솔직하게요.",
+    steps: buildCourse({ childName, label: honorific, profile: {} })[0].steps,
+    encore: null,
     lead: "아직 누구의 부모도 아니던 때가 있어요. 그리고 어느 날, 제가 생겼다는 걸 알게 됐어요.",
     hint: null,
     format: "audio",
@@ -43,7 +46,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
   const db = admin();
   const { data: p } = await db
     .from("vf_prompts")
-    .select("id, storyteller_id, text, format, status, week, cover_path, sent_at, unseal_at, child_audio_path, photo_path, hint, vf_storytellers(honorific, unseal_at, vf_families(child_name))")
+    .select("id, storyteller_id, text, format, status, week, half, cover_path, sent_at, unseal_at, child_audio_path, photo_path, hint, vf_storytellers(honorific, profile, unseal_at, vf_families(child_name))")
     .eq("token", params.token)
     .maybeSingle();
   if (!p) return NextResponse.json({ error: "링크를 찾을 수 없어요" }, { status: 404 });
@@ -101,8 +104,21 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     .not("sent_at", "is", null)
     .lt("sent_at", (p as any).sent_at || new Date().toISOString());
 
+  // 3단계 질문: 12주 과정이면 지금 질문표에서 다시 꺼낸다 (예전에 보낸 링크도 적용)
+  let steps: string[] | null = null;
+  const wk = (p as any).week as number | null;
+  if (wk && COURSE.some((w) => w.week === wk && w.steps)) {
+    try {
+      const row = buildCourse({ childName: st?.vf_families?.child_name || "", label: st?.honorific || "엄마", profile: st?.profile || {} })
+        .find((r) => r.week === wk);
+      steps = row?.steps || null;
+    } catch {}
+  }
+
   return NextResponse.json({
     firstEver: !earlier,
+    steps,
+    encore: (p as any).half || null,
     week: (p as any).week ?? null,
     hasCover: !!(p as any).cover_path,
     next,
