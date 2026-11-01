@@ -8,7 +8,6 @@ import QuizCard from "@/components/QuizCard";
 const TABS = [
   { href: "/app", label: "질문함" },
   { href: "/app/stories", label: "이야기" },
-  { href: "/app/know", label: "알아요?" },
   { href: "/app/family", label: "가족" },
 ];
 

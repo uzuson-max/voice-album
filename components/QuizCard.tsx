@@ -84,46 +84,77 @@ export default function QuizCard() {
       close();
     }
 
+    const ink = "#141211", gray = "#8A827B", wine = "#6A2232", rule = "#D9D3CB";
+    const d8 = new Date();
+    const date = `${d8.getMonth() + 1}.${String(d8.getDate()).padStart(2, "0")}`;
+    const btnFill: React.CSSProperties = { minHeight: 56, borderRadius: 2, border: `1.5px solid ${ink}`, background: ink, color: "#fff", fontSize: 17, fontWeight: 700, cursor: "pointer" };
+    const btnLine: React.CSSProperties = { ...btnFill, background: "transparent", color: ink };
+
+    // 이야기 탭과 같은 잡지 지면: 밝은 종이, 검은 글씨, 와인은 작은 강조에만
     return (
       <div role="dialog" aria-modal="true" className="wr-in" style={{
-        position: "fixed", inset: 0, zIndex: 50, background: "var(--ground)",
-        display: "flex", flexDirection: "column", padding: "28px 24px calc(28px + env(safe-area-inset-bottom))",
+        position: "fixed", inset: 0, zIndex: 50, background: "#F5F3EF", color: ink, overflowY: "auto",
+        display: "flex", flexDirection: "column", padding: "calc(18px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom))",
+        maxWidth: 480, margin: "0 auto",
       }}>
-        <div className="row between wr-in" style={{ animationDelay: ".3s" }}>
-          <span className="chip" style={{ color: "var(--accent)" }}>오늘의 한 장</span>
-          <button className="textbtn" onClick={close} style={{ color: "var(--muted)" }}>닫기</button>
+        <div className="row between" style={{ alignItems: "baseline", borderBottom: `2px solid ${ink}`, paddingBottom: 10 }}>
+          <span style={{ fontFamily: "var(--serif)", fontSize: 15, letterSpacing: ".2em", fontWeight: 600 }}>우리집 레코드</span>
+          <button className="textbtn" onClick={close} style={{ color: gray, fontSize: 15 }}>닫기</button>
+        </div>
+        <div className="row between" style={{ alignItems: "baseline", paddingTop: 12 }}>
+          <span style={{ fontFamily: "Georgia,serif", fontSize: 13, letterSpacing: ".18em" }}>TODAY&apos;S QUESTION</span>
+          <span style={{ fontFamily: "Georgia,serif", fontSize: 13, letterSpacing: ".1em", color: gray }}>{date}</span>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 20 }}>
-          <h1 className="wr-up" style={{ fontSize: 32, lineHeight: 1.4, fontWeight: 800, margin: 0, wordBreak: "keep-all", animationDelay: ".5s" }}>{n.q}</h1>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18, padding: "28px 0" }}>
+          <div>
+            <span style={{ display: "inline-block", background: wine, color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: ".14em", padding: "5px 9px" }}>오늘의 한 장</span>
+            <span style={{ fontSize: 13, color: gray, marginLeft: 10 }}>{L}에 대해 얼마나 알까요</span>
+          </div>
+          <h1 className="wr-up" style={{ fontFamily: "var(--serif)", fontSize: 30, lineHeight: 1.45, fontWeight: 700, margin: 0, wordBreak: "keep-all", textWrap: "balance" as any, animationDelay: ".1s" }}>
+            <span style={{ display: "block", fontFamily: "Georgia,serif", fontWeight: 400, fontSize: 44, lineHeight: 1, color: wine, marginBottom: 10 }}>Q.</span>
+            {n.q}
+          </h1>
 
           {step === "known" && (
-            <div className="wr-up stack" style={{ gap: 10 }}>
-              <p className="muted" style={{ margin: 0 }}>적어두면 나중에 {L} 대답이랑 맞춰볼 수 있어요.</p>
-              <textarea className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="내가 아는 답" />
+            <div className="wr-up" style={{ background: "#fff", borderTop: `3px solid ${ink}`, padding: "12px 16px 16px" }}>
+              <div style={{ fontSize: 11, letterSpacing: ".2em", color: wine, fontWeight: 700, marginBottom: 8 }}>내가 아는 답</div>
+              <textarea
+                className="input" value={note} onChange={(e) => setNote(e.target.value)}
+                placeholder={`적어두면 나중에 ${L} 대답이랑 맞춰볼 수 있어요`}
+                style={{ width: "100%", minHeight: 80, background: "#fff", color: ink, border: `1px solid ${rule}` }}
+              />
             </div>
           )}
           {step === "unknown" && (
-            <div className="stack" style={{ gap: 12 }}>
-              <p className="wr-up" style={{ margin: 0, fontSize: 18, lineHeight: 1.7, wordBreak: "keep-all" }}>
-                {pct !== null ? <>우리집 레코드를 쓰는 분들 중 <b style={{ color: "var(--accent)" }}>{pct}%</b>도 몰랐어요.</> : <>몰라도 괜찮아요.</>}
-              </p>
-              <p className="wr-up muted" style={{ margin: 0, fontSize: 16, lineHeight: 1.7, wordBreak: "keep-all", animationDelay: ".6s" }}>
+            <div className="wr-up" style={{ borderTop: `2px solid ${ink}`, borderBottom: `1px solid ${rule}`, padding: "16px 0" }}>
+              {pct !== null ? (
+                <div className="row" style={{ gap: 14, alignItems: "center" }}>
+                  <span style={{ fontFamily: "Georgia,serif", fontSize: 46, lineHeight: 1, color: wine }}>{pct}<small style={{ fontSize: 18, color: ink }}>%</small></span>
+                  <span style={{ fontSize: 15, lineHeight: 1.6, color: "#46403C", wordBreak: "keep-all" }}>우리집 레코드를 쓰는 분들 중<br />이만큼이 몰랐어요</span>
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontFamily: "var(--serif)", fontSize: 19, fontWeight: 600 }}>몰라도 괜찮아요.</p>
+              )}
+              <p style={{ margin: "14px 0 0", fontSize: 16, lineHeight: 1.75, color: "#46403C", wordBreak: "keep-all" }}>
                 {(UNKNOWN_NOTE[n.key] || "다음 통화 때 물어보세요.").replaceAll("{L}", L)}
               </p>
             </div>
           )}
         </div>
 
-        <div className="stack wr-up" style={{ gap: 10, animationDelay: step === "ask" ? "1.3s" : "1s" }} key={step}>
+        <div className="stack wr-up" style={{ gap: 10, animationDelay: ".3s" }} key={step}>
           {step === "ask" && (
             <>
-              <button className="btn" onClick={() => answer(false)}>몰라요</button>
-              <button className="btn soft" onClick={() => answer(true)}>알아요</button>
+              <button style={btnFill} onClick={() => answer(false)}>몰라요</button>
+              <button style={btnLine} onClick={() => answer(true)}>알아요</button>
             </>
           )}
-          {step === "known" && <button className="btn" onClick={saveNote}>저장</button>}
-          {step === "unknown" && <button className="btn soft" onClick={close}>둘러보기</button>}
+          {step === "known" && <button style={btnFill} onClick={saveNote}>저장</button>}
+          {step === "unknown" && <button style={btnLine} onClick={close}>둘러보기</button>}
+          <div className="row between" style={{ marginTop: 8, fontFamily: "Georgia,serif", fontSize: 11, letterSpacing: ".14em", color: gray }}>
+            <span>OUR HOUSE RECORD</span><span>1 / DAY</span>
+          </div>
         </div>
       </div>
     );
