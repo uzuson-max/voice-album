@@ -152,10 +152,19 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   }, [r.recording]);
 
   const [soundOff, setSoundOff] = useState(false);
+  // 첫 초대장: 휴대폰은 한 번 눌러야 소리를 허락해서, '초대장 열어보기'를 누르는 순간 음악을 켜고 멘트가 떠오른다
+  const [opened, setOpened] = useState(false);
+  function openInvite() {
+    if (MUSIC) startAmbient();
+    mc.unlock();
+    log("invite_open");
+    setOpened(true);
+  }
 
   // "이야기 시작하기": 이 누름이 있어야 휴대폰이 소리를 허락한다
   function begin(withSound: boolean) {
-    if (MUSIC && withSound) startAmbient();
+    if (MUSIC && withSound) startAmbient(); // 초대장에서 이미 켜졌으면 그대로 이어서 흐른다
+    if (!withSound) stopAmbient(1.5); // 초대장에서 켜진 음악도 끈다
     mc.unlock(); // 이 누름 안에서 소리 재생 허락
     log(withSound ? "begin" : "begin_silent");
     setPhase("ask");
@@ -348,6 +357,21 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       <main className="screen center foil boxed" style={{ paddingTop: 96 }}>
         <LP size={92} className="intro-lp" />
         <p className="tiny muted" style={{ margin: "28px 0 0", letterSpacing: "0.12em" }}>우리집 레코드</p>
+        {!opened ? (
+          <>
+            <p className="serif" style={{ margin: "26px 0 0", fontSize: 24, lineHeight: 1.5 }}>
+              {josa(c, "이/가")} 보낸
+              <br />
+              초대장이 도착했어요
+            </p>
+            <p className="muted" style={{ margin: "18px 0 0", fontSize: 16, lineHeight: 1.7 }}>
+              소리를 켜고 열어주세요
+            </p>
+            <div className="grow" />
+            <button className="btn" onClick={openInvite}>초대장 열어보기</button>
+          </>
+        ) : (
+        <>
         <div className="lead" style={{ marginTop: 26 }}>
           {lines.map((line, i) => (
             <p key={i} className="serif" style={{ fontSize: i === 0 || i === lines.length - 1 ? 24 : 19, whiteSpace: "pre-line", animation: `rise 1.6s ease ${0.4 + i * 1.6}s forwards` }}>
@@ -363,6 +387,8 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         >
           네, 시작할게요
         </button>
+        </>
+        )}
       </main>
     );
   }
