@@ -32,14 +32,18 @@ export function useRecorder() {
     s.current?.getTracks().forEach((t) => t.stop());
     s.current = null;
     setStream(null);
+    session("playback"); // 녹음이 끝나면 다시 '듣기' 모드로 — 아이폰에서 다음 질문 목소리가 작아지지 않게
   }
   useEffect(() => release, []);
 
   async function start(kind: Kind, limit: number) {
+    session("play-and-record");
+    // 에코 제거를 켜면 휴대폰·PC가 '통화 모드'로 바뀌어, 녹음이 끝난 뒤에도 다람쥐 목소리·음악이 작게 나온다 → 끈다
+    const mic = { echoCancellation: false, noiseSuppression: true, autoGainControl: true };
     const st = await navigator.mediaDevices.getUserMedia(
       kind === "video"
-        ? { audio: true, video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 960 } } }
-        : { audio: true }
+        ? { audio: mic, video: { facingMode: "user", width: { ideal: 720 }, height: { ideal: 960 } } }
+        : { audio: mic }
     );
     s.current = st;
     setStream(st);
@@ -88,4 +92,9 @@ export function useRecorder() {
   }
 
   return { recording, sec, blob, stream, failed, start, stop, reset };
+}
+
+// 아이폰(사파리 16.4+): 소리 모드 전환. 지원 안 하면 아무 일 없음
+function session(type: "playback" | "play-and-record") {
+  try { const a = (navigator as any).audioSession; if (a) a.type = type; } catch {}
 }
