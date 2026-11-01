@@ -174,9 +174,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     setPhase("ask");
     // 음악이 몇 초 흐르며 장면이 떠오르고 → 음악이 잦아들면 다람쥐가 장면과 질문을 읽고 → 마이크를 넘기면 녹음 버튼
     const q = steps ? steps[0] : info?.text;
-    const line = [info?.lead, q].filter(Boolean).join("\n");
+    // 다 읽고 나면 버튼 없이 바로 녹음이 시작된다 — 다람쥐가 먼저 말로 알려준다
+    const cue = kind === "video" ? "지금부터 녹화할게요. 편하게 말씀해 주세요" : "지금부터 녹음할게요. 편하게 말씀해 주세요";
+    const line = [info?.lead, q, cue].filter(Boolean).join("\n");
     mc.prepare(line); // 음악이 흐르는 동안 목소리를 미리 받아둔다
-    const go = () => mc.say(line, () => setReady(true));
+    const go = () => mc.say(line, (spoken) => { setReady(true); if (spoken) start(); }); // 목소리가 안 나왔으면 버튼으로
     if (!MUSIC) setTimeout(go, 1500); // 장면 첫 줄이 떠오를 시간만 주고 바로 읽는다
     else if (withSound) {
       // 피아노가 3초 먼저 흐르고, 다람쥐 목소리 밑에 작게 그대로 깔린다
@@ -704,7 +706,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       {r.recording && (
         <>
           <p className="row" style={{ justifyContent: "center", fontSize: 20, fontWeight: 700, margin: "0 0 16px" }}>
-            <span className="rec-dot pulse" /> {mmss(r.sec)}
+            <span className="rec-dot pulse" /> 녹음 중이에요 · {mmss(r.sec)}
             <span className="small muted" style={{ fontWeight: 400 }}>/ {mmss(limit)}</span>
           </p>
           <button className="btn" onClick={r.stop}>다 말했어요</button>
