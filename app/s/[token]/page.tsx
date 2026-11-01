@@ -70,6 +70,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [asked, setAsked] = useState("");
   const [host, setHost] = useState<{ react: string; followup: string | null; video?: boolean; song?: boolean } | null>(null);
   const [ready, setReady] = useState(false);
+  const [demoClips, setDemoClips] = useState<{ url: string; video: boolean }[]>([]); // 체험 녹음: 이 화면 안에서만 다시 듣고 저장하지 않음
   const r = useRecorder();
   const mc = useHost(params.token); // 다람쥐 진행자
   const live = useRef<HTMLVideoElement | null>(null);
@@ -192,6 +193,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     }
     const blob = r.blob;
     if (isDemo) {
+      setDemoClips((xs) => [...xs, { url: URL.createObjectURL(blob), video: kind === "video" }]);
       r.reset();
       // 체험도 3단계를 그대로 이어서 보여준다
       if (steps && turn < steps.length - 1) {
@@ -427,6 +429,19 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         {isDemo && (
           <div className="card stack" style={{ gap: 8, textAlign: "left", width: "100%", marginTop: 20 }}>
             <span className="chip" style={{ color: "var(--accent)" }}>체험은 여기까지예요</span>
+            {demoClips.length > 0 && (
+              <div className="stack" style={{ gap: 8 }}>
+                <p className="small" style={{ margin: 0, fontWeight: 700 }}>방금 남긴 목소리예요</p>
+                {demoClips.map((x, i) =>
+                  x.video ? (
+                    <video key={i} src={x.url} controls playsInline style={{ width: "100%", borderRadius: 12 }} />
+                  ) : (
+                    <audio key={i} src={x.url} controls style={{ width: "100%" }} />
+                  )
+                )}
+                <p className="tiny muted" style={{ margin: 0 }}>이 화면을 닫으면 사라지고, 어디에도 저장되지 않아요</p>
+              </div>
+            )}
             <p className="small" style={{ margin: 0, lineHeight: 1.7 }}>
               실제로는 이 목소리가 바로 자녀에게 전해지고, 이야기칸에 한 편의 기사로 올라와요.
               12번이 모이면 장마다 QR로 목소리를 다시 들을 수 있는 양장본이 집으로 가요.
@@ -601,7 +616,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
             {isVideo ? "눌러서 녹화하기" : "눌러서 말하기"}
           </button>
           <p className="small muted" style={{ marginTop: 12 }}>
-            {isVideo ? "영상" : "음성"} · 최대 {Math.round(limit / 60) || 1}분 · {toChild}
+            {isDemo ? "체험 녹음은 저장되지 않아요" : <>{isVideo ? "영상" : "음성"} · 최대 {Math.round(limit / 60) || 1}분 · {toChild}</>}
           </p>
           {first ? (
             <button className="link" onClick={later}>지금은 어려워요</button>
