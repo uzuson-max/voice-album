@@ -35,7 +35,7 @@ const MOMENT = `- 질문마다 인생의 한 순간을 꼭 짚는다: 나이·�
 
 function profileText(profile: Record<string, string>) {
   return Object.entries(profile || {})
-    .filter(([, v]) => String(v || "").trim())
+    .filter(([k, v]) => k !== "표지 이름" && String(v || "").trim())
     .map(([k, v]) => `${k}: ${v}`)
     .join("\n");
 }

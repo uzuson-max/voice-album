@@ -25,6 +25,8 @@ type Info = {
   reactions: Reaction[];
   next?: { day: string; lead: string | null } | null;
   firstEver?: boolean;
+  hasCover?: boolean;
+  coverName?: string | null;
   steps?: string[] | null; // 3단계(장면 → 사람 → 마음)
   encore?: string | null;
   demo?: boolean;
@@ -376,7 +378,10 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 18, lineHeight: 1.6 }}>
           {info.honorific}의 이야기는 {toChild}.
         </p>
-        <SelfieMission token={params.token} isDemo={isDemo} childName={info.childName} />
+        <SelfieMission
+          token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}
+          coverName={info.coverName || null} first={!!info.firstEver} hasCover={!!info.hasCover}
+        />
         {info.next ? (
           <div
             className="card stack"

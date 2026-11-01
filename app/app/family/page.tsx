@@ -9,7 +9,7 @@ const empty = {
   childName: "", label: "엄마", honorific: "어머니", phone: "", childPhone: "",
   sendWeekday: 2, sendHour: 9, unsealAt: "",
   born: "", school: "", hometown: "", job: "", likes: "", likeFood: "",
-  childBorn: "", food: "", catchphrase: "", unsaid: "",
+  childBorn: "", food: "", catchphrase: "", unsaid: "", coverName: "",
 };
 type F = typeof empty;
 
@@ -20,6 +20,7 @@ function profileOf(f: F) {
   return {
     "태어난 해": f.born, "학교·전공": f.school, 고향: f.hometown, "결혼 전 했던 일": f.job, "요즘 즐겨 하는 것": f.likes, "좋아하는 음식": f.likeFood,
     "내가 태어난 해": f.childBorn, "최애 음식": f.food, 말버릇: f.catchphrase, "못 한 말": f.unsaid,
+    "표지 이름": f.coverName,
   };
 }
 
@@ -53,6 +54,7 @@ export default function Family() {
           sendWeekday: storyteller.send_weekday, sendHour: storyteller.send_hour, unsealAt: storyteller.unseal_at || "",
           born: p["태어난 해"] || "", school: p["학교·전공"] || "", hometown: p.고향 || "", job: p["결혼 전 했던 일"] || p["했던 일"] || "", likes: p["요즘 즐겨 하는 것"] || p["좋아하는 것"] || "", likeFood: p["좋아하는 음식"] || "",
           childBorn: p["내가 태어난 해"] || "", food: p["최애 음식"] || "", catchphrase: p["말버릇"] || "", unsaid: p["못 한 말"] || "",
+          coverName: p["표지 이름"] || "",
         });
       }
     }).finally(() => setLoaded(true));
@@ -124,6 +126,9 @@ export default function Family() {
             <Field label="부모님이 태어난 해"><input className="input" inputMode="numeric" value={f.born} onChange={set("born")} /></Field>
             <Field label="내가 태어난 해"><input className="input" inputMode="numeric" value={f.childBorn} onChange={set("childBorn")} /></Field>
           </div>
+          <Field label="잡지 표지에 들어갈 부모님 이름" hint="이야기 잡지 표지에 크게 들어가요. 비워두면 호칭으로 나와요.">
+            <input className="input" value={f.coverName} onChange={set("coverName")} placeholder="김정숙" />
+          </Field>
           <Field label="부모님 음식 중 내 최애"><input className="input" value={f.food} onChange={set("food")} /></Field>
           <Field label="부모님 말버릇"><input className="input" value={f.catchphrase} onChange={set("catchphrase")} /></Field>
           <Field label="마지막으로 다니신 학교"><input className="input" value={f.school} onChange={set("school")} /></Field>
@@ -199,6 +204,9 @@ export default function Family() {
       optional: true,
       body: (
         <div className="stack" style={{ gap: 12 }}>
+          <Field label={`잡지 표지에 들어갈 ${p} 이름`} hint="표지에 크게 들어가요. 비워두면 호칭으로 나와요.">
+            <input className="input" value={f.coverName} onChange={set("coverName")} placeholder="김정숙" />
+          </Field>
           <div className="row">
             <Field label={`${josa(p, "이/가")} 태어난 해`}><input className="input" inputMode="numeric" value={f.born} onChange={set("born")} placeholder="1967" /></Field>
             <Field label="내가 태어난 해"><input className="input" inputMode="numeric" value={f.childBorn} onChange={set("childBorn")} placeholder="1997" /></Field>

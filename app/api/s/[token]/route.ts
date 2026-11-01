@@ -121,6 +121,7 @@ export async function GET(req: Request, { params }: { params: { token: string } 
     encore: (p as any).half || null,
     week: (p as any).week ?? null,
     hasCover: !!(p as any).cover_path,
+    coverName: String(st?.profile?.["표지 이름"] || "").trim() || null,
     next,
     text: t.ask || p.text,
     lead: t.lead,

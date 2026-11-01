@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     .from("vf_answers")
     .select(
       "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, process_error, unseal_at, created_at, " +
-        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, article_points, article_facts, photo_path, selfie_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
+        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, article_points, article_facts, photo_path, selfie_path, cover_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
     )
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
@@ -53,7 +53,7 @@ export async function GET(req: Request) {
         replyAsk: p.reply_ask,
         summary: a.summary,
         photoUrl: await sign(p.photo_path),
-        selfieUrl: await sign(p.selfie_path),
+        selfieUrl: await sign(p.cover_path || p.selfie_path),
         points: p.article_points ?? null,
         facts: p.article_facts ?? null,
         reactionText: p.reaction_text,
@@ -101,5 +101,17 @@ export async function GET(req: Request) {
 
   const articles = Object.values(byPrompt).sort((x: any, y: any) => String(y.createdAt).localeCompare(String(x.createdAt)));
   const sealed = Object.values(sealedMap).sort((a, b) => a.unsealAt.localeCompare(b.unsealAt));
-  return NextResponse.json({ articles, sealed, family, storyteller });
+
+  // 잡지 표지: 자녀가 고른 사진 → 없으면 첫 호 셀피 → 없으면 가장 최근 셀피·사진
+  const oldestFirst = [...articles].reverse() as any[];
+  const pick = oldestFirst.find((x) => x.selfieUrl) || (articles as any[]).find((x) => x.selfieUrl) || oldestFirst.find((x) => x.photoUrl);
+  const prof = (storyteller as any).profile || {};
+  const magazine = {
+    coverUrl: (await sign((storyteller as any).cover_path)) || pick?.selfieUrl || pick?.photoUrl || null,
+    custom: !!(storyteller as any).cover_path,
+    name: String(prof["표지 이름"] || "").trim() || null,
+    born: String(prof["태어난 해"] || "").replace(/\D/g, "").slice(0, 4) || null,
+    hometown: String(prof["고향"] || "").trim() || null,
+  };
+  return NextResponse.json({ articles, sealed, family, storyteller, magazine });
 }
