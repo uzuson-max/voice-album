@@ -95,6 +95,21 @@ export function useRecorder() {
 }
 
 // 아이폰(사파리 16.4+): 소리 모드 전환. 지원 안 하면 아무 일 없음
+// 모드가 바뀌는 1초 남짓 동안 휴대폰이 소리 길을 바꾸느라 음량이 확 줄었다가 돌아온다
+// → 바뀐 시각을 기억해 두고, 다람쥐 목소리는 그 시간이 지난 뒤에 읽기 시작한다 (audioSettled)
+let lastSwitch = 0;
+const SETTLE_MS = 1200;
 function session(type: "playback" | "play-and-record") {
-  try { const a = (navigator as any).audioSession; if (a) a.type = type; } catch {}
+  try {
+    const a = (navigator as any).audioSession;
+    if (a && a.type !== type) { a.type = type; lastSwitch = Date.now(); }
+  } catch {}
+  // 마이크를 켜고 끄는 것 자체도 소리 길을 바꾼다 (audioSession을 지원하지 않는 폰 포함)
+  lastSwitch = Math.max(lastSwitch, Date.now());
+}
+
+/** 소리 모드 전환이 끝날 때까지 기다린다 (바로 전에 녹음이 끝났을 때만 잠깐 기다림) */
+export function audioSettled(): Promise<void> {
+  const wait = lastSwitch + SETTLE_MS - Date.now();
+  return wait > 0 ? new Promise((r) => setTimeout(r, wait)) : Promise.resolve();
 }

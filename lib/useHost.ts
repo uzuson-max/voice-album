@@ -4,6 +4,7 @@
 //   listen: 귀 기울여 듣는 중 (천천히 끄덕임)
 // 목소리는 /api/s/{token}/tts 에서 받아온다. 실패하면 조용히 글자만 보여준다.
 import { useRef, useState } from "react";
+import { audioSettled } from "@/lib/useRecorder";
 
 export type HostMode = "off" | "load" | "talk" | "pass" | "listen";
 
@@ -65,6 +66,9 @@ export function useHost(token: string) {
       }).then((r) => r.json()));
       if (my !== seq.current) return;
       if (!j.url) throw new Error();
+      // 방금 녹음이 끝났으면 휴대폰 소리 길이 다 바뀐 뒤 읽기 시작 — 읽는 도중 음량이 출렁이지 않게
+      await audioSettled();
+      if (my !== seq.current) return;
       a.onended = () => done(true);
       a.onerror = () => done(false);
       a.src = j.url;
