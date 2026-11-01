@@ -188,18 +188,21 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   // 자녀 체험(demo)은 '어떻게 오는지' 느끼면 충분 — 3단계 대신 첫 이야기 하나만, 30초면 저절로 끝난다
   const DEMO_SEC = 30;
+  const DEMO_VIDEO_SEC = 20; // 체험 2번째: 짧은 영상 한마디
+  const demoSec = kind === "video" ? DEMO_VIDEO_SEC : DEMO_SEC;
   const steps = !isDemo && info?.steps && info.steps.length > 1 ? info.steps : null;
   const inStep = !!steps && turn < steps.length; // 3단계 중
   const lastStep = !!steps && turn === steps.length - 1;
   const GUIDE = 120; // 단계마다 권장 2분 (끊지는 않는다)
-  const limit = isDemo ? DEMO_SEC : inStep ? (kind === "video" ? 180 : 600) : turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
+  const limit = isDemo ? demoSec : inStep ? (kind === "video" ? 180 : 600) : turn === 0 ? (kind === "video" ? 180 : 900) : kind === "video" ? 90 : 300;
 
-  async function start() {
+  async function start(k?: Kind) {
     setErr("");
     duckAmbient(); // 녹음하는 동안은 작게
     mc.listen();
+    const kk = k || kind;
     try {
-      await r.start(kind, limit);
+      await r.start(kk, isDemo ? (kk === "video" ? DEMO_VIDEO_SEC : DEMO_SEC) : limit);
     } catch {
       setErr("마이크(카메라) 사용을 허용해 주셔야 해요. 화면 위쪽 알림에서 '허용'을 눌러주세요.");
     }
@@ -215,6 +218,17 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     if (isDemo) {
       setDemoClips((xs) => [...xs, { url: URL.createObjectURL(blob), video: kind === "video" }]);
       r.reset();
+      // 체험: 목소리 다음엔 짧은 영상 한마디 — 영상으로도 남는다는 걸 직접 느끼게
+      if (!steps && kind === "audio" && demoClips.length === 0) {
+        const vq = "이번엔 영상으로 남겨볼게요\n카메라를 보며 짧게 한마디 해주세요";
+        setKind("video");
+        setAsked(vq);
+        setTurn(1);
+        setReady(false);
+        setPhase("ask");
+        mc.say(`${vq}\n지금부터 녹화할게요`, (spoken) => { setReady(true); if (spoken) start("video"); });
+        return;
+      }
       // 체험도 3단계를 그대로 이어서 보여준다
       if (steps && turn < steps.length - 1) {
         const nq = steps[turn + 1];
@@ -685,7 +699,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
       {phase === "ask" && ready && !r.recording && (
         <>
-          <button className="btn" onClick={start}>
+          <button className="btn" onClick={() => start()}>
             {isVideo ? <span className="rec-dot" /> : <Mic />}
             {isVideo ? "눌러서 녹화하기" : "눌러서 말하기"}
           </button>
@@ -716,9 +730,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       {r.recording && isDemo && (
         <div style={{ width: "100%", margin: "0 0 14px" }}>
           <div style={{ height: 6, borderRadius: 3, background: "rgba(255,255,255,.14)", overflow: "hidden" }}>
-            <div style={{ height: "100%", width: `${Math.min(100, (r.sec / DEMO_SEC) * 100)}%`, background: "var(--accent)", transition: "width 1s linear" }} />
+            <div style={{ height: "100%", width: `${Math.min(100, (r.sec / demoSec) * 100)}%`, background: "var(--accent)", transition: "width 1s linear" }} />
           </div>
-          <p className="small muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>체험은 30초면 저절로 끝나요 · 실제로는 부모님이 편하게 10분 남짓 이야기하세요</p>
+          <p className="small muted" style={{ margin: "8px 0 0", lineHeight: 1.5 }}>{`체험은 ${demoSec}초면 저절로 끝나요 · 실제로는 부모님이 편하게 10분 남짓 이야기하세요`}</p>
         </div>
       )}
 
