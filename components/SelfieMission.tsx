@@ -73,7 +73,7 @@ export default function SelfieMission({ token, isDemo, childName, honorific, cov
         </div>
       ) : state !== "done" ? (
         <p className="serif" style={{ margin: 0, fontSize: 23, lineHeight: 1.6, wordBreak: "keep-all" }}>
-          {first ? <>{name} 님의 이야기 잡지가 오늘 시작돼요.<br />표지에 실을 얼굴을 한 장 찍어주세요.</> : <>오늘 이야기의 표지로<br />지금 얼굴을 한 장 남겨주세요.</>}
+          {first ? <>어디에도 적힌 적 없던<br />{name}의 이야기가<br />오늘 처음 남아요<span style={{ display: "block", marginTop: 10, fontSize: 18, opacity: 0.85, fontFamily: "var(--sans)" }}>그 첫 장에 실을 얼굴을 한 장 찍어주세요</span></> : <>오늘 이야기의 표지로<br />지금 얼굴을 한 장 남겨주세요</>}
         </p>
       ) : null}
 
