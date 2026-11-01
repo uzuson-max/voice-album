@@ -14,6 +14,20 @@ export function useHost(token: string) {
   const el = useRef<HTMLAudioElement | null>(null);
   const seq = useRef(0); // 말하는 도중 다른 동작이 오면 앞의 것은 버린다
   const [mode, setMode] = useState<HostMode>("off");
+  const pre = useRef<{ text: string; p: Promise<any> } | null>(null);
+
+  // 읽을 목소리를 미리 받아둔다 — 글자가 먼저 다 뜨고 한참 뒤에 읽기 시작하지 않게
+  function prepare(text: string) {
+    if (!text.trim()) return;
+    pre.current = {
+      text,
+      p: fetch(`/api/s/${token}/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      }).then((r) => r.json()).catch(() => ({})),
+    };
+  }
 
   // "이야기 시작하기" 누름 안에서 부를 것
   function unlock() {
@@ -42,11 +56,13 @@ export function useHost(token: string) {
     if (!a || !text.trim()) return done(false);
     setMode("load");
     try {
-      const j = await fetch(`/api/s/${token}/tts`, {
+      const ready = pre.current?.text === text ? pre.current.p : null;
+      pre.current = null;
+      const j = await (ready || fetch(`/api/s/${token}/tts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
-      }).then((r) => r.json());
+      }).then((r) => r.json()));
       if (my !== seq.current) return;
       if (!j.url) throw new Error();
       a.onended = () => done(true);
@@ -72,5 +88,5 @@ export function useHost(token: string) {
     setMode("off");
   }
 
-  return { mode, on: mode !== "off", unlock, say, listen, stop };
+  return { mode, on: mode !== "off", unlock, prepare, say, listen, stop };
 }

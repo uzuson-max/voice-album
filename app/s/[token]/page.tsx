@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { browserClient } from "@/lib/supabaseBrowser";
 import { Baby, Envelope, LP, Mic, MomOnSofa } from "@/components/Illust";
-import { quietAmbient, startAmbient, stopAmbient, toggleMute } from "@/lib/ambient";
+import { duckAmbient, startAmbient, stopAmbient, toggleMute } from "@/lib/ambient";
 import { koDate } from "@/lib/time";
 import { josa } from "@/lib/korean";
 import { mmss, useRecorder, type Kind } from "@/lib/useRecorder";
@@ -146,9 +146,9 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 음악은 장면을 읽는 동안에만. 녹음이 시작되면 바로 끄고 다시 틀지 않는다 (목소리·다시 듣기에 섞이지 않게)
+  // 녹음하는 동안에도 음악은 끄지 않고 목소리 밑으로 작게 깔아둔다 (bgm)
   useEffect(() => {
-    if (r.recording) quietAmbient(0);
+    if (r.recording) duckAmbient();
   }, [r.recording]);
 
   const [soundOff, setSoundOff] = useState(false);
@@ -161,11 +161,13 @@ export default function ParentPage({ params }: { params: { token: string } }) {
     setPhase("ask");
     // 음악이 몇 초 흐르며 장면이 떠오르고 → 음악이 잦아들면 다람쥐가 장면과 질문을 읽고 → 마이크를 넘기면 녹음 버튼
     const q = steps ? steps[0] : info?.text;
-    const go = () => mc.say([info?.lead, q].filter(Boolean).join("\n"), () => setReady(true));
+    const line = [info?.lead, q].filter(Boolean).join("\n");
+    mc.prepare(line); // 음악이 흐르는 동안 목소리를 미리 받아둔다
+    const go = () => mc.say(line, () => setReady(true));
     if (!MUSIC) setTimeout(go, 1500); // 장면 첫 줄이 떠오를 시간만 주고 바로 읽는다
     else if (withSound) {
-      // 피아노가 4초 먼저 흐르고, 다람쥐 목소리 밑에 작게 그대로 깔린다 (녹음 버튼을 누르면 꺼짐)
-      setTimeout(go, 4000);
+      // 피아노가 3초 먼저 흐르고, 다람쥐 목소리 밑에 작게 그대로 깔린다
+      setTimeout(go, 3000);
     } else go();
   }
 
@@ -177,7 +179,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
 
   async function start() {
     setErr("");
-    quietAmbient(0); // 녹음 버튼을 누르는 순간 바로 끈다
+    duckAmbient(); // 녹음하는 동안은 작게
     mc.listen();
     try {
       await r.start(kind, limit);
@@ -539,7 +541,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <div style={{ marginTop: isVideo ? 20 : 32 }}>{isVideo ? <Baby /> : <MomOnSofa />}</div>
       )}
 
-      {first && info.lead && phase === "ask" && !r.recording && (
+      {first && info.lead && phase === "ask" && !r.recording && mc.mode !== "load" && (
         <div className="lead" style={{ marginTop: 26 }}>
           {splitLead(info.lead).map((line, i, arr) => (
             <p
@@ -557,14 +559,14 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         </div>
       )}
 
-      <h1
-        className={`serif q${first && info.lead && phase === "ask" && !r.recording && !mc.on ? " reveal" : ""}`}
-        style={{ marginTop: mc.on ? 14 : 22, ...(mc.on ? { fontSize: 22 } : {}), animationDelay: info.lead && !mc.on ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
+      {!(mc.mode === "load" && phase === "ask") && <h1
+        className={`serif q${first && info.lead && phase === "ask" && !r.recording && !ready ? " reveal" : ""}`}
+        style={{ marginTop: mc.on ? 14 : 22, ...(mc.on ? { fontSize: 22 } : {}), animationDelay: info.lead && !ready ? `${0.6 + splitLead(info.lead).length * BEAT + 0.2}s` : "0s" }}
       >
         {splitLead(asked).map((line, i) => (
           <span key={i} className="qline">{line}</span>
         ))}
-      </h1>
+      </h1>}
 
       {first && ready && info.childAudioUrl && phase === "ask" && !r.recording && (
         <div style={{ width: "100%", marginTop: 16 }}>

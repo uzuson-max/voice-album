@@ -13,25 +13,40 @@ let engine: Engine | null = null;
 let muted = false;
 let wanted = 0;
 
+// 녹음하는 동안엔 끄지 않고 이만큼으로 낮춰서 bgm처럼 깔아둔다 (기본 크기 대비)
+const UNDER_VOICE = 0.35;
+
 // 휴대폰은 버튼을 누른 그 순간에 바로 play()를 불러야 소리를 허락한다 — 그래서 await 없이 즉시 재생.
-// 아이폰은 볼륨 조절이 막혀 있어서, 줄일 때는 멈추고 올릴 때는 다시 튼다. (음원 자체를 작게 만들어 둠)
-function fileEngine(onFail: () => void): Engine {
+// 아이폰은 audio.volume이 막혀 있어서, 소리 장치(GainNode)를 거쳐 크기를 조절한다.
+function fileEngine(onFail: () => void, ctx?: AudioContext): Engine {
   const el = new Audio(FILE);
   el.loop = true;
-  el.volume = 0;
+  let gain: GainNode | null = null;
+  if (ctx) {
+    try {
+      const src = ctx.createMediaElementSource(el);
+      gain = ctx.createGain();
+      gain.gain.value = 0;
+      src.connect(gain);
+      gain.connect(ctx.destination);
+    } catch { gain = null; }
+  }
+  el.volume = gain ? 1 : 0;
   el.play().catch(onFail);
   let raf = 0;
   let pauseT: any = 0;
+  const getV = () => (gain ? gain.gain.value : el.volume);
+  const setV = (x: number) => { if (gain) gain.gain.value = x; else el.volume = x; };
   return {
     setLevel(v, sec) {
       cancelAnimationFrame(raf);
       clearTimeout(pauseT);
       if (v > 0 && el.paused) el.play().catch(() => {});
       const to = Math.min(1, v / LEVEL); // 음원 자체가 이미 작아서 1이 기본 크기
-      const from = el.volume, t0 = performance.now();
+      const from = getV(), t0 = performance.now();
       const step = () => {
         const k = Math.min(1, (performance.now() - t0) / (sec * 1000 || 1));
-        try { el.volume = Math.max(0, Math.min(1, from + (to - from) * k)); } catch {}
+        try { setV(Math.max(0, Math.min(1, from + (to - from) * k))); } catch {}
         if (k < 1) raf = requestAnimationFrame(step);
       };
       step();
@@ -130,7 +145,7 @@ export function startAmbient() {
     engine = fileEngine(() => {
       engine = synthEngine(spare);
       engine.setLevel(muted ? 0 : wanted, 4);
-    });
+    }, spare);
     engine.setLevel(muted ? 0 : LEVEL, 4);
   } catch {
     engine = null;
@@ -142,6 +157,12 @@ export function quietAmbient(sec = 0) {
   wanted = 0;
   engine?.setLevel(0, sec);
   if (sec === 0) engine?.stop(); // 아이폰은 볼륨 조절이 안 돼서 즉시 멈춘다
+}
+
+/** 녹음 중: 끄지 않고 목소리 밑으로 작게 */
+export function duckAmbient(sec = 1.5) {
+  wanted = LEVEL * UNDER_VOICE;
+  if (!muted) engine?.setLevel(wanted, sec);
 }
 
 /** 녹음 끝: 다시 잔잔하게 */
