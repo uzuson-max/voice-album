@@ -154,6 +154,10 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [soundOff, setSoundOff] = useState(false);
   // 첫 초대장: 휴대폰은 한 번 눌러야 소리를 허락해서, '초대장 열어보기'를 누르는 순간 음악을 켜고 멘트가 떠오른다
   const [opened, setOpened] = useState(false);
+  // 녹음을 마치면: ① 표지 사진(잡지 틀) → ② '오늘 이야기, 잘 담았어요' + 다음 이야기 → (체험만) ③ 버튼을 눌러야 예시 잡지
+  const [coverDone, setCoverDone] = useState(false);
+  const [tour, setTour] = useState(false);
+  const tourRef = useRef<HTMLDivElement | null>(null);
   function openInvite() {
     if (MUSIC) startAmbient();
     mc.unlock();
@@ -441,21 +445,30 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       </main>
     );
 
-  if (phase === "done")
+  if (phase === "done") {
+    const needCover = !coverDone && !info.hasCover && !info.answered;
+    if (needCover)
+      return (
+        <main className="screen center foil" style={{ paddingTop: 56 }}>
+          {host?.react && <p className="muted" style={{ margin: 0, fontSize: 17 }}>{host.react}</p>}
+          <h1 className="serif" style={{ margin: "10px 0 0", fontSize: 26 }}>녹음을 마쳤어요</h1>
+          <SelfieMission
+            token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}
+            coverName={info.coverName || null} first={!!info.firstEver} hasCover={!!info.hasCover}
+            onDone={() => setCoverDone(true)}
+          />
+          <div className="grow" />
+        </main>
+      );
     return (
       <main className="screen center foil" style={{ paddingTop: 48 }}>
         <div style={{ transform: "scale(.72)", transformOrigin: "center top", marginBottom: -40 }}>
           <Envelope />
         </div>
-        {host?.react && <p className="muted" style={{ margin: "8px 0 0", fontSize: 17 }}>{host.react}</p>}
         <h1 className="serif" style={{ margin: "10px 0 0", fontSize: 28 }}>오늘 이야기, 잘 담았어요</h1>
         <p className="muted" style={{ margin: "10px 0 0", fontSize: 18, lineHeight: 1.6 }}>
           {info.honorific}의 이야기는 {toChild}
         </p>
-        {!isDemo && <SelfieMission
-          token={params.token} isDemo={isDemo} childName={info.childName} honorific={info.honorific}
-          coverName={info.coverName || null} first={!!info.firstEver} hasCover={!!info.hasCover}
-        />}
         {info.next ? (
           <div
             className="card stack"
@@ -478,12 +491,29 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         ) : (
           <p style={{ marginTop: 32, fontSize: 18 }}>{info.childName}에게 이야기가 잘 전해졌어요</p>
         )}
-        {isDemo && (
-          <SampleStory clips={demoClips} childName={info.childName} steps={steps} />
+        {isDemo && !tour && (
+          <div className="stack" style={{ marginTop: 72, alignItems: "center", gap: 10, width: "100%" }}>
+            <p className="tiny muted" style={{ margin: 0, letterSpacing: "0.08em" }}>여기까지가 부모님이 보시는 화면이에요</p>
+            <button
+              className="btn"
+              onClick={() => {
+                setTour(true);
+                setTimeout(() => tourRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+              }}
+            >
+              이 이야기가 어떻게 도착하는지 보기 ↓
+            </button>
+          </div>
+        )}
+        {isDemo && tour && (
+          <div ref={tourRef} style={{ alignSelf: "stretch" }}>
+            <SampleStory clips={demoClips} childName={info.childName} steps={steps} />
+          </div>
         )}
         <div className="grow" />
       </main>
     );
+  }
 
   if (phase === "later")
     return (
