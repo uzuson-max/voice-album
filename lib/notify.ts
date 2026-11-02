@@ -102,7 +102,7 @@ export async function notifyKeepEnding(now = new Date(), keepYears = 1) {
       f.child_phone,
       "keep",
       { "#{부모님}": label, "#{날짜}": date },
-      `[${APP_NAME}] ${label} 이야기 보관이 ${date}에 끝나요.\n\n그 전에 목소리·영상 원본을 내려받아 두세요.\n${appUrl()}/app/export`,
+      `[${APP_NAME}] ${label} 이야기 원본 내려받기가 ${date}에 끝나요.\n\n그 뒤에도 앱과 잡지 QR로는 계속 들을 수 있어요. 원본 파일이 필요하면 그 전에 내려받아 두세요.\n${appUrl()}/app/export`,
       "원본 내려받기 안내"
     ).catch((e) => log.push({ keepFail: f.id, e: e?.message }));
     log.push({ keepNotified: f.id });

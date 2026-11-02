@@ -47,7 +47,7 @@ export default function Plan() {
       <div className="stack">
         <h1 className="h1">{josa(label, "과/와")} 함께할 12번의 이야기</h1>
         <p className="muted small" style={{ margin: 0, lineHeight: 1.7 }}>
-          화요일과 토요일, 질문이 하나씩 가요. 다 모이면 {label} 목소리가 담긴 양장본 한 권이 집으로 가요.
+          화요일과 토요일, 질문이 하나씩 가요. 다 모이면 {label} 목소리가 담긴 잡지 한 권이 상자에 담겨 가요.
         </p>
 
         <div className="card box stack" style={{ gap: 6 }}>
@@ -63,8 +63,8 @@ export default function Plan() {
           <Row k="부모님 참여" v="문자 링크 하나. 앱 설치·로그인 없이 말로만" />
           <Row k="매번 받는 것" v="목소리·영상 원본 + 우리집 신문 한 편" />
           <Row k="내가 보내는 답장" v={`${replies}번 — ${label}의 다음 링크에 먼저 도착`} />
-          <Row k="12번이 끝나면" v="양장본 1권 · 장마다 QR로 목소리 다시 듣기" />
-          <Row k="보관" v={`끝난 뒤 ${PRICE.keepYears}년 동안 열람·원본 전체 내려받기`} />
+          <Row k="12번이 끝나면" v="잡지 1권(상자 포장) · 호마다 QR로 목소리 다시 듣기" />
+          <Row k="보관" v={`앱·QR로 듣기는 서비스 운영 동안 계속 · 원본 내려받기는 끝난 뒤 ${PRICE.keepYears}년`} />
           {PRICE.extraCopy && <Row k="형제용 추가 부수" v={PRICE.extraCopy} />}
         </div>
 

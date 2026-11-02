@@ -34,7 +34,7 @@ export default function Export() {
       <div className="stack">
         <h1 className="h1">원본 전체 내려받기</h1>
         <p className="small muted" style={{ margin: 0, lineHeight: 1.7 }}>
-          {josa(d.label, "이/가")} 남긴 목소리와 영상을 그대로 내려받아요. 과정이 끝난 뒤 {PRICE.keepYears}년 동안 여기서 언제든 다시 받을 수 있어요.
+          {josa(d.label, "이/가")} 남긴 목소리와 영상을 그대로 내려받아요. 과정이 끝난 뒤 {PRICE.keepYears}년 동안 여기서 언제든 다시 받을 수 있고, 그 뒤에도 앱과 잡지 QR로는 계속 들을 수 있어요.
         </p>
 
         {d.files.length === 0 && <p className="muted small">아직 내려받을 이야기가 없어요.</p>}

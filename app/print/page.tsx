@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { api } from "@/lib/supabaseBrowser";
 import { josa } from "@/lib/korean";
 import { KOREA_YEARS } from "@/lib/eras";
+import { qrOrigin } from "@/lib/brand";
 
 type Art = {
   promptId: string; question: string; week: number | null; title: string; article: string | null; quote: string | null;
@@ -70,7 +71,7 @@ export default function PrintMagazine() {
 
   // QR: 호마다 '목소리 듣기' 주소
   useEffect(() => {
-    const origin = window.location.origin;
+    const origin = qrOrigin();
     arts.forEach((a) => {
       if (!a.token || qr[a.promptId]) return;
       QRCode.toDataURL(`${origin}/l/${a.token}`, { margin: 0, width: 300, color: { dark: "#2F2B28", light: "#00000000" } })
@@ -118,6 +119,7 @@ export default function PrintMagazine() {
       <div className="pm-bar">
         <div>
           <b>인쇄용 잡지 · {pages.length}쪽</b>
+          {!process.env.NEXT_PUBLIC_QR_ORIGIN && <span style={{ color: "#E2A37A", opacity: 1 }}>아직 내 도메인이 연결되지 않아 QR이 임시 주소예요. 판매용 인쇄 전에 꼭 도메인을 연결하세요</span>}
           <span>인쇄 창에서 대상 ‘PDF로 저장’, 여백 ‘없음’, ‘배경 그래픽’을 켜주세요. 2쪽 편지는 눌러서 직접 고칠 수 있어요</span>
         </div>
         <button className="btn sm" onClick={() => window.print()}>PDF로 저장</button>
