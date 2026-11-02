@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserClient } from "@/lib/supabaseBrowser";
-import { Envelope } from "@/components/Illust";
 
+// 로그인 — 그림 대신 잡지 제호처럼 글자만으로. 이야기 탭(잡지)과 같은 결
 export default function Login() {
   const router = useRouter();
   const [err, setErr] = useState("");
@@ -26,14 +26,25 @@ export default function Login() {
     }
   }
 
+  const ink = "var(--charcoal)";
   return (
-    <main className="screen center" style={{ paddingTop: 100 }}>
-      <Envelope />
-      <h1 className="serif" style={{ fontSize: 26, margin: "36px 0 0" }}>시작하기</h1>
-      <p className="muted" style={{ fontSize: 16, lineHeight: 1.7, marginTop: 12 }}>
-        카카오로 3초 만에 시작해요.
-      </p>
-      <div className="grow" style={{ minHeight: 32 }} />
+    <main className="screen" style={{ paddingTop: "calc(24px + env(safe-area-inset-top))" }}>
+      <div className="row between" style={{ alignItems: "baseline", borderBottom: `1px solid ${ink}`, paddingBottom: 10 }}>
+        <span style={{ fontSize: 12, letterSpacing: ".22em", color: "var(--muted)" }}>부모님 이야기 잡지</span>
+        <span style={{ fontSize: 12, letterSpacing: ".22em", color: "var(--muted)" }}>창간 준비호</span>
+      </div>
+
+      <div style={{ marginTop: "clamp(56px, 16vh, 140px)" }}>
+        <h1 style={{ fontFamily: "var(--serif)", fontWeight: 700, fontSize: 54, lineHeight: 1.12, letterSpacing: "-.02em", margin: 0, color: ink }}>
+          우리집<br />레코드
+        </h1>
+        <div style={{ width: 44, height: 3, background: "var(--ochre)", margin: "26px 0 22px" }} />
+        <p style={{ fontSize: 17, lineHeight: 1.75, color: "var(--text)", margin: 0, wordBreak: "keep-all" }}>
+          엄마·아빠의 목소리와 모습을<br />한 권으로 남겨요
+        </p>
+      </div>
+
+      <div className="grow" style={{ minHeight: 40 }} />
       {err && <p className="err">{err}</p>}
       <button
         className="btn"
@@ -46,6 +57,7 @@ export default function Login() {
         </svg>
         {busy ? "카카오로 이동 중…" : "카카오로 시작하기"}
       </button>
+      <p className="muted" style={{ fontSize: 13, textAlign: "center", margin: "12px 0 0" }}>가입과 로그인 모두 카카오로 한 번에</p>
     </main>
   );
 }
