@@ -5,7 +5,7 @@ import { kstParts, SEND_DAYS, SEND_DAYS_LABEL } from "./time";
 import { APP_NAME, appUrl, PRICE } from "./brand";
 import { finishPrompt, healPending } from "./process";
 import { ensureLead } from "./lead";
-import { josa } from "./korean";
+import { josa, callName, isNickname } from "./korean";
 import { notifyKeepEnding } from "./notify";
 import { isPaused } from "./course";
 
@@ -62,7 +62,7 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
 
   const token = crypto.randomBytes(16).toString("base64url");
   const h = storyteller.honorific || "";
-  const cGa = josa(childName, "이/가");
+  const cGa = josa(callName(childName, isNickname(childName)), "이/가"); // 재빈 → 재빈이가, 큰딸 → 큰딸이
   let text: string;
   if (!sentBefore) {
     text =
@@ -104,7 +104,7 @@ async function revisitMissed(storyteller: any, childName: string) {
     .limit(1)
     .maybeSingle();
   if (!missed) return { sent: false, reason: "보낼 질문이 없어요" };
-  const cGa = josa(childName, "이/가");
+  const cGa = josa(callName(childName, isNickname(childName)), "이/가"); // 재빈 → 재빈이가, 큰딸 → 큰딸이
   const text =
     `[${APP_NAME}] 그동안 못다 한 이야기가 하나 있어요.\n\n${teaser(missed)}\n\n` +
     `${cGa} 꼭 듣고 싶어 했던 이야기예요. 편하실 때 들려주세요.\n${link(missed.token)}`;

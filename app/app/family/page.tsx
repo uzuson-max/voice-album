@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, browserClient } from "@/lib/supabaseBrowser";
-import { render, josa } from "@/lib/korean";
-import { buildCourse } from "@/lib/questions";
+import { render, josa, isNickname } from "@/lib/korean";
+import { buildCourse, CHOICES, PROFILE_KEYS as K } from "@/lib/questions";
 import HonorificSheet from "@/components/HonorificSheet";
 import CourseControls from "@/components/CourseControls";
 import { LIMIT } from "@/lib/course";
@@ -11,25 +11,52 @@ import { LIMIT } from "@/lib/course";
 const empty = {
   childName: "", label: "엄마", honorific: "어머니", phone: "", childPhone: "",
   sendWeekday: 2, sendHour: 9, unsealAt: "",
-  born: "", school: "", hometown: "", job: "", likes: "", likeFood: "",
+  born: "", hometown: "", job: "",
   childBorn: "", food: "", catchphrase: "", unsaid: "", coverName: "",
+  me: "", order: "", teenPlace: "", at20: "", whenKid: "", leftHome: "", talk: "", avoid: "",
 };
 type F = typeof empty;
 
 const HONORIFIC: Record<string, string> = { 엄마: "어머니", 아빠: "아버지" };
 const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
 
-function profileOf(f: F) {
+// base: 예전에 받던 항목(학교·즐겨 하는 것 등)은 지우지 않고 그대로 둔다
+function profileOf(f: F, base: Record<string, any> = {}) {
   return {
-    "태어난 해": f.born, "학교·전공": f.school, 고향: f.hometown, "결혼 전 했던 일": f.job, "요즘 즐겨 하는 것": f.likes, "좋아하는 음식": f.likeFood,
-    "내가 태어난 해": f.childBorn, "최애 음식": f.food, 말버릇: f.catchphrase, "못 한 말": f.unsaid,
+    ...base,
+    [K.parentBorn]: f.born, [K.hometown]: f.hometown, [K.job]: f.job,
+    [K.childBorn]: f.childBorn, [K.food]: f.food, [K.catchphrase]: f.catchphrase, [K.unsaid]: f.unsaid,
     "표지 이름": f.coverName,
+    [K.me]: f.me, [K.order]: f.order, [K.teenPlace]: f.teenPlace, [K.at20]: f.at20,
+    [K.whenKid]: f.whenKid, [K.leftHome]: f.leftHome, [K.talk]: f.talk, [K.avoid]: f.avoid,
   };
 }
 
-function varsOf(f: F) {
+function fromProfile(p: Record<string, any>) {
+  const g = (k: string) => String(p[k] ?? "");
   return {
-    childGiven: f.childName.trim() || "재빈이", childIsNickname: true, parentTitle: f.label.trim() || "엄마",
+    born: g(K.parentBorn), hometown: g(K.hometown), job: g(K.job) || g("했던 일"),
+    childBorn: g(K.childBorn), food: g(K.food), catchphrase: g(K.catchphrase), unsaid: g(K.unsaid), coverName: g("표지 이름"),
+    me: g(K.me), order: g(K.order), teenPlace: g(K.teenPlace), at20: g(K.at20),
+    whenKid: g(K.whenKid), leftHome: g(K.leftHome), talk: g(K.talk), avoid: g(K.avoid),
+  };
+}
+
+// 아들·딸 + 몇째 → 부모님이 실제로 부를 법한 이름 후보
+function nameIdeas(me: string, order: string) {
+  if (!me) return [];
+  const big = me === "딸" ? "큰딸" : "큰아들";
+  const ours = me === "딸" ? "우리 딸" : "우리 아들";
+  if (order === "첫째") return [big, ours];
+  if (order === "막내") return ["막내", ours];
+  if (order === "중간") return ["둘째", ours];
+  return [ours];
+}
+
+function varsOf(f: F) {
+  const name = f.childName.trim() || "재빈";
+  return {
+    childGiven: name, childIsNickname: isNickname(name), parentTitle: f.label.trim() || "엄마",
     parentBirthYear: parseInt(f.born, 10) || 0, childBirthYear: parseInt(f.childBorn, 10) || 0,
   };
 }
@@ -47,6 +74,7 @@ export default function Family() {
   const [role, setRole] = useState<"owner" | "member" | null>(null);
   const [sheet, setSheet] = useState(false);
   const [changes, setChanges] = useState(0); // 호칭 바꾼 횟수
+  const [base, setBase] = useState<Record<string, any>>({}); // 저장돼 있던 profile 원본
 
   useEffect(() => {
     api("/api/me/family").then(({ family, storyteller, role }) => {
@@ -55,18 +83,18 @@ export default function Family() {
         setIsNew(false);
         setChanges(storyteller.honorific_changes || 0);
         const p = storyteller.profile || {};
+        setBase(p);
         setF({
           childName: family.child_name, label: storyteller.label, honorific: storyteller.honorific, phone: storyteller.phone, childPhone: family.child_phone || "",
           sendWeekday: storyteller.send_weekday, sendHour: storyteller.send_hour, unsealAt: storyteller.unseal_at || "",
-          born: p["태어난 해"] || "", school: p["학교·전공"] || "", hometown: p.고향 || "", job: p["결혼 전 했던 일"] || p["했던 일"] || "", likes: p["요즘 즐겨 하는 것"] || p["좋아하는 것"] || "", likeFood: p["좋아하는 음식"] || "",
-          childBorn: p["내가 태어난 해"] || "", food: p["최애 음식"] || "", catchphrase: p["말버릇"] || "", unsaid: p["못 한 말"] || "",
-          coverName: p["표지 이름"] || "",
+          ...fromProfile(p),
         });
       }
     }).finally(() => setLoaded(true));
   }, []);
 
   const set = (k: keyof F) => (e: any) => setF({ ...f, [k]: e.target.value });
+  const pick = (k: keyof F) => (val: string) => setF({ ...f, [k]: val });
   const p = f.label.trim() || "엄마";
 
   async function save(nf: F = f) {
@@ -76,7 +104,7 @@ export default function Family() {
         method: "POST",
         body: JSON.stringify({
           ...nf, sendWeekday: Number(nf.sendWeekday), sendHour: Number(nf.sendHour), unsealAt: null, agree,
-          profile: profileOf(nf),
+          profile: profileOf(nf, base),
         }),
       });
       if (r?.storyteller) setChanges(r.storyteller.honorific_changes || 0);
@@ -116,7 +144,8 @@ export default function Family() {
       <main className="screen with-tabs">
         <form onSubmit={(e) => { e.preventDefault(); save(); }} className="stack">
           <h1 className="h1">가족</h1>
-          <Field label="부모님이 나를 부르는 이름"><input className="input" required value={f.childName} onChange={set("childName")} /></Field>
+          <Field label={`${josa(p, "이/가")} 나를 부르는 이름`}><input className="input" required value={f.childName} onChange={set("childName")} /></Field>
+          <NamePreview v={varsOf(f)} label={p} />
           <Field label="호칭" hint={changes >= LIMIT.honorificChanges ? "호칭은 이미 한 번 바꿨어요" : "누르면 어디에 어떻게 들어가는지 볼 수 있어요. 한 번만 바꿀 수 있어요."}>
             <button type="button" className="input" style={{ textAlign: "left" }} onClick={() => setSheet(true)}>{f.label} · 문자에는 {f.honorific}</button>
           </Field>
@@ -138,13 +167,17 @@ export default function Family() {
           <Field label="잡지 표지에 들어갈 부모님 이름" hint="이야기 잡지 표지에 크게 들어가요. 비워두면 호칭으로 나와요.">
             <input className="input" value={f.coverName} onChange={set("coverName")} placeholder="김정숙" />
           </Field>
-          <Field label="부모님 음식 중 내 최애"><input className="input" value={f.food} onChange={set("food")} /></Field>
-          <Field label="부모님 말버릇"><input className="input" value={f.catchphrase} onChange={set("catchphrase")} /></Field>
-          <Field label="마지막으로 다니신 학교"><input className="input" value={f.school} onChange={set("school")} /></Field>
-          <Field label="고향"><input className="input" value={f.hometown} onChange={set("hometown")} /></Field>
-          <Field label="결혼 전에 하셨던 일"><input className="input" value={f.job} onChange={set("job")} /></Field>
-          <Field label="좋아하시는 음식"><input className="input" value={f.likeFood} onChange={set("likeFood")} /></Field>
-          <Field label="요즘 즐겨 하시는 것"><input className="input" value={f.likes} onChange={set("likes")} /></Field>
+          <Field label={`${p} 음식 중 내 최애`}><input className="input" value={f.food} onChange={set("food")} /></Field>
+          <Field label={`${p} 말버릇`}><input className="input" value={f.catchphrase} onChange={set("catchphrase")} /></Field>
+          <Field label="나는"><Chips options={CHOICES.me} value={f.me} onChange={pick("me")} /><Chips options={CHOICES.order} value={f.order} onChange={pick("order")} /></Field>
+          <Field label="10대 때 살던 곳"><Chips options={CHOICES.teenPlace} value={f.teenPlace} onChange={pick("teenPlace")} /></Field>
+          <Field label="고향 (아는 경우만)"><input className="input" value={f.hometown} onChange={set("hometown")} /></Field>
+          <Field label="스무 살 무렵"><Chips options={CHOICES.at20} value={f.at20} onChange={pick("at20")} /></Field>
+          <Field label="결혼 전 했던 일"><Chips options={CHOICES.job} value={f.job} onChange={pick("job")} /><input className="input" value={f.job} onChange={set("job")} placeholder="직접 쓰기" /></Field>
+          <Field label="내가 어릴 때"><Chips options={CHOICES.whenKid} value={f.whenKid} onChange={pick("whenKid")} /></Field>
+          <Field label="내가 처음 집을 떠난 건"><Chips options={CHOICES.leftHome} value={f.leftHome} onChange={pick("leftHome")} /></Field>
+          <Field label="말씀하실 때"><Chips options={CHOICES.talk} value={f.talk} onChange={pick("talk")} /></Field>
+          <Field label="질문에서 비켜갈 이야기"><Chips multi options={CHOICES.avoid} value={f.avoid} onChange={pick("avoid")} /></Field>
           {err && <p className="err">{err}</p>}
           {saved && <p className="small" style={{ color: "var(--primary)" }}>저장했어요.</p>}
           <button className="btn" disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
@@ -172,7 +205,7 @@ export default function Family() {
   /* ───────── 처음 오신 분: 상담처럼 하나씩 ───────── */
   const v = varsOf(f);
   const years = v.parentBirthYear > 1900 && v.childBirthYear > v.parentBirthYear;
-  const course = buildCourse({ childName: v.childGiven, label: p, profile: profileOf(f) });
+  const course = buildCourse({ childName: v.childGiven, label: p, profile: profileOf(f, base) });
 
   const steps: { title: string; why?: string; body: React.ReactNode; ok?: boolean; optional?: boolean }[] = [
     {
@@ -216,12 +249,19 @@ export default function Family() {
     },
     {
       title: `${josa(p, "이/가")} 나를 뭐라고 불러요?`,
-      why: "부모님께 가는 문자에 이 이름이 그대로 써요. 평소 부르는 그대로가 좋아요.",
+      why: `${p}에게 가는 문자와 화면에 이 이름이 들어가요. 성은 빼고, 평소 부르는 그대로요.`,
       ok: !!f.childName.trim(),
       body: (
         <div className="stack" style={{ gap: 12 }}>
-          <input className="input" autoFocus value={f.childName} onChange={set("childName")} placeholder="예: 재빈이, 우리 딸, 막내" />
-          {f.childName.trim() && <Preview label={`${p}에게 이렇게 가요`} text={render("{child:이/가} 보낸 질문이 도착했어요.", v)} />}
+          <div className="stack" style={{ gap: 6 }}>
+            <Chips options={CHOICES.me} value={f.me} onChange={pick("me")} />
+            <Chips options={CHOICES.order} value={f.order} onChange={pick("order")} />
+          </div>
+          <input className="input" value={f.childName} onChange={set("childName")} placeholder="예: 재빈, 큰딸, 막내" />
+          {nameIdeas(f.me, f.order).length > 0 && (
+            <Chips options={nameIdeas(f.me, f.order)} value={f.childName} onChange={pick("childName")} />
+          )}
+          {f.childName.trim() && <NamePreview v={v} label={p} />}
         </div>
       ),
     },
@@ -248,25 +288,64 @@ export default function Family() {
       title: `${p} 음식 중에 제일 좋아하는 건요?`,
       why: `${josa(p, "이/가")} 그 음식을 처음부터 영상으로 알려주는 회차가 돼요. 언젠가 다시 못 먹게 될 맛을 남기는 시간이에요.`,
       optional: true,
-      body: <input className="input" value={f.food} onChange={set("food")} placeholder="예: 김치찌개, 계란볶음밥" />,
+      body: (
+        <div className="stack" style={{ gap: 10 }}>
+          <Chips options={CHOICES.food} value={f.food} onChange={pick("food")} />
+          <input className="input" value={f.food} onChange={set("food")} placeholder="없으면 직접 써주세요" />
+        </div>
+      ),
     },
     {
       title: `${josa(p, "이/가")} 맨날 하던 말이 있어요?`,
       why: "그 말을 왜 그렇게 자주 했는지, 그리고 지금 한 번만 해달라고 묻는 회차가 돼요.",
       optional: true,
-      body: <input className="input" value={f.catchphrase} onChange={set("catchphrase")} placeholder="예: 밥은 먹고 다니냐" />,
-    },
-    {
-      title: `${p}에 대해 아는 만큼만`,
-      why: "질문을 다듬고, 기사에 그 시절 배경을 입히는 데 써요. 아는 것만 적어도 충분해요.",
-      optional: true,
       body: (
         <div className="stack" style={{ gap: 10 }}>
-          <Field label="고향"><input className="input" value={f.hometown} onChange={set("hometown")} placeholder="예: 전남 순천" /></Field>
-          <Field label="마지막으로 다니신 학교"><input className="input" value={f.school} onChange={set("school")} placeholder="예: 순천공고" /></Field>
-          <Field label="결혼 전에 하셨던 일"><input className="input" value={f.job} onChange={set("job")} placeholder="예: 섬유공장, 미용실, 은행" /></Field>
-          <Field label="좋아하시는 음식"><input className="input" value={f.likeFood} onChange={set("likeFood")} placeholder="예: 해산물, 회" /></Field>
-          <Field label="요즘 즐겨 하시는 것"><input className="input" value={f.likes} onChange={set("likes")} placeholder="예: 텃밭 가꾸기, 트로트, 등산" /></Field>
+          <Chips options={CHOICES.catchphrase} value={f.catchphrase} onChange={pick("catchphrase")} />
+          <input className="input" value={f.catchphrase} onChange={set("catchphrase")} placeholder={`${p} 말투 그대로 써주세요`} />
+          {f.catchphrase.trim() && <Preview label="10번째 이야기가 이렇게 시작해요" text={render(`"${f.catchphrase.trim()}" {parent:이/가} 맨날 하던 그 말이요.`, v)} />}
+        </div>
+      ),
+    },
+    {
+      title: `나를 낳기 전, ${p}의 시절`,
+      why: `그 시절 장면을 그리는 데 써요. 확실하지 않으면 비워두세요. 비워둔 칸은 누구에게나 맞는 장면으로 가요.`,
+      optional: true,
+      body: (
+        <div className="stack" style={{ gap: 16 }}>
+          <Field label="10대 때 살던 곳"><Chips options={CHOICES.teenPlace} value={f.teenPlace} onChange={pick("teenPlace")} /></Field>
+          {f.teenPlace && course[1].lead && <Preview label="2번째 이야기가 이렇게 시작해요" text={course[1].lead} />}
+          <Field label="스무 살 무렵"><Chips options={CHOICES.at20} value={f.at20} onChange={pick("at20")} /></Field>
+          <Field label="결혼 전에 했던 일" hint="가게 이름이나 회사 이름을 알면 직접 써주세요. 질문에 그대로 들어가요.">
+            <Chips options={CHOICES.job} value={f.job} onChange={pick("job")} />
+            <input className="input" value={f.job} onChange={set("job")} placeholder="예: 섬유공장, 동네 미용실" />
+          </Field>
+          <Field label="고향 (아는 경우만)"><input className="input" value={f.hometown} onChange={set("hometown")} placeholder="예: 전남 순천" /></Field>
+        </div>
+      ),
+    },
+    {
+      title: `나를 키우던 시절의 ${p}`,
+      why: "내가 기억하는 장면에서 질문이 출발해요. 그래야 둘 다 아는 그날로 같이 돌아가요.",
+      optional: true,
+      body: (
+        <div className="stack" style={{ gap: 16 }}>
+          <Field label={`내가 초등학생일 때 ${josa(p, "은/는")}`}><Chips options={CHOICES.whenKid} value={f.whenKid} onChange={pick("whenKid")} /></Field>
+          <Field label="내가 처음 며칠 이상 집을 떠난 건"><Chips options={CHOICES.leftHome} value={f.leftHome} onChange={pick("leftHome")} /></Field>
+          {f.leftHome && course[5].lead && <Preview label="6번째 이야기가 이렇게 시작해요" text={course[5].lead} />}
+        </div>
+      ),
+    },
+    {
+      title: `${josa(p, "은/는")} 어떤 분이에요?`,
+      why: "질문의 길이와 결을 맞추는 데 써요. 여기 적은 건 부모님께 보이지 않아요.",
+      optional: true,
+      body: (
+        <div className="stack" style={{ gap: 16 }}>
+          <Field label="이야기할 때"><Chips options={CHOICES.talk} value={f.talk} onChange={pick("talk")} /></Field>
+          <Field label="질문에서 비켜갈 이야기" hint="여러 개 골라도 돼요. 이 주제는 꺼내지 않아요.">
+            <Chips multi options={CHOICES.avoid} value={f.avoid} onChange={pick("avoid")} />
+          </Field>
         </div>
       ),
     },
@@ -345,6 +424,51 @@ export default function Family() {
         </div>
       </div>
     </main>
+  );
+}
+
+// 고르기 버튼 — 다시 누르면 해제. multi 면 '·'로 이어 저장
+function Chips({ options, value, onChange, multi }: { options: readonly string[]; value: string; onChange: (v: string) => void; multi?: boolean }) {
+  const sel = multi ? value.split("·").filter(Boolean) : [value];
+  return (
+    <div className="row" style={{ gap: 6, flexWrap: "wrap" }}>
+      {options.map((o) => {
+        const on = sel.includes(o);
+        return (
+          <button
+            key={o} type="button" className={`btn sm${on ? "" : " soft"}`} style={{ flex: "0 0 auto", width: "auto" }}
+            onClick={() => {
+              if (!multi) return onChange(on ? "" : o);
+              onChange((on ? sel.filter((x) => x !== o) : [...sel, o]).join("·"));
+            }}
+          >
+            {o}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// 이름이 실제로 어떻게 들어가는지 — 호칭 팝업처럼 자리별로 보여준다
+function NamePreview({ v, label }: { v: any; label: string }) {
+  return (
+    <div className="card stack" style={{ gap: 10 }}>
+      <span className="tiny muted">{label}에게 이렇게 가요</span>
+      <Ex where="문자" text={render("{child:이/가} 보낸 질문이 도착했어요", v)} />
+      <Ex where="듣는 화면" text={render("{child:이/가} 꼭 듣고 싶어 했던 이야기예요", v)} />
+      <Ex where={`${label} 목소리`} text={render("{child:아/야}", v)} />
+      <span className="tiny muted">어색하면 고쳐 써보세요. 재빈, 재빈이 어느 쪽으로 써도 {label} 말투로 맞춰져요.</span>
+    </div>
+  );
+}
+
+function Ex({ where, text }: { where: string; text: string }) {
+  return (
+    <div className="row" style={{ gap: 10, alignItems: "baseline" }}>
+      <span className="tiny muted" style={{ minWidth: 64 }}>{where}</span>
+      <span className="serif" style={{ fontSize: 16, lineHeight: 1.5 }}>{text}</span>
+    </div>
   );
 }
 

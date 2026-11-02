@@ -68,6 +68,15 @@ export function callName(given: string, nickname = false): string {
   return hasBatchim(n) ? n + '이' : n;
 }
 
+/**
+ * 이름이 아니라 별명·관계로 부르는지: '큰딸', '우리 아들', '막내' → true
+ * 별명에는 '이'를 붙이지 않는다 (큰딸이가 ✕ → 큰딸이 ○)
+ */
+export function isNickname(given: string): boolean {
+  const n = given.trim();
+  return /\s/.test(n) || /(딸|아들|막내|째|공주|왕자|강아지|새끼|님|씨)$/.test(n);
+}
+
 /** 부르는 말: '재빈' → '재빈아', '민지' → '민지야' */
 export function vocative(given: string, nickname = false): string {
   let n = given.trim();

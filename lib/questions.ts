@@ -12,7 +12,7 @@
 //  {parent:은/는} 엄마는 / {age@childBirth:살} 스물여섯 살 / {childAge+10:살} 마흔여덟 살
 //  {favoriteFood} 김치찌개
 
-import { render, type FamilyVars } from './korean';
+import { render, isNickname, type FamilyVars } from './korean';
 
 /* ───────── 온보딩: vf_storytellers.profile 에 저장되는 키 ───────── */
 
@@ -23,7 +23,57 @@ export const PROFILE_KEYS = {
   food: '최애 음식',
   catchphrase: '말버릇',
   unsaid: '못 한 말',               // 자녀만 봄, 11주 답장 때 다시 꺼냄
+  // 2026-11 온보딩 개편: 쓰기 대신 고르기. 값은 아래 보기 문구 그대로 저장
+  me: '나',                         // 아들 | 딸
+  order: '몇째',                    // 외동 | 첫째 | 중간 | 막내
+  teenPlace: '10대 때 살던 곳',      // 시골 마을 | 작은 도시 | 큰 도시
+  at20: '스무 살 무렵',              // 학교 다니는 중 | 일하는 중 | 결혼·살림 | 군대
+  job: '결혼 전 했던 일',            // 기존 키 그대로 (보기 + 직접 쓰기)
+  whenKid: '내가 어릴 때',           // 밖에서 일하셨어요 | 집에서 살림하셨어요 | 둘 다 하셨어요
+  leftHome: '처음 집을 떠난 때',      // 수학여행·캠프 | 대학·기숙사 | 군대 | 취업·독립 | 결혼
+  talk: '말수',                     // 이야기를 길게 하는 편 | 물어보면 하는 편 | 짧게 끝내는 편
+  avoid: '조심할 이야기',            // 여러 개, '·'로 이어 저장
 } as const;
+
+/* 고르기 보기 — 온보딩 화면과 질문 문장이 같은 값을 쓴다 */
+export const CHOICES = {
+  me: ['아들', '딸'],
+  order: ['외동', '첫째', '중간', '막내'],
+  teenPlace: ['시골 마을', '작은 도시', '큰 도시'],
+  at20: ['학교 다니는 중', '일하는 중', '결혼·살림', '군대'],
+  job: ['회사·사무실', '공장', '가게·장사', '선생님·공무원', '집안일 돕기'],
+  whenKid: ['밖에서 일하셨어요', '집에서 살림하셨어요', '둘 다 하셨어요'],
+  leftHome: ['수학여행·캠프', '대학·기숙사', '군대', '취업·독립', '결혼'],
+  talk: ['이야기를 길게 하는 편', '물어보면 하는 편', '짧게 끝내는 편'],
+  avoid: ['돌아가신 가족', '이혼·재혼', '건강', '돈·사업'],
+  food: ['김치찌개', '된장찌개', '갈비찜', '잡채', '김밥', '미역국'],
+  catchphrase: ['밥은 먹고 다니냐', '차 조심해라', '일찍 다녀라', '아이고 내 새끼'],
+} as const;
+
+// 2주차: 10대 때 살던 곳에 따라 노래가 흘러나오던 장면만 바꾼다
+const TEEN_SCENE: Record<string, string> = {
+  '시골 마을': '시골 마을에서 학교 다니던 시절, 라디오에서 매일 흘러나오던 노래가 있었죠.',
+  '작은 도시': '동네 길로 학교 다니던 시절, 라디오에서, 가게 앞에서 매일 흘러나오던 노래가 있었죠.',
+  '큰 도시': '버스 타고 학교 다니던 시절, 레코드 가게 앞에서 매일 흘러나오던 노래가 있었죠.',
+};
+const TEEN_DEFAULT = '라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.';
+
+// 6주차: 내가 처음 집을 비운 계기
+const LEFT_SCENE: Record<string, string> = {
+  '수학여행·캠프': '제가 수학여행 간다고 처음 며칠 집을 비우던 날이 있었어요.',
+  '대학·기숙사': '제가 대학 때문에 처음 집을 떠나던 날이 있었어요.',
+  '군대': '제가 군대에 들어가던 날이 있었어요.',
+  '취업·독립': '제가 일 때문에 처음 집을 나가 살게 된 날이 있었어요.',
+  '결혼': '제가 결혼해서 집을 떠나던 날이 있었어요.',
+};
+const LEFT_DEFAULT = '제가 처음으로 며칠씩 집을 비우던 때가 있었어요. 수학여행이든, 군대든, 대학이든요.';
+
+// 5주차: 그 시절 부모님 하루
+const KID_SCENE: Record<string, string> = {
+  '밖에서 일하셨어요': '제가 초등학교에 들어가던 해예요. 일 나가랴 저 챙기랴, 아침이 제일 바빴던 시절이요.',
+  '둘 다 하셨어요': '제가 초등학교에 들어가던 해예요. 일 나가랴 저 챙기랴, 아침이 제일 바빴던 시절이요.',
+};
+const KID_DEFAULT = '제가 초등학교에 들어가던 해예요. 아침마다 저를 학교에 보내던 그 시절이요.';
 
 export type CourseInput = {
   childName: string;                 // 부모님이 부르는 이름 (예: 재빈이)
@@ -42,7 +92,7 @@ export function buildVars(i: CourseInput): FamilyVars & { flags: Record<string, 
 
   return {
     childGiven: i.childName.trim(),
-    childIsNickname: true, // 이미 부르는 형태로 입력받음 (재빈이, 우리 아들)
+    childIsNickname: isNickname(i.childName), // '재빈'·'재빈이' → 재빈이가 / '큰딸' → 큰딸이
     parentTitle: label,
     parentBirthYear,
     childBirthYear,
@@ -52,7 +102,13 @@ export function buildVars(i: CourseInput): FamilyVars & { flags: Record<string, 
     unsaidWords: get(PROFILE_KEYS.unsaid),
     favoriteFood: food,
     teenYear: parentBirthYear ? parentBirthYear + 14 : 0, // 중학생(열네 살) 무렵
+    teenScene: TEEN_SCENE[get(PROFILE_KEYS.teenPlace)] || TEEN_DEFAULT,
+    leftScene: LEFT_SCENE[get(PROFILE_KEYS.leftHome)] || LEFT_DEFAULT,
+    kidScene: KID_SCENE[get(PROFILE_KEYS.whenKid)] || KID_DEFAULT,
     flags: {
+      notFirst: ['중간', '막내'].includes(get(PROFILE_KEYS.order)),
+      notFirstAge: ['중간', '막내'].includes(get(PROFILE_KEYS.order)) && !!parentBirthYear && childBirthYear > parentBirthYear,
+      avoidMoney: get(PROFILE_KEYS.avoid).includes('돈'),
       noYears: !parentBirthYear || !childBirthYear || childBirthYear <= parentBirthYear,
       noParentYear: !parentBirthYear,
       noChildYear: !childBirthYear,
@@ -82,6 +138,7 @@ export type Week = Text & {
   replyIf?: string;         // flags 키가 true 면 답장 없음
   free?: boolean;           // 무료 체험 회차
   preview?: boolean;        // 무료 체험 때 미리보기로 보여줄 회차
+  when?: { flag: string; lead?: string; ask?: string }[]; // 온보딩 고르기에 따라 문장 일부만 바꿈
 };
 
 export const COURSE: Week[] = [
@@ -90,22 +147,27 @@ export const COURSE: Week[] = [
     week: 1, format: 'audio', chapter: '나를 모르던 시절', free: true,
     why: '부모님이 처음 부모가 된 순간에서 시작해요. 내가 등장하는 이야기라, 첫 녹음부터 끝까지 듣게 돼요.',
     lead: '아직 누군가의 {parent:이/가} 아니던 때가 있었어요. {age@childBirth:살}, 나도 아직 애 같은데 진짜 아기가 생긴 거죠.',
-    ask: '그 소식을 처음 알게 된 날, 기억하시나요? 아기가 생긴 걸 어디서, 어떻게 알게 됐는지 천천히 들려주세요.',
+    ask: '그 소식을 처음 알게 된 날, 기억하시나요? 제가 생긴 걸 어디서, 어떻게 알게 됐는지 천천히 들려주세요.',
     steps: [
-      '그 소식을 처음 알게 된 날, 기억하시나요? 아기가 생긴 걸 어디서, 어떻게 알게 됐는지 천천히 들려주세요.',
+      '그 소식을 처음 알게 된 날, 기억하시나요? 제가 생긴 걸 어디서, 어떻게 알게 됐는지 천천히 들려주세요.',
       '그 소식, 제일 먼저 누구한테 말했어요? 그 사람 표정이랑 했던 말, 기억나는 대로 들려주세요.',
       '그때 {parent} 마음은 어땠어요? 기뻤는지, 덜컥 겁이 났는지, 그때 그대로 들려주세요.',
     ],
     skipIf: 'noYears',
     alt: {
       lead: '아직 누군가의 {parent:이/가} 아니던 때가 있었어요. 나도 아직 애 같은데 진짜 아기가 생긴 거죠.',
-      ask: '그 소식을 처음 알게 된 날, 기억하시나요? 아기가 생긴 걸 어디서, 어떻게 알게 됐는지 천천히 들려주세요.',
+      ask: '그 소식을 처음 알게 된 날, 기억하시나요? 제가 생긴 걸 어디서, 어떻게 알게 됐는지 천천히 들려주세요.',
     },
+    // 첫째가 아니면 '처음 부모가 된' 장면이 아니다
+    when: [
+      { flag: 'notFirst', lead: '{parent:은/는} 이미 한 아이를 키우고 있었어요. 그 바쁜 날들 사이에 제가 찾아왔죠.' },
+      { flag: 'notFirstAge', lead: '{age@childBirth:살}, {parent:은/는} 이미 한 아이를 키우고 있었어요. 그 바쁜 날들 사이에 제가 찾아왔죠.' },
+    ],
   },
   {
     week: 2, format: 'audio', chapter: '나를 모르던 시절', free: true,
     why: '그 시절 노래 한 곡이면 기억이 줄줄이 따라 나와요. {parent:이/가} {parent}이기 전, 한 사람이던 시절을 처음 들어보는 회차예요.',
-    lead: '{teenYear}년, {parent:은/는} 중학생이었어요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
+    lead: '{teenYear}년, {parent:은/는} 중학생이었어요. {teenScene}',
     ask: '그때 {parent:은/는} 어떤 아이였어요? 제일 많이 따라 부른 노래 한 곡이랑, 그 노래를 들으면 떠오르는 사람 얘기를 해주세요.',
     steps: [
       '그 시절 제일 많이 따라 부른 노래가 뭐였어요? 그 노래가 흘러나오던 곳이랑, 그때 {parent} 모습을 떠올려서 얘기해주세요.',
@@ -114,7 +176,7 @@ export const COURSE: Week[] = [
     ],
     skipIf: 'noParentYear',
     alt: {
-      lead: '{parent:이/가} 중학생이던 시절이에요. 라디오에서, 거리에서 매일 흘러나오던 노래가 있었죠.',
+      lead: '{parent:이/가} 중학생이던 시절이에요. {teenScene}',
       ask: '그때 {parent:은/는} 어떤 아이였어요? 제일 많이 따라 부른 노래 한 곡이랑, 그 노래를 들으면 떠오르는 사람 얘기를 해주세요.',
     },
   },
@@ -147,13 +209,13 @@ export const COURSE: Week[] = [
   {
     week: 5, format: 'video', chapter: '나를 키우던 시절',
     why: '스무 살의 꿈 이야기와 이어져요. 나를 키우느라 부모님이 내려놓은 것을, 자녀는 대부분 이때 처음 알게 돼요.',
-    lead: '제가 초등학교에 들어가던 해예요. 아침마다 저를 학교에 보내던 그 시절이요.',
+    lead: '{kidScene}',
     ask: '그 시절 저 키우느라, {parent:이/가} 하고 싶었는데 내려놓은 게 있었어요? 그때 마음이 어땠는지도요.',
   },
   {
     week: 6, format: 'video', chapter: '나를 키우던 시절',
     why: '내가 떠난 뒤의 집은 자녀가 볼 수 없던 장면이에요. 그날 부모님 마음을 듣고, 그날의 내 마음도 답장으로 전해요.',
-    lead: '제가 처음으로 며칠씩 집을 비우던 때가 있었어요. 수학여행이든, 군대든, 대학이든요. 그날 밤 집에는 제 자리만 비어 있었어요.',
+    lead: '{leftScene} 그날 밤 집에는 제 자리만 비어 있었어요.',
     ask: '그날 빈 제 방을 보면서 무슨 생각을 했어요? 그날 저녁 이야기를 기억나는 대로 해주세요.',
     reply: {
       lead: '내가 집을 비운 그날, {parent} 이야기 들었어요?',
@@ -184,6 +246,7 @@ export const COURSE: Week[] = [
     lead: '살다 보면 사람 때문에, 돈 때문에 마음이 크게 흔들리는 때가 와요. {parent}에게도 그런 때가 있었을 거예요.',
     ask: '{parent} 인생에서 제일 크게 흔들렸던 때는 언제였어요? 그때 어떻게 버텼는지, 그리고 그때 배운 걸 저한테 알려주세요.',
     hint: '말하기 어려운 부분은 빼도 괜찮아요. 그때 배운 것만 남겨도 충분해요.',
+    when: [{ flag: 'avoidMoney', lead: '살다 보면 마음이 크게 흔들리는 때가 와요. {parent}에게도 그런 때가 있었을 거예요.' }],
     encore: '마지막으로, 전화 받을 때처럼 제 이름 한 번만 불러주세요. 목소리 듣고 싶은 날 꺼내 들을게요.',
   },
   {
@@ -253,7 +316,10 @@ export function buildCourse(input: CourseInput): CourseRow[] {
   const r = (s?: string) => (s ? render(s, v).trim() : null);
 
   return COURSE.map((w) => {
-    const t: Text = w.skipIf && v.flags[w.skipIf] && w.alt ? w.alt : w;
+    let t: Text = w.skipIf && v.flags[w.skipIf] && w.alt ? w.alt : w;
+    for (const o of w.when || []) {
+      if (v.flags[o.flag]) t = { lead: o.lead ?? t.lead, ask: o.ask ?? t.ask };
+    }
     let reply = w.reply && !(w.replyIf && v.flags[w.replyIf]) ? w.reply : null;
     // 11주 답장: 못 한 말을 안 적어뒀으면 일반 문장으로
     if (reply && w.week === 11 && v.flags.noUnsaid) {
