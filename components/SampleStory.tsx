@@ -76,7 +76,7 @@ export default function SampleStory({ clips, childName, steps }: Props) {
 
       {/* 첫 화면: 견본호 띠 + 베이지 종이 블록 */}
       <div className="t-band"><span>SAMPLE ISSUE</span><span>우리집 레코드 · 견본호</span></div>
-      <header className="t-hero paper">
+      <header className="t-hero rose">
         <div className="t-hero-rule" />
         <h2>
           {label}의 목소리와 모습이
@@ -132,7 +132,7 @@ export default function SampleStory({ clips, childName, steps }: Props) {
         </section>
       </section>
 
-      <section className="t-sec paper">
+      <section className="t-sec rose">
         <Step n={4} title="10분 남짓한 녹음이, 한 편의 기사가 돼요" desc={`${label}의 말 · 핵심 정리 · 글 · 숫자로 엮어요. 목소리는 기사 안에서 바로 다시 들을 수 있어요`} />
         <p className="tour-note">아래 글은 예시로 꾸민 기사예요. 실제로는 {josa(label, "이/가")} 하신 말씀으로 채워져요</p>
         <div className="t-sheet"><Issue a={article} n={1} label={label} name={mag.name} onSaved={noop} onMediaError={noop} sample films={MOM_FILMS} /></div>
@@ -181,7 +181,8 @@ function Step({ n, title, desc }: { n: number; title: string; desc?: string }) {
 
 const TOUR = `
 .mz-wrap.tour{margin:0 -22px;align-self:stretch;text-align:left;padding-bottom:0;background:#E8E1D6}
-.tour .paper{background-color:#EADBCB;background-image:radial-gradient(rgba(90,60,40,.06) 1px,transparent 1.2px),radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.2px);background-size:7px 7px,11px 11px;background-position:0 0,3px 5px}
+.tour .rose{background:#E6C9C2}
+.tour .paper{background-color:#ECD2B9;background-image:radial-gradient(rgba(90,60,40,.06) 1px,transparent 1.2px),radial-gradient(rgba(255,255,255,.5) 1px,transparent 1.2px);background-size:7px 7px,11px 11px;background-position:0 0,3px 5px}
 .t-band{display:flex;justify-content:space-between;align-items:center;background:var(--mz);color:#E8E1D6;padding:9px 20px;font-family:Georgia,serif;font-size:11px;letter-spacing:.2em}
 .t-band span:last-child{font-family:var(--serif);letter-spacing:.12em}
 .t-hero{position:relative;padding:34px 22px 30px;text-align:left;overflow:hidden}
@@ -208,7 +209,7 @@ const TOUR = `
 .t-sec.dark .tour-step h3{color:#F5F0E8}
 .t-sec.dark .tour-step p{color:#B9C4CA}
 .t-sec.dark .tour-step .no{background:#EADBCB;color:var(--mz);box-shadow:3px 3px 0 #000}
-.tour-clips{margin:4px 20px 0;padding:16px;background:#EADBCB;border:1px solid #2F2B28;display:flex;flex-direction:column;gap:14px}
+.tour-clips{margin:4px 20px 0;padding:16px;background:#E6C9C2;border:1px solid #2F2B28;display:flex;flex-direction:column;gap:14px}
 .tour-clips .pill{display:inline-block;margin-bottom:7px;background:#2F2B28;color:#EADBCB;font-size:11px;font-weight:700;letter-spacing:.14em;padding:3px 8px}
 .tour-clips audio,.tour-clips video{width:100%}
 .tour-clips video{border-radius:4px;background:#2F2B28}
