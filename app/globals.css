@@ -7,7 +7,8 @@
   --ochre-hi: #E2A37A;     /* 오커 밝은 톤 — 어두운 바탕 위 포인트 */
   --ochre-tint: #F0E2D4;   /* 오커 옅은 면 — 정보 카드 */
   --rose: #C27B78;         /* Dusty Rose (PANTONE 17-1718) — 감정적인 자리에만 조금 */
-  --rose-tint: #EED8D4;
+  --rose-tint: #EBCFCA;
+  --rose-ink: #8E4B48;
   --offwhite: #F5F0E8;     /* Off-white — 카드·종이 */
   --bg: #E8E1D6;           /* 웜 그레이지 바탕 (오프화이트를 넓게 깔면 하얘서 한 톤 깊게) */
   --charcoal: #2F2B28;     /* Warm Charcoal (PANTONE 18-1242) — 글씨·주요 버튼·의식 같은 순간 */
@@ -30,8 +31,8 @@
   --ink: var(--text);
   --muted: var(--text-muted);
   --line: var(--border);
-  --primary: var(--charcoal);
-  --on-primary: var(--offwhite);
+  --primary: #A95B32;      /* 버튼은 오커로 채운다 (글씨 대비 위해 한 톤 깊게) */
+  --on-primary: #FBF5EE;
   --accent: var(--ochre-ink);
   --danger: #B5503F;
   --gold-hi: var(--ochre-ink);
@@ -250,3 +251,27 @@ body:has(.boxed) { background: var(--bg); }
 .cover { position: relative; margin: -6px -4px 0; border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 5; border: 1px solid var(--border); box-shadow: 0 16px 28px -18px rgba(47, 43, 40, 0.35); }
 .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .cover figcaption { position: absolute; left: 14px; right: 14px; bottom: 12px; display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; color: #FBF6EF; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }
+
+/* ── Urban Archive 채우기: 오커·더스티 로즈를 글자색이 아니라 '면'으로 ── */
+.chip { background: var(--rose-tint); color: var(--rose-ink); padding: 4px 11px; border-radius: 999px; font-weight: 600; align-self: flex-start; width: fit-content; }
+.pill { background: var(--rose-tint); color: var(--rose-ink); }
+.card.insight { background: var(--rose-tint); }
+.card.insight .chip { background: var(--offwhite); }
+.card.box { background: var(--ochre); color: #FBF5EE; box-shadow: 0 16px 28px -16px rgba(150, 70, 30, 0.55); }
+.card.box .muted, .card.box .small.muted { color: #F6DCCB !important; }
+.card.box .chip { background: rgba(255, 255, 255, 0.22); color: #FBF5EE !important; }
+.card.box .btn { background: var(--charcoal); color: var(--offwhite); }
+.masthead { background: var(--ochre); color: #FBF5EE; }
+.masthead .muted { color: #F6DCCB; }
+.masthead h1 { color: #FBF5EE; }
+.tabbar { background: var(--charcoal); border-color: var(--charcoal); }
+.tabbar a { color: #CFC5B9; }
+.tabbar a.on { background: var(--ochre); color: #FBF5EE; }
+.btn.soft { border: 1.5px solid var(--rose); color: var(--rose-ink); background: rgba(235, 207, 202, 0.35); }
+.input:focus { border-color: var(--ochre); }
+.check { accent-color: var(--ochre); }
+.rec-dot { background: var(--rose); }
+/* 부모님 첫 화면(상자): 바탕을 더스티 로즈로 따뜻하게 */
+body:has(.boxed) { background: #E6C9C2; }
+.foil::before { border-color: rgba(169, 91, 50, 0.35); }
+.sound-toggle { background: rgba(245, 240, 232, 0.9); }
