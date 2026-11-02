@@ -130,6 +130,7 @@ export default function Stories() {
             </div>
           )}
           <a href="/app/export" className="mz-export">목소리·영상 원본 전체 내려받기</a>
+          <a href="/app/print" className="mz-export">인쇄용 잡지 만들기 (PDF)</a>
         </div>
       )}
     </main>

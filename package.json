@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
+    "@types/qrcode": "^1.5.6",
     "@vercel/functions": "1.6.0",
     "next": "14.2.15",
+    "qrcode": "^1.5.4",
     "react": "^18",
     "react-dom": "^18",
     "solapi": "^6.0.1"
