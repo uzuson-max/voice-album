@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { admin } from "@/lib/supabaseAdmin";
+import { courseState } from "@/lib/course";
 import { bad, loadFamily, unauthorized, userIdFrom } from "@/lib/auth";
 import { isOpen } from "@/lib/time";
 
@@ -56,6 +57,7 @@ export async function GET(req: Request) {
       .sort((a, b) => String(b.sent_at).localeCompare(String(a.sent_at))),
     storyteller: m.storyteller,
     family: m.family,
+    course: courseState(m.storyteller, all.some((p) => p.status !== "queued")),
   });
 }
 

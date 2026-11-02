@@ -4,6 +4,9 @@ import { useRouter } from "next/navigation";
 import { api, browserClient } from "@/lib/supabaseBrowser";
 import { render, josa } from "@/lib/korean";
 import { buildCourse } from "@/lib/questions";
+import HonorificSheet from "@/components/HonorificSheet";
+import CourseControls from "@/components/CourseControls";
+import { LIMIT } from "@/lib/course";
 
 const empty = {
   childName: "", label: "엄마", honorific: "어머니", phone: "", childPhone: "",
@@ -42,12 +45,15 @@ export default function Family() {
   const [agree, setAgree] = useState(false);
   const [step, setStep] = useState(0);
   const [role, setRole] = useState<"owner" | "member" | null>(null);
+  const [sheet, setSheet] = useState(false);
+  const [changes, setChanges] = useState(0); // 호칭 바꾼 횟수
 
   useEffect(() => {
     api("/api/me/family").then(({ family, storyteller, role }) => {
       setRole(role);
       if (family && storyteller) {
         setIsNew(false);
+        setChanges(storyteller.honorific_changes || 0);
         const p = storyteller.profile || {};
         setF({
           childName: family.child_name, label: storyteller.label, honorific: storyteller.honorific, phone: storyteller.phone, childPhone: family.child_phone || "",
@@ -63,16 +69,17 @@ export default function Family() {
   const set = (k: keyof F) => (e: any) => setF({ ...f, [k]: e.target.value });
   const p = f.label.trim() || "엄마";
 
-  async function save() {
+  async function save(nf: F = f) {
     setBusy(true); setErr(""); setSaved(false);
     try {
-      await api("/api/me/family", {
+      const r: any = await api("/api/me/family", {
         method: "POST",
         body: JSON.stringify({
-          ...f, sendWeekday: Number(f.sendWeekday), sendHour: Number(f.sendHour), unsealAt: null, agree,
-          profile: profileOf(f),
+          ...nf, sendWeekday: Number(nf.sendWeekday), sendHour: Number(nf.sendHour), unsealAt: null, agree,
+          profile: profileOf(nf),
         }),
       });
+      if (r?.storyteller) setChanges(r.storyteller.honorific_changes || 0);
       if (isNew) router.replace("/app/pick");
       else setSaved(true);
     } catch (e: any) {
@@ -97,6 +104,7 @@ export default function Family() {
           </div>
           <SiblingInvite label={p} />
           <button type="button" className="link" onClick={async () => { await browserClient().auth.signOut(); router.replace("/"); }}>로그아웃</button>
+          <CourseControls label={p} />
         </div>
       </main>
     );
@@ -109,11 +117,12 @@ export default function Family() {
         <form onSubmit={(e) => { e.preventDefault(); save(); }} className="stack">
           <h1 className="h1">가족</h1>
           <Field label="부모님이 나를 부르는 이름"><input className="input" required value={f.childName} onChange={set("childName")} /></Field>
-          <div className="row">
-            <Field label="내가 부르는 호칭"><input className="input" required value={f.label} onChange={set("label")} /></Field>
-            <Field label="문자 속 호칭"><input className="input" required value={f.honorific} onChange={set("honorific")} /></Field>
-          </div>
-          <Field label="부모님 휴대폰 번호"><input className="input" required inputMode="tel" value={f.phone} onChange={set("phone")} /></Field>
+          <Field label="호칭" hint={changes >= LIMIT.honorificChanges ? "호칭은 이미 한 번 바꿨어요" : "누르면 어디에 어떻게 들어가는지 볼 수 있어요. 한 번만 바꿀 수 있어요."}>
+            <button type="button" className="input" style={{ textAlign: "left" }} onClick={() => setSheet(true)}>{f.label} · 문자에는 {f.honorific}</button>
+          </Field>
+          <Field label="부모님 휴대폰 번호" hint="아직 담긴 이야기가 없을 때 번호를 고치면, 첫 초대장부터 다시 가요">
+            <input className="input" required inputMode="tel" value={f.phone} onChange={set("phone")} />
+          </Field>
           <Field label="내 휴대폰 번호 (선택)" hint="이야기가 도착하면 이 번호로 알려드려요. 다른 알림은 보내지 않아요.">
             <input className="input" inputMode="tel" value={f.childPhone} onChange={set("childPhone")} placeholder="010-0000-0000" />
           </Field>
@@ -141,8 +150,21 @@ export default function Family() {
           <button className="btn" disabled={busy}>{busy ? "저장 중…" : "저장"}</button>
           <SiblingInvite label={p} />
           <button type="button" className="link" onClick={() => router.push("/app/pick")}>12번의 이야기 새로 설계하기</button>
+          <CourseControls label={p} />
           <button type="button" className="link" onClick={async () => { await browserClient().auth.signOut(); router.replace("/"); }}>로그아웃</button>
         </form>
+        <HonorificSheet
+          open={sheet} label={f.label} honorific={f.honorific} childName={f.childName}
+          locked={changes >= LIMIT.honorificChanges}
+          onClose={() => setSheet(false)}
+          onSave={(label, honorific) => {
+            setSheet(false);
+            if (label === f.label && honorific === f.honorific) return;
+            if (!confirm(`호칭을 '${label} · ${honorific}'(으)로 바꿀까요?\n바꾸고 나면 더는 바꿀 수 없어요.`)) return;
+            const nf = { ...f, label, honorific };
+            setF(nf); save(nf);
+          }}
+        />
       </main>
     );
   }
@@ -181,9 +203,14 @@ export default function Family() {
               </button>
             ))}
           </div>
-          <Field label="다르게 부르면 적어주세요" hint="예: 어머니, 우리 엄마">
-            <input className="input" value={f.label} onChange={(e) => setF({ ...f, label: e.target.value, honorific: HONORIFIC[e.target.value] || e.target.value })} />
+          <Field label="다르게 부르면 적어주세요" hint="누르면 어디에 어떻게 들어가는지 볼 수 있어요. 호칭은 시작한 뒤 한 번만 바꿀 수 있어요.">
+            <input className="input" readOnly value={`${f.label} · 문자에는 ${f.honorific}`} onClick={() => setSheet(true)} onFocus={(e) => { e.currentTarget.blur(); setSheet(true); }} />
           </Field>
+          <HonorificSheet
+            open={sheet} isNew label={f.label} honorific={f.honorific} childName={f.childName}
+            onClose={() => setSheet(false)}
+            onSave={(label, honorific) => { setF({ ...f, label, honorific }); setSheet(false); }}
+          />
         </div>
       ),
     },
@@ -307,7 +334,7 @@ export default function Family() {
         <div className="grow" />
         <div className="stack" style={{ gap: 8, position: "sticky", bottom: 16 }}>
           {last ? (
-            <button className="btn" disabled={busy} onClick={save}>{busy ? "준비 중…" : "12번 전체 보기"}</button>
+            <button className="btn" disabled={busy} onClick={() => save()}>{busy ? "준비 중…" : "12번 전체 보기"}</button>
           ) : (
             <button className="btn" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 0 ? "시작할게요" : "다음"}</button>
           )}

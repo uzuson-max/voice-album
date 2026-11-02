@@ -13,7 +13,7 @@ const SRC: Record<string, string> = { followup: "지난 대답에서 이어진 �
 
 export default function Questions() {
   const router = useRouter();
-  const [d, setD] = useState<{ queued: P[]; sent: P[]; storyteller: any; family?: any; insight: any } | null>(null);
+  const [d, setD] = useState<{ queued: P[]; sent: P[]; storyteller: any; family?: any; insight: any; course?: string } | null>(null);
   const [polishing, setPolishing] = useState(false);
   const [edit, setEdit] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -82,6 +82,7 @@ export default function Questions() {
             아직 모르는 {st?.label || "부모님"} ›
           </a>
         </div>
+        <CourseNotice course={(d as any).course} st={st} />
         {d.family?.plan === "trial" && d.sent.length > 0 && (
           <a href="/app/plan" className="card stack" style={{ gap: 6, textDecoration: "none", color: "inherit" }}>
             <span className="chip" style={{ color: "var(--accent)" }}>정식 과정</span>
@@ -223,5 +224,33 @@ function FormatToggle({ value, onChange }: { value: "audio" | "video"; onChange:
         </button>
       ))}
     </div>
+  );
+}
+
+// 과정 상태 안내: 부모님 확인 대기 · 번호 확인 · 쉬는 중 · 그만둠 (평소엔 아무것도 안 보인다)
+function CourseNotice({ course, st }: { course?: string; st: any }) {
+  const label = st?.label || "부모님";
+  const m: Record<string, { head: string; body: string }> = {
+    waiting_confirm: {
+      head: `${josa(label, "이/가")} 첫 문자를 열어보시길 기다리고 있어요`,
+      body: `초대장에서 "네, 맞아요"를 누르셔야 다음 이야기가 가요. 혹시 못 보셨다면 한 번 말씀드려 주세요.`,
+    },
+    wrong_number: {
+      head: "문자를 받은 분이 \"제가 아니에요\"를 누르셨어요",
+      body: `${label} 번호를 확인해 주세요. 번호를 고치면 첫 초대장부터 다시 가요.`,
+    },
+    paused: {
+      head: `${st?.paused_until ? `${Number(st.paused_until.slice(5, 7))}월 ${Number(st.paused_until.slice(8, 10))}일까지` : "지금은"} 쉬고 있어요`,
+      body: "쉬는 동안엔 질문과 알림이 가지 않아요. 남은 이야기는 그다음부터 이어져요.",
+    },
+    stopped: { head: "과정을 마쳤어요", body: "지금까지 담긴 이야기는 이야기 탭에서 계속 볼 수 있어요." },
+  };
+  const x = course ? m[course] : null;
+  if (!x) return null;
+  return (
+    <Link href="/app/family" className="card stack" style={{ gap: 6, textDecoration: "none", color: "inherit", border: "1px solid var(--accent)" }}>
+      <div style={{ fontSize: 16, fontWeight: 700 }}>{x.head}</div>
+      <div className="small muted" style={{ lineHeight: 1.7 }}>{x.body}</div>
+    </Link>
   );
 }

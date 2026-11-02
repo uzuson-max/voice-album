@@ -7,6 +7,7 @@ import { finishPrompt, healPending } from "./process";
 import { ensureLead } from "./lead";
 import { josa } from "./korean";
 import { notifyKeepEnding } from "./notify";
+import { isPaused } from "./course";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -47,6 +48,11 @@ export async function sendNextPrompt(storyteller: any, childName: string) {
     .eq("storyteller_id", storyteller.id)
     .not("reaction_at", "is", null)
     .is("reaction_shown_on", null);
+
+  // 첫 문자 뒤에는 부모님이 "네, 맞아요"를 눌러야 다음 이야기가 간다 (번호를 잘못 넣어 모르는 분께 계속 가지 않게)
+  if (sentBefore && !storyteller.confirmed_at) return { sent: false, reason: "부모님이 첫 문자에서 확인해주시면 다음 이야기가 가요" };
+  if (isPaused(storyteller)) return { sent: false, reason: "쉬는 중이라 보내지 않았어요" };
+  if (storyteller.stopped_at) return { sent: false, reason: "그만둔 과정이에요" };
 
   // 그 시절로 데려가는 빌드업을 미리 만들어 둔다 (문자에는 다듬은 질문만)
   const t = await ensureLead(next.id);
@@ -168,6 +174,8 @@ export async function runDispatch(now = new Date()) {
 
   for (const st of tellers || []) {
     const childName = (st as any).vf_families?.child_name || "";
+    // 쉬는 중이면 새 질문도 알림도 보내지 않는다
+    if (isPaused(st)) continue;
     try {
       // 1) 새 질문
       if (SEND_DAYS.includes(weekday) && hour >= st.send_hour) {

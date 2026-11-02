@@ -32,7 +32,7 @@ type Info = {
   encore?: string | null;
   demo?: boolean;
 };
-type Phase = "loading" | "error" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
+type Phase = "loading" | "error" | "wrong" | "welcome" | "intro" | "ask" | "review" | "sending" | "thinking" | "host" | "done" | "later";
 
 const MAX_TURNS = 2;
 
@@ -158,6 +158,11 @@ export default function ParentPage({ params }: { params: { token: string } }) {
   const [coverDone, setCoverDone] = useState(false);
   const [tour, setTour] = useState(false);
   const tourRef = useRef<HTMLDivElement | null>(null);
+  // 첫 초대장 확인: "네, 맞아요" / "제가 아니에요"
+  function confirmMe(wrong: boolean) {
+    if (isDemo) return;
+    fetch(`/api/s/${params.token}/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ wrong }), keepalive: true }).catch(() => {});
+  }
   function openInvite() {
     if (MUSIC) startAmbient();
     mc.unlock();
@@ -373,7 +378,7 @@ export default function ParentPage({ params }: { params: { token: string } }) {
       `앞으로 12번, ${info.honorific}의 이야기를\n듣고 싶대요`,
       "한 번에 10분, 말로만 하시면 돼요",
       "오늘부터 남기는 이야기는\n자녀들과 평생 나눌 소중한 기억이 될 거예요",
-      "준비되셨나요?",
+      `${c} ${info.honorific} 맞으시죠?`,
     ];
     return (
       <main className="screen center foil boxed" style={{ paddingTop: opened ? 96 : 40 }}>
@@ -428,15 +433,31 @@ export default function ParentPage({ params }: { params: { token: string } }) {
         <button
           className="btn"
           style={{ opacity: 0, animation: `rise 1.2s ease ${0.4 + lines.length * 1.6}s forwards` }}
-          onClick={() => { log("welcome"); begin(true); }} // 첫 링크는 안내 화면을 한 번 더 거치지 않고 바로 질문으로
+          onClick={() => { log("welcome"); confirmMe(false); begin(true); }} // 첫 링크는 안내 화면을 한 번 더 거치지 않고 바로 질문으로
         >
-          네, 시작할게요
+          네, 맞아요 · 시작할게요
+        </button>
+        <button
+          className="link"
+          style={{ marginTop: 6, opacity: 0, animation: `rise 1.2s ease ${0.4 + lines.length * 1.6}s forwards` }}
+          onClick={() => { if (confirm(`${c} ${josa(info.honorific, "이/가")} 아니신가요?\n누르시면 이 번호로는 더 문자가 가지 않아요`)) { confirmMe(true); stopAmbient(1); setPhase("wrong"); } }}
+        >
+          제가 아니에요
         </button>
         </>
         )}
       </main>
     );
   }
+
+  if (phase === "wrong")
+    return (
+      <main className="screen center foil">
+        <div className="grow" />
+        <p className="serif q">알려주셔서 고마워요<br />이 번호로는 더 문자가 가지 않아요</p>
+        <div className="grow" />
+      </main>
+    );
 
   if (phase === "intro")
     return (

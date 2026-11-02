@@ -12,7 +12,7 @@ export const maxDuration = 60;
 export async function GET(req: Request) {
   const uid = await userIdFrom(req);
   if (!uid) return unauthorized();
-  const { family, storyteller } = await loadFamily(uid);
+  const { family, storyteller, role } = await loadFamily(uid);
   if (!storyteller) return NextResponse.json({ articles: [], sealed: [], family, storyteller });
 
   const db = admin();
@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     .from("vf_answers")
     .select(
       "id, prompt_id, turn, asked, media_path, media_type, duration_sec, title, summary, transcript, process_error, unseal_at, created_at, " +
-        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, article_points, article_facts, photo_path, selfie_path, cover_path, reaction_text, reaction_audio_path, reply_lead, reply_ask)"
+        "vf_prompts!vf_answers_prompt_id_fkey(text, ask, lead, week, finished_at, article_title, article, article_quote, article_points, article_facts, photo_path, selfie_path, cover_path, reaction_text, reaction_audio_path, reply_lead, reply_ask, redo_count)"
     )
     .eq("storyteller_id", storyteller.id)
     .order("created_at", { ascending: true });
@@ -56,6 +56,7 @@ export async function GET(req: Request) {
         selfieUrl: await sign(p.cover_path || p.selfie_path),
         points: p.article_points ?? null,
         facts: p.article_facts ?? null,
+        redoCount: p.redo_count || 0,
         reactionText: p.reaction_text,
         reactionAudioUrl: await sign(p.reaction_audio_path),
         createdAt: a.created_at,
@@ -113,5 +114,5 @@ export async function GET(req: Request) {
     born: String(prof["태어난 해"] || "").replace(/\D/g, "").slice(0, 4) || null,
     hometown: String(prof["고향"] || "").trim() || null,
   };
-  return NextResponse.json({ articles, sealed, family, storyteller, magazine });
+  return NextResponse.json({ articles, sealed, family, storyteller, magazine, role });
 }

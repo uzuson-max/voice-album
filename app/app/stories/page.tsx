@@ -38,6 +38,14 @@ export default function Stories() {
   const mag: Mag = d.magazine || { coverUrl: null, custom: false, name: null, born: null, hometown: null };
   const open = arts.find((a) => a.promptId === cur) || arts[0];
   const openIdx = open ? arts.indexOf(open) : -1;
+  async function redo(id: string) {
+    if (!confirm(`이 호를 다시 담을까요?\n\n지금 담긴 녹음·영상·기사·표지는 지워지고, ${label}께 같은 질문이 새 링크로 다시 가요.\n한 호에 한 번만 할 수 있어요.`)) return;
+    try {
+      await api("/api/me/redo", { method: "POST", body: JSON.stringify({ promptId: id }) });
+      alert(`${label}께 다시 보냈어요. 새로 담기면 이 자리에 실려요.`);
+      setCur(null); load();
+    } catch (e: any) { alert(e.message); }
+  }
   const go = (id: string) => { setCur(id); setTimeout(() => artRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 30); };
 
   return (
@@ -107,6 +115,11 @@ export default function Stories() {
                 key={open.promptId} a={open} n={issueNo(open, openIdx, total)} label={label} name={mag.name}
                 onSaved={load} onMediaError={onMediaError}
               />
+            )}
+            {open && d.role !== "member" && !(open as any).redoCount && (
+              <button type="button" className="link" style={{ display: "block", margin: "6px auto 0", fontSize: 14 }} onClick={() => redo(open.promptId)}>
+                이 호 다시 담기
+              </button>
             )}
           </div>
 
