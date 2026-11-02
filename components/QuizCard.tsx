@@ -97,22 +97,18 @@ export default function QuizCard() {
         display: "flex", flexDirection: "column", padding: "calc(18px + env(safe-area-inset-top)) 22px calc(22px + env(safe-area-inset-bottom))",
         maxWidth: 480, margin: "0 auto",
       }}>
-        <div className="row between" style={{ alignItems: "baseline", borderBottom: `2px solid ${ink}`, paddingBottom: 10 }}>
+        {/* 상단: 제호 한 줄 + 닫기만. 영어 라벨·뱃지 줄은 걷어냄 */}
+        <div className="row between" style={{ alignItems: "center", borderBottom: `1px solid ${ink}`, paddingBottom: 12 }}>
           <span style={{ fontFamily: "var(--serif)", fontSize: 15, letterSpacing: ".2em", fontWeight: 600 }}>우리집 레코드</span>
           <button className="textbtn" onClick={close} style={{ color: gray, fontSize: 15 }}>닫기</button>
         </div>
-        <div className="row between" style={{ alignItems: "baseline", paddingTop: 12 }}>
-          <span style={{ fontFamily: "Georgia,serif", fontSize: 13, letterSpacing: ".18em" }}>TODAY&apos;S QUESTION</span>
-          <span style={{ fontFamily: "Georgia,serif", fontSize: 13, letterSpacing: ".1em", color: gray }}>{date}</span>
-        </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 18, padding: "28px 0" }}>
-          <div>
-            <span style={{ display: "inline-block", background: wine, color: "#fff", fontSize: 11, fontWeight: 700, letterSpacing: ".14em", padding: "5px 9px" }}>오늘의 한 장</span>
-            <span style={{ fontSize: 13, color: gray, marginLeft: 10 }}>{L}에 대해 얼마나 알까요</span>
+        {/* 질문은 화면 위쪽 1/3 지점에서 시작 (가운데 정렬하면 답을 고른 뒤 아래로 처짐) */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20, padding: "clamp(40px, 11vh, 96px) 0 28px" }}>
+          <div style={{ fontSize: 14, color: wine, fontWeight: 700, letterSpacing: ".04em" }}>
+            오늘의 한 장 <span style={{ color: gray, fontWeight: 400, marginLeft: 6 }}>{date}</span>
           </div>
           <h1 className="wr-up" style={{ fontFamily: "var(--serif)", fontSize: 30, lineHeight: 1.45, fontWeight: 700, margin: 0, wordBreak: "keep-all", textWrap: "balance" as any, animationDelay: ".1s" }}>
-            <span style={{ display: "block", fontFamily: "Georgia,serif", fontWeight: 400, fontSize: 44, lineHeight: 1, color: wine, marginBottom: 10 }}>Q.</span>
             {n.q}
           </h1>
 
@@ -152,9 +148,6 @@ export default function QuizCard() {
           )}
           {step === "known" && <button style={btnFill} onClick={saveNote}>저장</button>}
           {step === "unknown" && <button style={btnLine} onClick={close}>둘러보기</button>}
-          <div className="row between" style={{ marginTop: 8, fontFamily: "Georgia,serif", fontSize: 11, letterSpacing: ".14em", color: gray }}>
-            <span>OUR HOUSE RECORD</span><span>1 / DAY</span>
-          </div>
         </div>
       </div>
     );
