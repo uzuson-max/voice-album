@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { admin } from "@/lib/supabaseAdmin";
 import { bad, loadFamily, unauthorized, userIdFrom } from "@/lib/auth";
-import { QUIZ, fill } from "@/lib/quiz";
+import { ALL_QUIZ, quizFor, fill } from "@/lib/quiz";
 
 export const dynamic = "force-dynamic";
 
@@ -23,9 +23,10 @@ export async function GET(req: Request) {
     .select("qkey, known, note, learned_at, created_at")
     .eq("family_id", m.family.id)
     .order("created_at", { ascending: false });
+  const list = quizFor(label);
   const done = new Set((rows || []).map((r) => r.qkey));
-  const next = QUIZ.find((q) => !done.has(q.key));
-  const byKey = Object.fromEntries(QUIZ.map((q) => [q.key, q]));
+  const next = list.find((q) => !done.has(q.key));
+  const byKey = Object.fromEntries(ALL_QUIZ.map((q) => [q.key, q]));
   const records = (rows || [])
     .filter((r) => byKey[r.qkey])
     .map((r) => ({ ...r, q: fill(byKey[r.qkey].q, label, honorific), ask: fill(byKey[r.qkey].ask, label, honorific) }));
@@ -33,7 +34,7 @@ export async function GET(req: Request) {
     label, honorific, phone,
     next: next ? { key: next.key, q: fill(next.q, label, honorific), ask: fill(next.ask, label, honorific) } : null,
     records,
-    total: QUIZ.length,
+    total: list.length,
   });
 }
 
@@ -43,7 +44,7 @@ export async function POST(req: Request) {
   if (!m) return unauthorized();
   const b = await req.json().catch(() => ({}));
   const key = String(b.key || "");
-  if (!QUIZ.some((q) => q.key === key)) return bad("없는 질문이에요");
+  if (!ALL_QUIZ.some((q) => q.key === key)) return bad("없는 질문이에요");
   const db = admin();
   const note = typeof b.note === "string" ? b.note.trim().slice(0, 300) : undefined;
 

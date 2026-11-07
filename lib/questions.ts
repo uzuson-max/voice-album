@@ -33,6 +33,7 @@ export const PROFILE_KEYS = {
   leftHome: '처음 집을 떠난 때',      // 수학여행·캠프 | 대학·기숙사 | 군대 | 취업·독립 | 결혼
   talk: '말수',                     // 이야기를 길게 하는 편 | 물어보면 하는 편 | 짧게 끝내는 편
   avoid: '조심할 이야기',            // 여러 개, '·'로 이어 저장
+  dadThing: '아빠 기억',             // 아빠 전용: 아빠가 해주던 것 (7주 영상 회차에 들어감)
 } as const;
 
 /* 고르기 보기 — 온보딩 화면과 질문 문장이 같은 값을 쓴다 */
@@ -48,6 +49,9 @@ export const CHOICES = {
   avoid: ['돌아가신 가족', '이혼·재혼', '건강', '돈·사업'],
   food: ['김치찌개', '된장찌개', '갈비찜', '잡채', '김밥', '미역국'],
   catchphrase: ['밥은 먹고 다니냐', '차 조심해라', '일찍 다녀라', '아이고 내 새끼'],
+  // 아빠 전용
+  jobDad: ['회사·사무실', '공장·현장', '가게·장사', '선생님·공무원', '운전·운송', '농사·어업'],
+  dadThing: ['전구·수도 고치기', '자전거 타는 법', '캐치볼', '된장찌개', '운전', '낚시'],
 } as const;
 
 // 2주차: 10대 때 살던 곳에 따라 노래가 흘러나오던 장면만 바꾼다
@@ -101,6 +105,7 @@ export function buildVars(i: CourseInput): FamilyVars & { flags: Record<string, 
     catchphrase: get(PROFILE_KEYS.catchphrase),
     unsaidWords: get(PROFILE_KEYS.unsaid),
     favoriteFood: food,
+    dadThing: get(PROFILE_KEYS.dadThing),
     teenYear: parentBirthYear ? parentBirthYear + 14 : 0, // 중학생(열네 살) 무렵
     teenScene: TEEN_SCENE[get(PROFILE_KEYS.teenPlace)] || TEEN_DEFAULT,
     leftScene: LEFT_SCENE[get(PROFILE_KEYS.leftHome)] || LEFT_DEFAULT,
@@ -115,6 +120,7 @@ export function buildVars(i: CourseInput): FamilyVars & { flags: Record<string, 
       noCatchphrase: !get(PROFILE_KEYS.catchphrase),
       noUnsaid: !get(PROFILE_KEYS.unsaid),
       noFood: !food,
+      noDadThing: !get(PROFILE_KEYS.dadThing),
       isDad: ['아빠', '아버지', '아버님'].includes(label),
     },
   };
@@ -292,6 +298,74 @@ export const COURSE: Week[] = [
   },
 ];
 
+/* ───────── 아빠 편: 엄마와 영역이 다른 회차만 덮어쓴다 ─────────
+   엄마 = 음식·자장가·감정을 풀어내는 이야기 / 아빠 = 일·손으로 해주던 것·가장의 무게·말로 못 한 마음
+   나머지 회차(2·3·9·10·11·12)는 두 분 모두에게 맞아서 그대로 쓴다. */
+const DAD: Record<number, Partial<Week>> = {
+  1: {
+    why: '아빠가 처음 아빠가 된 순간에서 시작해요. 내가 등장하는 이야기라, 첫 녹음부터 끝까지 듣게 돼요.',
+    lead: '{age@childBirth:살}, 아직 어른이 덜 된 것 같은데 {parent}라는 이름이 생기던 때가 있었어요.',
+    ask: '그 소식을 처음 알게 된 날, 어디서 뭘 하고 있었는지 기억하시나요? 천천히 들려주세요.',
+    steps: [
+      '그 소식을 처음 알게 된 날, 어디서 뭘 하고 있었는지 기억하시나요? 천천히 들려주세요.',
+      '그 소식을 제일 먼저 누구한테 말했어요? 그 사람이 한 말이랑 표정, 기억나는 대로요.',
+      '그날 이후로 달라진 게 있다면 뭐였어요? 그때 {parent} 마음은 어땠는지도 들려주세요.',
+    ],
+    alt: {
+      lead: '{parent}라는 이름이 처음 생기던 때가 있었어요. 나도 아직 어른이 덜 된 것 같은데요.',
+      ask: '그 소식을 처음 알게 된 날, 어디서 뭘 하고 있었는지 기억하시나요? 천천히 들려주세요.',
+    },
+    when: [
+      { flag: 'notFirst', lead: '{parent:은/는} 이미 한 아이의 {parent}였어요. 그 바쁜 날들 사이에 제가 찾아왔죠.' },
+      { flag: 'notFirstAge', lead: '{age@childBirth:살}, {parent:은/는} 이미 한 아이의 {parent}였어요. 그 바쁜 날들 사이에 제가 찾아왔죠.' },
+    ],
+  },
+  4: {
+    lead: '{childBirthYear}년, {parent:은/는} 제 얼굴을 처음 보았어요.',
+    alt: {
+      lead: '{parent:이/가} 제 얼굴을 처음 본 날이에요.',
+      ask: '처음 제 얼굴을 봤을 때 무슨 생각이 들었어요? 그리고 제 이름엔 어떤 마음을 담았는지도 알려주세요.',
+    },
+  },
+  5: {
+    why: '자녀는 부모님이 일하는 모습을 거의 보지 못해요. 하루를 아침부터 따라가 보면, 내가 몰랐던 {parent}가 나와요.',
+    lead: '제가 초등학교에 들어가던 해예요. 그 무렵 {parent}의 하루는 어떻게 흘러가고 있었을까요.',
+    ask: '그때 {parent}의 하루를 아침부터 순서대로 들려주세요. 일하던 곳, 같이 일하던 사람, 집에 돌아오던 길 풍경까지요.',
+    steps: [
+      '그때 {parent}의 하루를 아침부터 순서대로 들려주세요. 일하던 곳, 같이 일하던 사람, 집에 돌아오던 길 풍경까지요.',
+      '그 일을 하면서 제일 뿌듯했던 순간이랑 제일 고됐던 순간을 하나씩 들려주세요.',
+      '그 시절 저 때문에 미뤄둔 게 혹시 있었어요? 있었다면 그때 마음은 어땠는지도요.',
+    ],
+  },
+  6: {
+    why: '내가 떠난 날, 아빠가 어떤 마음이었는지는 자녀가 볼 수 없던 장면이에요. 그날 이야기를 듣고, 그날의 내 마음도 답장으로 전해요.',
+    lead: '{leftScene}',
+    ask: '그날 저를 보내면서 하고 싶었는데 못 한 말이 있었어요? 그날 하루를 기억나는 대로 들려주세요.',
+  },
+  7: {
+    why: '뭐든 해결해 주던 아빠의 손은 말로 듣는 것보다 영상으로 보는 게 훨씬 오래 남아요. 알려주신 걸 내가 직접 해보고 답장해요.',
+    lead: '{parent:이/가} 해주던 {dadThing}, 이제 제가 해야 할 날이 와요.',
+    ask: '{parent:이/가} 알려줄 수 있는 것 중에 "{dadThing}" 하나, 제가 나중에 혼자 할 수 있게 직접 하면서 처음부터 알려주세요.',
+    hint: '평소 하던 대로 해주세요. "대충 이렇게"도 그대로 남겨요.',
+    skipIf: 'noDadThing',
+    alt: {
+      lead: '{parent:이/가} 척척 해주던 게 있었어요. 이제 제가 해야 할 날이 와요.',
+      ask: '{parent:이/가} 제일 자신 있게 해주던 것 하나, 제가 나중에 혼자 할 수 있게 직접 하면서 처음부터 알려주세요.',
+    },
+    reply: {
+      lead: '{parent:이/가} 알려준 {dadThing}, 이제 직접 해볼 차례예요.',
+      ask: '{parent} 영상 보면서 직접 해보고, 소감까지 남겨주세요. 서툴러도 괜찮아요.',
+    },
+    replyIf: 'noDadThing',
+  },
+  8: {
+    why: '잔소리 대신 아빠가 직접 겪은 이야기로 남는 지혜예요. 마지막엔 내 이름을 부르는 목소리를 하나 더 남겨요.',
+    lead: '가장이라는 말에는 무게가 있다고들 해요. {parent}에게도 그런 때가 있었을 거예요.',
+    ask: '{parent} 인생에서 제일 무거운 짐을 졌다고 느낀 때는 언제였어요? 그때 어떻게 버텼는지, 그리고 그때 배운 걸 저한테 알려주세요.',
+    when: [{ flag: 'avoidMoney', lead: '살다 보면 마음이 크게 흔들리는 때가 와요. {parent}에게도 그런 때가 있었을 거예요.' }],
+  },
+};
+
 /* ───────── 꺼내 쓰기 ───────── */
 
 export type CourseRow = {
@@ -315,7 +389,8 @@ export function buildCourse(input: CourseInput): CourseRow[] {
   const v = buildVars(input);
   const r = (s?: string) => (s ? render(s, v).trim() : null);
 
-  return COURSE.map((w) => {
+  return COURSE.map((base) => {
+    const w: Week = v.flags.isDad && DAD[base.week] ? { ...base, ...DAD[base.week] } : base;
     let t: Text = w.skipIf && v.flags[w.skipIf] && w.alt ? w.alt : w;
     for (const o of w.when || []) {
       if (v.flags[o.flag]) t = { lead: o.lead ?? t.lead, ask: o.ask ?? t.ask };
