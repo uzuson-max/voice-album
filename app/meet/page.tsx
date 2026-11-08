@@ -96,7 +96,12 @@ export default function MeetPage() {
   // 직장 동료·친구 숫자는 돌아가지 않고, 숫자가 생기면서 올라온다
   const work = workTimes;
   const friend = friendTimes;
-  const parent = useCount(parentTimes, stage === "parent", skipped ? 0 : 2600, skipped ? 0 : 1500);
+  // 만나러 가는 날 = 1일. 번과 일이 같은 숫자라, 모든 단위를 "일"로 통일한다
+  const parentDays = Math.max(1, parentTimes);
+  const spanLabel = parentDays < 365
+    ? `달력으로 치면 약 ${(Math.round(parentDays / 3) / 10).toFixed(1)}개월`
+    : `달력으로 치면 약 ${(Math.round(parentDays / 36.5) / 10).toFixed(1)}년`;
+  const parent = useCount(parentDays, stage === "parent", skipped ? 0 : 2600, skipped ? 0 : 1500);
 
   // 장면 자동 전환
   useEffect(() => {
@@ -180,25 +185,29 @@ export default function MeetPage() {
       {stage === "work" && (
         <section className={`center scene${leaving ? " out" : ""}`}>
           <div className="who">직장 동료</div>
-          <div className="num">{work.toLocaleString()}<small>번</small></div>
-          <div className="cap">주 5일 만난다면, 앞으로 {years}년 동안</div>
+          <div className="num">{work.toLocaleString()}<small>일</small></div>
+          <div className="cap">주 5일 만나면, 앞으로 {years}년 동안</div>
         </section>
       )}
 
       {stage === "friend" && (
         <section className={`center scene${leaving ? " out" : ""}`}>
           <div className="who">가장 친한 친구</div>
-          <div className="num">{friend.toLocaleString()}<small>번</small></div>
-          <div className="cap">한 달에 두 번 만난다면, 앞으로 {years}년 동안</div>
+          <div className="num">{friend.toLocaleString()}<small>일</small></div>
+          <div className="cap">한 달에 두 번 만나면, 앞으로 {years}년 동안</div>
         </section>
       )}
 
       {stage === "parent" && (
         <div className="cover">
           <section className="center parentScene" onClick={(e) => e.stopPropagation()}>
-            <div className="who p">부모님</div>
-            <div className="num p">{parent.toLocaleString()}<small>번</small></div>
-            <div className="cap p">앞으로 {years}년 동안, {freqLabel} 만난다면</div>
+            <div className="who p">부모님과 함께할 수 있는 시간이 겨우</div>
+            <div className="num p glow">{parent.toLocaleString()}<small>일</small></div>
+            <div className="lead p">믿어지시나요?</div>
+            <div className="cap p">
+              앞으로 {years}년 동안 {freqLabel} 하루씩 만난다면<br />
+              {spanLabel}
+            </div>
             <div className="below">
               <div className="ask p">부모님 얼마나 자주 만나세요?</div>
               <div className="chips p4">
@@ -245,7 +254,8 @@ const CSS = `
 .num small{font-size:30px;font-weight:700;margin-left:6px;color:var(--ochre-ink)}
 .cap{font-size:15px;color:var(--text-muted)}
 .scene{animation:fadein .8s ease both}
-.scene .num{animation:rise 1s cubic-bezier(.2,.8,.2,1) .3s both}
+.scene .num{font-size:72px;animation:rise 1s cubic-bezier(.2,.8,.2,1) .3s both}
+.scene .num small{font-size:26px}
 .scene .who{animation:fadein .8s ease both}
 .scene .cap{animation:fadein .8s ease 1s both}
 .scene.out{animation:fadeout .6s ease both}
@@ -254,18 +264,20 @@ const CSS = `
   padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));
   animation:cover 1.1s cubic-bezier(.7,0,.2,1) both}
 .skipped .cover{animation:none}
-.parentScene{width:100%;max-width:440px;margin:0 auto;flex:1 0 auto;justify-content:center;gap:10px}
+.parentScene{width:100%;max-width:440px;margin:0 auto;flex:1 0 auto;justify-content:center;gap:10px;padding-top:36px}
 .st-parent{background:var(--ochre-ink)}
-.who.p{font-size:30px;animation:fadein 1s ease .9s both}
+.who.p{font-size:22px;font-weight:600;animation:fadein 1s ease .9s both}
+.lead.p{font-size:26px;font-weight:700;animation:fadein 1s ease 2.9s both}
 .num.p{font-size:min(34vw,150px);animation:pop 1.4s ease 1.4s both}
-.num.p small{color:#F5F0E8;font-size:40px}
-.cap.p{color:rgba(245,240,232,.85);font-size:16px;animation:fadein 1s ease 2.8s both}
-.below{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:28px;animation:fadein 1s ease 3.8s both}
+.num.p small{color:#FFE3BC;font-size:44px;text-shadow:none}
+.cap.p{color:rgba(245,240,232,.8);font-size:14px;line-height:1.7;animation:fadein 1s ease 3.4s both}
+.num.glow{color:#FFE3BC;text-shadow:0 0 36px rgba(255,205,140,.6),0 8px 0 rgba(0,0,0,.18),0 18px 40px rgba(0,0,0,.35)}
+.below{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:56px;animation:fadein 1s ease 3.8s both}
 .below .ask{margin:0;font-size:15px;font-weight:500}
-.p4{display:flex;flex-direction:column;gap:6px;width:100%;max-width:260px}
-.p4 .chip{min-height:40px;font-size:14px;width:100%;padding:0 10px}
+.p4{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:100%;max-width:360px}
+.p4 .chip{min-height:36px;min-width:0;font-size:13px;padding:0 12px}
 .replay{background:transparent;border:0;color:rgba(245,240,232,.75);font-size:13px;height:44px;cursor:pointer}
-.skipped .who.p,.skipped .num.p,.skipped .cap.p,.skipped .below{animation:none;opacity:1}
+.skipped .who.p,.skipped .num.p,.skipped .lead.p,.skipped .cap.p,.skipped .below{animation:none;opacity:1}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
 @keyframes fadeout{from{opacity:1}to{opacity:0}}
