@@ -122,6 +122,15 @@ export default function MeetPage() {
     }
   }, [stage]);
 
+  useEffect(() => {
+    if (stage !== "parent") return;
+    const b = document.body.style.background;
+    const h = document.documentElement.style.background;
+    document.body.style.background = "#9A4E2A";
+    document.documentElement.style.background = "#9A4E2A";
+    return () => { document.body.style.background = b; document.documentElement.style.background = h; };
+  }, [stage]);
+
   const start = () => {
     if (!ageOk) return;
     snd.init();
@@ -191,7 +200,7 @@ export default function MeetPage() {
             <div className="num p">{parent.toLocaleString()}<small>번</small></div>
             <div className="cap p">앞으로 {years}년 동안, {freqLabel} 만난다면</div>
             <div className="below">
-              <div className="ask p">우리 집은 얼마나 자주 만나세요?</div>
+              <div className="ask p">부모님 얼마나 자주 만나세요?</div>
               <div className="chips p4">
                 {FREQ.map(([v, l]) => (
                   <button key={v} className="chip on-dark" aria-pressed={freq === v} onClick={() => setFreq(v)}>{l}</button>
@@ -241,19 +250,20 @@ const CSS = `
 .scene .cap{animation:fadein .8s ease 1s both}
 .scene.out{animation:fadeout .6s ease both}
 .in{animation:fadein .8s ease both}
-.cover{position:fixed;inset:0;overflow-y:auto;z-index:4;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
+.cover{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;overflow-y:auto;z-index:4;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
   padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));
   animation:cover 1.1s cubic-bezier(.7,0,.2,1) both}
 .skipped .cover{animation:none}
-.parentScene{width:100%;max-width:440px;margin:0 auto;min-height:100%;justify-content:center;gap:10px}
+.parentScene{width:100%;max-width:440px;margin:0 auto;flex:1 0 auto;justify-content:center;gap:10px}
+.st-parent{background:var(--ochre-ink)}
 .who.p{font-size:30px;animation:fadein 1s ease .9s both}
 .num.p{font-size:min(34vw,150px);animation:pop 1.4s ease 1.4s both}
 .num.p small{color:#F5F0E8;font-size:40px}
 .cap.p{color:rgba(245,240,232,.85);font-size:16px;animation:fadein 1s ease 2.8s both}
 .below{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:28px;animation:fadein 1s ease 3.8s both}
 .below .ask{margin:0;font-size:15px;font-weight:500}
-.p4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:360px}
-.p4 .chip{min-height:44px}
+.p4{display:flex;flex-direction:column;gap:6px;width:100%;max-width:260px}
+.p4 .chip{min-height:40px;font-size:14px;width:100%;padding:0 10px}
 .replay{background:transparent;border:0;color:rgba(245,240,232,.75);font-size:13px;height:44px;cursor:pointer}
 .skipped .who.p,.skipped .num.p,.skipped .cap.p,.skipped .below{animation:none;opacity:1}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
