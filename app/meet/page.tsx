@@ -5,8 +5,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-const AGES = [55, 60, 65, 70, 75];
-const FREQ: [number, string][] = [[24, "한 달 2번"], [12, "한 달 1번"], [6, "두 달 1번"], [4, "세 달 1번"]];
+const FREQ: [number, string][] = [[24, "한 달 2번"], [12, "한 달 1번"], [6, "두 달 1번"], [4, "세 달 1번"], [2, "명절에만"]];
 const WORK_PER_YEAR = 240;   // 주 5일
 const FRIEND_PER_YEAR = 24;  // 한 달 2번
 type Stage = "intro" | "work" | "friend" | "parent";
@@ -79,30 +78,34 @@ function useCount(target: number, run: boolean, ms: number, delay: number, onTic
 export default function MeetPage() {
   const snd = useSound();
   const [stage, setStage] = useState<Stage>("intro");
-  const [age, setAge] = useState(65);
-  const [freq, setFreq] = useState(12);
+  const [ageText, setAgeText] = useState("");
+  const [freq, setFreq] = useState(6); // 처음엔 두 달에 한 번으로 보여준다
   const [leaving, setLeaving] = useState(false);
   const [skipped, setSkipped] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
   const [run, setRun] = useState(0);
 
-  const years = 80 - age;
+  const age = parseInt(ageText, 10) || 0;
+  const ageOk = age >= 30 && age <= 99;
+  const years = (age < 80 ? 80 : 90) - age; // 여든까지, 이미 넘으셨으면 아흔까지
   const workTimes = WORK_PER_YEAR * years;
   const friendTimes = FRIEND_PER_YEAR * years;
   const parentTimes = freq * years;
   const freqLabel = FREQ.find(([v]) => v === freq)?.[1] ?? "";
 
-  const work = useCount(workTimes, stage === "work", 2200, 700, snd.tickWork);
-  const friend = useCount(friendTimes, stage === "friend", 1800, 700, snd.tickFriend);
+  // 직장 동료·친구 숫자는 돌아가지 않고, 숫자가 생기면서 올라온다
+  const work = workTimes;
+  const friend = friendTimes;
   const parent = useCount(parentTimes, stage === "parent", skipped ? 0 : 2600, skipped ? 0 : 1500);
 
   // 장면 자동 전환
   useEffect(() => {
     setLeaving(false);
     if (stage === "work" || stage === "friend") {
+      const t1 = setTimeout(() => (stage === "work" ? snd.tickWork() : snd.tickFriend()), 350);
       const a = setTimeout(() => setLeaving(true), 3600);
       const b = setTimeout(() => setStage(stage === "work" ? "friend" : "parent"), 4200);
-      return () => { clearTimeout(a); clearTimeout(b); };
+      return () => { clearTimeout(t1); clearTimeout(a); clearTimeout(b); };
     }
     if (stage === "parent" && !skipped) {
       snd.swell();
@@ -120,6 +123,7 @@ export default function MeetPage() {
   }, [stage]);
 
   const start = () => {
+    if (!ageOk) return;
     snd.init();
     snd.setOn(soundOn);
     setSkipped(false);
@@ -146,12 +150,21 @@ export default function MeetPage() {
           <h1 className="h1">부모님과 앞으로<br />몇 번 만날 수 있을까요</h1>
           <p className="sub">소리를 켜고 보시면 더 좋아요</p>
           <p className="ask">부모님은 올해 몇 세이신가요</p>
-          <div className="chips" role="group" aria-label="부모님 나이">
-            {AGES.map((a) => (
-              <button key={a} className="chip" aria-pressed={age === a} onClick={() => setAge(a)}>{a}세</button>
-            ))}
-          </div>
-          <button className="cta dark" onClick={start}>시작</button>
+          <label className="agebox">
+            <input
+              className="ageinput"
+              type="number"
+              inputMode="numeric"
+              min={30}
+              max={99}
+              value={ageText}
+              onChange={(e) => setAgeText(e.target.value.slice(0, 2))}
+              onKeyDown={(e) => { if (e.key === "Enter") start(); }}
+              aria-label="부모님 나이"
+            />
+            <span className="ageunit">세</span>
+          </label>
+          <button className="cta dark" onClick={start} disabled={!ageOk}>시작</button>
         </section>
       )}
 
@@ -195,7 +208,7 @@ export default function MeetPage() {
 }
 
 const CSS = `
-.meet{position:relative;max-width:440px;margin:0 auto;min-height:100dvh;box-sizing:border-box;overflow:hidden;
+.meet{position:relative;max-width:440px;margin:0 auto;min-height:100vh;min-height:100dvh;box-sizing:border-box;overflow:hidden;
   background:var(--offwhite);color:var(--charcoal);
   padding:max(24px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
   display:flex;flex-direction:column}
@@ -212,29 +225,39 @@ const CSS = `
 .chip.on-dark[aria-pressed=true]{background:#F5F0E8;border-color:#F5F0E8;color:var(--ochre-ink)}
 .cta{margin-top:22px;display:flex;align-items:center;justify-content:center;width:100%;max-width:360px;height:58px;border-radius:8px;border:0;font-size:18px;font-weight:700;text-decoration:none;cursor:pointer}
 .cta.dark{background:var(--charcoal);color:var(--offwhite)}
+.cta:disabled{opacity:.35;cursor:default}
+.agebox{display:flex;align-items:center;gap:10px}
+.ageinput{width:120px;height:64px;box-sizing:border-box;text-align:center;font-size:32px;font-weight:700;border:2px solid var(--charcoal);border-radius:8px;background:#fff;color:var(--charcoal);font-family:inherit;-moz-appearance:textfield}
+.ageinput::-webkit-outer-spin-button,.ageinput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.ageunit{font-size:24px;font-weight:700}
 .cta.light{background:#F5F0E8;color:var(--ochre-ink)}
 .who{font-size:22px;font-weight:700}
 .num{font-weight:900;line-height:1;font-size:96px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
 .num small{font-size:30px;font-weight:700;margin-left:6px;color:var(--ochre-ink)}
 .cap{font-size:15px;color:var(--text-muted)}
 .scene{animation:fadein .8s ease both}
+.scene .num{animation:rise 1s cubic-bezier(.2,.8,.2,1) .3s both}
+.scene .who{animation:fadein .8s ease both}
+.scene .cap{animation:fadein .8s ease 1s both}
 .scene.out{animation:fadeout .6s ease both}
 .in{animation:fadein .8s ease both}
-.cover{position:absolute;inset:0;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
+.cover{position:fixed;inset:0;overflow-y:auto;z-index:4;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
   padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));
   animation:cover 1.1s cubic-bezier(.7,0,.2,1) both}
 .skipped .cover{animation:none}
-.parentScene{width:100%;max-width:440px;margin:0 auto}
+.parentScene{width:100%;max-width:440px;margin:0 auto;min-height:100%;justify-content:center;gap:10px}
 .who.p{font-size:30px;animation:fadein 1s ease .9s both}
-.num.p{font-size:150px;animation:pop 1.4s ease 1.4s both}
+.num.p{font-size:min(34vw,150px);animation:pop 1.4s ease 1.4s both}
 .num.p small{color:#F5F0E8;font-size:40px}
 .cap.p{color:rgba(245,240,232,.85);font-size:16px;animation:fadein 1s ease 2.8s both}
 .below{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:28px;animation:fadein 1s ease 3.8s both}
 .below .ask{margin:0;font-size:15px;font-weight:500}
 .p4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:360px}
+.p4 .chip{min-height:44px}
 .replay{background:transparent;border:0;color:rgba(245,240,232,.75);font-size:13px;height:44px;cursor:pointer}
 .skipped .who.p,.skipped .num.p,.skipped .cap.p,.skipped .below{animation:none;opacity:1}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
 @keyframes fadeout{from{opacity:1}to{opacity:0}}
 @keyframes cover{from{clip-path:circle(0% at 50% 50%)}to{clip-path:circle(150% at 50% 50%)}}
 @keyframes pop{0%{opacity:0;transform:scale(.7)}60%{opacity:1;transform:scale(1.04)}100%{opacity:1;transform:none}}
