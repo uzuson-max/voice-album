@@ -1,118 +1,242 @@
 "use client";
-// 결제 전 공개 페이지: 직장 동료 → 친한 친구 → 부모님 순서로 "앞으로 몇 번 만날까" 를 보여준다.
-// 화면을 누르면 애니메이션이 바로 끝까지 뜬다. 가입 없이 열린다.
+// 결제 전 공개 페이지 /meet
+// 흐름: 부모님 나이 고르기 → 직장 동료 숫자 → 친한 친구 숫자 → 부모님 숫자가 화면 전체를 덮는다
+// 화면을 누르면 바로 마지막 장면으로 넘어간다. 소리는 '시작'을 누른 뒤부터 난다(브라우저 정책).
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-const AGE = 64;            // 부모님 나이 기본값 (입력받기 전 예시)
-const YEARS = 80 - AGE;    // 여든까지
+const AGES = [55, 60, 65, 70, 75];
+const FREQ: [number, string][] = [[24, "한 달 2번"], [12, "한 달 1번"], [6, "두 달 1번"], [4, "세 달 1번"]];
+const WORK_PER_YEAR = 240;   // 주 5일
+const FRIEND_PER_YEAR = 24;  // 한 달 2번
+type Stage = "intro" | "work" | "friend" | "parent";
 
-const ROWS = [
-  { key: "w", n: 1, name: "직장 동료", opts: [[240, "주 5일"], [144, "주 3일"], [48, "주 1일"], [12, "한 달 1번"]] },
-  { key: "f", n: 2, name: "가장 친한 친구", opts: [[48, "매주"], [24, "한 달 2번"], [12, "한 달 1번"], [4, "세 달 1번"]] },
-  { key: "p", n: 3, name: "부모님", opts: [[24, "한 달 2번"], [12, "한 달 1번"], [6, "두 달 1번"], [4, "세 달 1번"]] },
-] as const;
+/* ---------- 소리: 파일 없이 브라우저에서 만든다 (아주 작게) ---------- */
+function useSound() {
+  const ctx = useRef<AudioContext | null>(null);
+  const on = useRef(true);
+  const init = () => {
+    try {
+      const C = window.AudioContext || (window as any).webkitAudioContext;
+      if (!C) return;
+      ctx.current = ctx.current ?? new C();
+      void ctx.current.resume();
+    } catch {}
+  };
+  const tone = (freq: number, dur: number, gain: number, type: OscillatorType = "sine", delay = 0) => {
+    try {
+      const c = ctx.current;
+      if (!c || !on.current) return;
+      const t = c.currentTime + delay;
+      const o = c.createOscillator();
+      const g = c.createGain();
+      o.type = type;
+      o.frequency.setValueAtTime(freq, t);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g).connect(c.destination);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    } catch {}
+  };
+  return {
+    init,
+    setOn: (v: boolean) => { on.current = v; },
+    tickWork: () => tone(900, 0.04, 0.05, "triangle"),
+    tickFriend: () => tone(620, 0.06, 0.07, "triangle"),
+    swell: () => { tone(98, 2.4, 0.16, "sine"); tone(147, 2.4, 0.08, "sine"); },
+    bell: () => { tone(523, 2.2, 0.12, "sine"); tone(784, 2.6, 0.08, "sine", 0.02); tone(1046, 2.0, 0.04, "sine", 0.04); },
+  };
+}
 
-const ICON: Record<number, JSX.Element> = {
-  1: (<svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="9" width="20" height="14" rx="2" /><path d="M10 9V6h8v3M4 15h20" /></svg>),
-  2: (<svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="9" r="3.5" /><circle cx="19" cy="9" r="3.5" /><path d="M3 23c0-4 3-7 6-7s6 3 6 7M13 23c0-4 3-7 6-7s6 3 6 7" /></svg>),
-  3: (<svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="var(--ochre)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 24S4 17.5 4 10.5A5.5 5.5 0 0 1 14 7a5.5 5.5 0 0 1 10 3.5C24 17.5 14 24 14 24z" /></svg>),
-};
+/* ---------- 숫자가 올라가는 효과 ---------- */
+function useCount(target: number, run: boolean, ms: number, delay: number, onTick?: () => void) {
+  const [n, setN] = useState(0);
+  const [done, setDone] = useState(false);
+  const tick = useRef(onTick);
+  tick.current = onTick;
+  useEffect(() => {
+    if (!run) { setN(0); setDone(false); return; }
+    let raf = 0, t0 = 0, last = 0, dead = false;
+    const to = setTimeout(() => {
+      const step = (t: number) => {
+        if (dead) return;
+        if (!t0) t0 = t;
+        const p = Math.min(1, (t - t0) / (ms || 1));
+        setN(Math.round(target * (1 - Math.pow(1 - p, 3))));
+        if (t - last > 70 && p < 1) { last = t; tick.current?.(); }
+        if (p < 1) raf = requestAnimationFrame(step); else setDone(true);
+      };
+      raf = requestAnimationFrame(step);
+    }, delay);
+    return () => { dead = true; clearTimeout(to); cancelAnimationFrame(raf); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run]);
+  return done ? target : n;
+}
 
 export default function MeetPage() {
-  const [v, setV] = useState<Record<string, number>>({ w: 240, f: 24, p: 12 });
-  const [run, setRun] = useState(1);        // 다시 보기: key 가 바뀌면 애니메이션이 처음부터
-  const [skip, setSkip] = useState(false);  // 화면을 누르면 바로 끝까지
+  const snd = useSound();
+  const [stage, setStage] = useState<Stage>("intro");
+  const [age, setAge] = useState(65);
+  const [freq, setFreq] = useState(12);
+  const [leaving, setLeaving] = useState(false);
+  const [skipped, setSkipped] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
+  const [run, setRun] = useState(0);
 
-  const rows = useMemo(
-    () => ROWS.map((r) => {
-      const times = v[r.key] * YEARS;
-      return { ...r, times, pct: Math.max(1.5, (times / (240 * YEARS)) * 100) };
-    }),
-    [v]
-  );
+  const years = 80 - age;
+  const workTimes = WORK_PER_YEAR * years;
+  const friendTimes = FRIEND_PER_YEAR * years;
+  const parentTimes = freq * years;
+  const freqLabel = FREQ.find(([v]) => v === freq)?.[1] ?? "";
+
+  const work = useCount(workTimes, stage === "work", 2200, 700, snd.tickWork);
+  const friend = useCount(friendTimes, stage === "friend", 1800, 700, snd.tickFriend);
+  const parent = useCount(parentTimes, stage === "parent", skipped ? 0 : 2600, skipped ? 0 : 1500);
+
+  // 장면 자동 전환
+  useEffect(() => {
+    setLeaving(false);
+    if (stage === "work" || stage === "friend") {
+      const a = setTimeout(() => setLeaving(true), 3600);
+      const b = setTimeout(() => setStage(stage === "work" ? "friend" : "parent"), 4200);
+      return () => { clearTimeout(a); clearTimeout(b); };
+    }
+    if (stage === "parent" && !skipped) {
+      snd.swell();
+      const c = setTimeout(() => snd.bell(), 1500);
+      return () => clearTimeout(c);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, run]);
+
+  useEffect(() => {
+    // 움직임 줄이기 설정이면 바로 마지막 장면
+    if (stage === "intro" && typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setSkipped(true);
+    }
+  }, [stage]);
+
+  const start = () => {
+    snd.init();
+    snd.setOn(soundOn);
+    setSkipped(false);
+    setStage("work");
+    setRun((x) => x + 1);
+  };
+  const skip = () => {
+    if (stage === "work" || stage === "friend") { setSkipped(true); setStage("parent"); }
+  };
+  const toggleSound = () => { const v = !soundOn; setSoundOn(v); snd.setOn(v); };
 
   return (
-    <main
-      key={run}
-      className={`meet${skip ? " skip" : ""}`}
-      onClick={() => setSkip(true)}
-    >
+    <main className={`meet st-${stage}${skipped ? " skipped" : ""}`} onClick={skip}>
       <style>{CSS}</style>
-      <button
-        className="replay"
-        onClick={(e) => { e.stopPropagation(); setSkip(false); setRun((x) => x + 1); }}
-        aria-label="처음부터 다시 보기"
-      >
-        다시 보기
-      </button>
 
-      <h1 className="title">앞으로 {YEARS}년 동안<br />이 사람들을 몇 번 만날까요</h1>
+      {stage !== "intro" && (
+        <button className="snd" onClick={(e) => { e.stopPropagation(); toggleSound(); }}>
+          {soundOn ? "소리 끄기" : "소리 켜기"}
+        </button>
+      )}
 
-      {rows.map((r) => (
-        <section key={r.key} className="row">
-          <div className={`head r${r.n}`}>
-            <span className="lab">{ICON[r.n]}{r.name}</span>
-            <span className={`num n${r.n}${r.n === 3 ? " big" : ""}`}>
-              {r.times.toLocaleString()}<small>번</small>
-            </span>
-          </div>
-          <div className="track"><div className={`bar b${r.n}`} style={{ width: `${r.pct}%` }} /></div>
-          <div className="chips" onClick={(e) => e.stopPropagation()}>
-            {r.opts.map(([n, label]) => (
-              <button key={n} className="chip" aria-pressed={v[r.key] === n} onClick={() => setV({ ...v, [r.key]: n })}>
-                {label}
-              </button>
+      {stage === "intro" && (
+        <section className="center in">
+          <h1 className="h1">부모님과 앞으로<br />몇 번 만날 수 있을까요</h1>
+          <p className="sub">소리를 켜고 보시면 더 좋아요</p>
+          <p className="ask">부모님은 올해 몇 세이신가요</p>
+          <div className="chips" role="group" aria-label="부모님 나이">
+            {AGES.map((a) => (
+              <button key={a} className="chip" aria-pressed={age === a} onClick={() => setAge(a)}>{a}세</button>
             ))}
           </div>
+          <button className="cta dark" onClick={start}>시작</button>
         </section>
-      ))}
+      )}
 
-      <p className="after msg">
-        부모님과는 생각보다 적죠
-        <span>우리 집은 어떤지 눌러서 바꿔 보세요</span>
-      </p>
+      {stage === "work" && (
+        <section className={`center scene${leaving ? " out" : ""}`}>
+          <div className="who">직장 동료</div>
+          <div className="num">{work.toLocaleString()}<small>번</small></div>
+          <div className="cap">주 5일 만난다면, 앞으로 {years}년 동안</div>
+        </section>
+      )}
 
-      <Link href="/login" className="cta after" onClick={(e) => e.stopPropagation()}>
-        부모님 이야기 시작하기
-      </Link>
+      {stage === "friend" && (
+        <section className={`center scene${leaving ? " out" : ""}`}>
+          <div className="who">가장 친한 친구</div>
+          <div className="num">{friend.toLocaleString()}<small>번</small></div>
+          <div className="cap">한 달에 두 번 만난다면, 앞으로 {years}년 동안</div>
+        </section>
+      )}
+
+      {stage === "parent" && (
+        <div className="cover">
+          <section className="center parentScene" onClick={(e) => e.stopPropagation()}>
+            <div className="who p">부모님</div>
+            <div className="num p">{parent.toLocaleString()}<small>번</small></div>
+            <div className="cap p">앞으로 {years}년 동안, {freqLabel} 만난다면</div>
+            <div className="below">
+              <div className="ask p">우리 집은 얼마나 자주 만나세요?</div>
+              <div className="chips p4">
+                {FREQ.map(([v, l]) => (
+                  <button key={v} className="chip on-dark" aria-pressed={freq === v} onClick={() => setFreq(v)}>{l}</button>
+                ))}
+              </div>
+              <Link href="/login" className="cta light">부모님 이야기 시작하기</Link>
+              <button className="replay" onClick={() => { setSkipped(false); setStage("intro"); }}>처음부터 다시 보기</button>
+            </div>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
 
 const CSS = `
-.meet{max-width:440px;margin:0 auto;min-height:100dvh;box-sizing:border-box;background:var(--offwhite);color:var(--charcoal);
-  padding:max(36px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
-  display:flex;flex-direction:column;gap:14px;position:relative}
-.replay{position:absolute;top:8px;right:12px;height:44px;padding:0 10px;border:0;background:transparent;color:var(--text-muted);font-size:13px;cursor:pointer}
-.title{margin:12px 0 0;font-size:22px;line-height:1.5;font-weight:700}
-.row{display:flex;flex-direction:column;gap:8px}
-.head{display:flex;justify-content:space-between;align-items:center}
-.lab{display:inline-flex;align-items:center;gap:10px;font-size:17px;font-weight:700}
-.num{font-weight:900;line-height:1;font-size:30px}
-.num small{font-size:15px;font-weight:700;color:var(--ochre-ink)}
-.num.big{font-size:44px;color:var(--ochre-ink)}
-.track{height:26px;background:var(--border);border:1px solid var(--border);border-radius:3px;overflow:hidden}
-.bar{height:26px;background:var(--ochre);transition:width .35s ease;transform-origin:left}
-.chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-.chip{min-height:44px;border-radius:6px;font-size:13px;border:1px solid var(--border);background:var(--offwhite);color:var(--charcoal);font-weight:500;cursor:pointer}
+.meet{position:relative;max-width:440px;margin:0 auto;min-height:100dvh;box-sizing:border-box;overflow:hidden;
+  background:var(--offwhite);color:var(--charcoal);
+  padding:max(24px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
+  display:flex;flex-direction:column}
+.snd{position:absolute;top:10px;right:12px;z-index:5;height:44px;padding:0 10px;border:0;background:transparent;color:var(--text-muted);font-size:13px;cursor:pointer}
+.st-parent .snd{color:#F5F0E8}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.h1{margin:0;font-size:28px;line-height:1.45;font-weight:800}
+.sub{margin:0;font-size:14px;color:var(--text-muted)}
+.ask{margin:22px 0 0;font-size:17px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:360px}
+.chip{min-height:48px;min-width:64px;padding:0 14px;border-radius:8px;font-size:15px;border:1px solid var(--border);background:var(--offwhite);color:var(--charcoal);font-weight:500;cursor:pointer}
 .chip[aria-pressed=true]{border:2px solid var(--ochre-ink);background:var(--ochre-ink);color:#fff;font-weight:700}
-.msg{margin:0;text-align:center;font-size:17px;line-height:1.6;font-weight:500}
-.msg span{display:block;font-size:14px;color:var(--text-muted)}
-.cta{margin-top:auto;display:flex;align-items:center;justify-content:center;height:56px;border-radius:6px;background:var(--charcoal);color:var(--offwhite);font-size:18px;font-weight:700;text-decoration:none}
-.title,.head,.chips,.after{opacity:0}
-@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-.title{animation:up 1s ease .2s both}
-.head.r1{animation:up .8s ease 1.2s both}.head.r2{animation:up .8s ease 4s both}.head.r3{animation:up .8s ease 7s both}
-.b1{animation:draw 1.6s ease-in-out 1.6s both}.b2{animation:draw 1.2s ease-in-out 4.4s both}.b3{animation:draw 1s ease-in-out 7.4s both}
-.num{opacity:0}
-.n1{animation:up .8s ease 3s both}.n2{animation:up .8s ease 5.6s both}.n3{animation:up 2.4s ease 9s both}
-.head{opacity:1}
-.head.r1 .lab,.head.r2 .lab,.head.r3 .lab{opacity:0}
-.head.r1 .lab{animation:up .8s ease 1.2s both}.head.r2 .lab{animation:up .8s ease 4s both}.head.r3 .lab{animation:up .8s ease 7s both}
-.after{animation:up 1s ease 11.6s both}
-.chips{animation:up 1s ease 13s both}
-.skip *{animation:none!important;opacity:1!important;transform:none!important}
+.chip.on-dark{background:transparent;border:1px solid rgba(245,240,232,.6);color:#F5F0E8}
+.chip.on-dark[aria-pressed=true]{background:#F5F0E8;border-color:#F5F0E8;color:var(--ochre-ink)}
+.cta{margin-top:22px;display:flex;align-items:center;justify-content:center;width:100%;max-width:360px;height:58px;border-radius:8px;border:0;font-size:18px;font-weight:700;text-decoration:none;cursor:pointer}
+.cta.dark{background:var(--charcoal);color:var(--offwhite)}
+.cta.light{background:#F5F0E8;color:var(--ochre-ink)}
+.who{font-size:22px;font-weight:700}
+.num{font-weight:900;line-height:1;font-size:96px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
+.num small{font-size:30px;font-weight:700;margin-left:6px;color:var(--ochre-ink)}
+.cap{font-size:15px;color:var(--text-muted)}
+.scene{animation:fadein .8s ease both}
+.scene.out{animation:fadeout .6s ease both}
+.in{animation:fadein .8s ease both}
+.cover{position:absolute;inset:0;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
+  padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));
+  animation:cover 1.1s cubic-bezier(.7,0,.2,1) both}
+.skipped .cover{animation:none}
+.parentScene{width:100%;max-width:440px;margin:0 auto}
+.who.p{font-size:30px;animation:fadein 1s ease .9s both}
+.num.p{font-size:150px;animation:pop 1.4s ease 1.4s both}
+.num.p small{color:#F5F0E8;font-size:40px}
+.cap.p{color:rgba(245,240,232,.85);font-size:16px;animation:fadein 1s ease 2.8s both}
+.below{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:28px;animation:fadein 1s ease 3.8s both}
+.below .ask{margin:0;font-size:15px;font-weight:500}
+.p4{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;max-width:360px}
+.replay{background:transparent;border:0;color:rgba(245,240,232,.75);font-size:13px;height:44px;cursor:pointer}
+.skipped .who.p,.skipped .num.p,.skipped .cap.p,.skipped .below{animation:none;opacity:1}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeout{from{opacity:1}to{opacity:0}}
+@keyframes cover{from{clip-path:circle(0% at 50% 50%)}to{clip-path:circle(150% at 50% 50%)}}
+@keyframes pop{0%{opacity:0;transform:scale(.7)}60%{opacity:1;transform:scale(1.04)}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.meet *{animation:none!important;opacity:1!important;transform:none!important}}
 `;
