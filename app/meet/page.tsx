@@ -8,7 +8,8 @@ import { useEffect, useRef, useState } from "react";
 const FREQ: [number, string][] = [[24, "한 달 2번"], [12, "한 달 1번"], [6, "두 달 1번"], [4, "세 달 1번"], [2, "명절에만"]];
 const WORK_PER_YEAR = 240;   // 주 5일
 const FRIEND_PER_YEAR = 24;  // 한 달 2번
-type Stage = "intro" | "work" | "friend" | "parent";
+type Stage = "intro" | "peers" | "parent";
+const FREQ_SENT: Record<number, string> = { 24: "한 달에 두 번", 12: "한 달에 한 번", 6: "두 달에 한 번", 4: "세 달에 한 번", 2: "명절에만" };
 
 /* ---------- 소리: 파일 없이 브라우저에서 만든다 (아주 작게) ---------- */
 function useSound() {
@@ -78,6 +79,7 @@ function useCount(target: number, run: boolean, ms: number, delay: number, onTic
 export default function MeetPage() {
   const snd = useSound();
   const [stage, setStage] = useState<Stage>("intro");
+  const [who, setWho] = useState<"" | "엄마" | "아빠">("");
   const [ageText, setAgeText] = useState("");
   const [freq, setFreq] = useState(6); // 처음엔 두 달에 한 번으로 보여준다
   const [leaving, setLeaving] = useState(false);
@@ -91,7 +93,7 @@ export default function MeetPage() {
   const workTimes = WORK_PER_YEAR * years;
   const friendTimes = FRIEND_PER_YEAR * years;
   const parentTimes = freq * years;
-  const freqLabel = FREQ.find(([v]) => v === freq)?.[1] ?? "";
+  const freqSent = FREQ_SENT[freq] ?? "";
 
   // 직장 동료·친구 숫자는 돌아가지 않고, 숫자가 생기면서 올라온다
   const work = workTimes;
@@ -106,11 +108,12 @@ export default function MeetPage() {
   // 장면 자동 전환
   useEffect(() => {
     setLeaving(false);
-    if (stage === "work" || stage === "friend") {
-      const t1 = setTimeout(() => (stage === "work" ? snd.tickWork() : snd.tickFriend()), 350);
-      const a = setTimeout(() => setLeaving(true), 3600);
-      const b = setTimeout(() => setStage(stage === "work" ? "friend" : "parent"), 4200);
-      return () => { clearTimeout(t1); clearTimeout(a); clearTimeout(b); };
+    if (stage === "peers") {
+      const t1 = setTimeout(() => snd.tickWork(), 350);
+      const t2 = setTimeout(() => snd.tickFriend(), 2650);
+      const a = setTimeout(() => setLeaving(true), 5600);
+      const b = setTimeout(() => setStage("parent"), 6200);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(a); clearTimeout(b); };
     }
     if (stage === "parent" && !skipped) {
       snd.swell();
@@ -137,15 +140,15 @@ export default function MeetPage() {
   }, [stage]);
 
   const start = () => {
-    if (!ageOk) return;
+    if (!ageOk || !who) return;
     snd.init();
     snd.setOn(soundOn);
     setSkipped(false);
-    setStage("work");
+    setStage("peers");
     setRun((x) => x + 1);
   };
   const skip = () => {
-    if (stage === "work" || stage === "friend") { setSkipped(true); setStage("parent"); }
+    if (stage === "peers") { setSkipped(true); setStage("parent"); }
   };
   const toggleSound = () => { const v = !soundOn; setSoundOn(v); snd.setOn(v); };
 
@@ -163,59 +166,75 @@ export default function MeetPage() {
         <section className="center in">
           <h1 className="h1">부모님과 앞으로<br />몇 번 만날 수 있을까요</h1>
           <p className="sub">소리를 켜고 보시면 더 좋아요</p>
-          <p className="ask">부모님은 올해 몇 세이신가요</p>
-          <label className="agebox">
-            <input
-              className="ageinput"
-              type="number"
-              inputMode="numeric"
-              min={30}
-              max={99}
-              value={ageText}
-              onChange={(e) => setAgeText(e.target.value.slice(0, 2))}
-              onKeyDown={(e) => { if (e.key === "Enter") start(); }}
-              aria-label="부모님 나이"
-            />
-            <span className="ageunit">세</span>
-          </label>
-          <button className="cta dark" onClick={start} disabled={!ageOk}>시작</button>
+
+          <div className="field">
+            <div className="ask">누구의 이야기인가요</div>
+            <div className="whobtns" role="group" aria-label="대상">
+              {(["엄마", "아빠"] as const).map((w) => (
+                <button key={w} className="chip" aria-pressed={who === w} onClick={() => setWho(w)}>{w}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="field">
+            <div className="ask">올해 몇 세이신가요</div>
+            <label className="agebox">
+              <input
+                className="ageinput"
+                type="number"
+                inputMode="numeric"
+                min={30}
+                max={99}
+                value={ageText}
+                onChange={(e) => setAgeText(e.target.value.slice(0, 2))}
+                onKeyDown={(e) => { if (e.key === "Enter") start(); }}
+                aria-label="부모님 나이"
+              />
+              <span className="ageunit">세</span>
+            </label>
+          </div>
+
+          <div className="field">
+            <div className="ask">얼마나 자주 만나세요</div>
+            <div className="chips" role="group" aria-label="만나는 횟수">
+              {FREQ.map(([v, l]) => (
+                <button key={v} className="chip" aria-pressed={freq === v} onClick={() => setFreq(v)}>{l}</button>
+              ))}
+            </div>
+          </div>
+
+          <button className="cta dark" onClick={start} disabled={!ageOk || !who}>시작</button>
         </section>
       )}
 
-      {stage === "work" && (
-        <section className={`center scene${leaving ? " out" : ""}`}>
-          <div className="who">직장 동료</div>
-          <div className="num">{work.toLocaleString()}<small>일</small></div>
-          <div className="cap">주 5일 만나면, 앞으로 {years}년 동안</div>
-        </section>
-      )}
-
-      {stage === "friend" && (
-        <section className={`center scene${leaving ? " out" : ""}`}>
-          <div className="who">가장 친한 친구</div>
-          <div className="num">{friend.toLocaleString()}<small>일</small></div>
-          <div className="cap">한 달에 두 번 만나면, 앞으로 {years}년 동안</div>
+      {stage === "peers" && (
+        <section className={`center scene peers${leaving ? " out" : ""}`}>
+          <div className="peer p1">
+            <div className="who">직장 동료</div>
+            <div className="num">{work.toLocaleString()}<small>일</small></div>
+            <div className="cap">앞으로 {years}년 동안, 평일마다 얼굴을 본다면</div>
+          </div>
+          <div className="peer p2">
+            <div className="who">가장 친한 친구</div>
+            <div className="num">{friend.toLocaleString()}<small>일</small></div>
+            <div className="cap">앞으로 {years}년 동안, 한 달에 두 번 만난다면</div>
+          </div>
         </section>
       )}
 
       {stage === "parent" && (
         <div className="cover">
           <section className="center parentScene" onClick={(e) => e.stopPropagation()}>
-            <div className="who p">부모님과 함께할 수 있는 시간이 겨우</div>
+            <div className="who p">{who}와 함께할 수 있는 시간이 겨우</div>
             <div className="num p glow">{parent.toLocaleString()}<small>일</small></div>
             <div className="lead p">믿어지시나요?</div>
             <div className="cap p">
-              앞으로 {years}년 동안 {freqLabel} 하루씩 만난다면<br />
+              앞으로 {years}년 동안, {freqSent} 하루씩 찾아뵌다면<br />
               {spanLabel}
             </div>
             <div className="below">
-              <div className="ask p">부모님 얼마나 자주 만나세요?</div>
-              <div className="chips p4">
-                {FREQ.map(([v, l]) => (
-                  <button key={v} className="chip on-dark" aria-pressed={freq === v} onClick={() => setFreq(v)}>{l}</button>
-                ))}
-              </div>
-              <Link href="/login" className="cta light">부모님 이야기 시작하기</Link>
+              <div className="callout">사랑하는 우리 {who},<br />조금이라도 기억하고 싶다면</div>
+              <Link href="/login" className="cta light">더 늦기 전에 {who} 이야기 담기</Link>
               <button className="replay" onClick={() => { setSkipped(false); setStage("intro"); }}>처음부터 다시 보기</button>
             </div>
           </section>
@@ -237,7 +256,18 @@ const CSS = `
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
 .h1{margin:0;font-size:28px;line-height:1.45;font-weight:800}
 .sub{margin:0;font-size:14px;color:var(--text-muted)}
-.ask{margin:22px 0 0;font-size:17px;font-weight:600}
+.ask{margin:0;font-size:16px;font-weight:600}
+.field{display:flex;flex-direction:column;align-items:center;gap:8px;width:100%}
+.whobtns{display:flex;gap:10px}
+.whobtns .chip{width:112px;min-height:52px;font-size:18px}
+.in{gap:16px}
+.callout{font-size:20px;line-height:1.55;font-weight:700;text-align:center}
+.peers{gap:40px}
+.peer{display:flex;flex-direction:column;align-items:center;gap:8px}
+.peer.p2 .who{animation-delay:2.4s}
+.peer.p2 .num{animation-delay:2.7s}
+.peer.p2 .cap{animation-delay:3.4s}
+.peer.p1 .cap{animation-delay:1s}
 .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:360px}
 .chip{min-height:48px;min-width:64px;padding:0 14px;border-radius:8px;font-size:15px;border:1px solid var(--border);background:var(--offwhite);color:var(--charcoal);font-weight:500;cursor:pointer}
 .chip[aria-pressed=true]{border:2px solid var(--ochre-ink);background:var(--ochre-ink);color:#fff;font-weight:700}
