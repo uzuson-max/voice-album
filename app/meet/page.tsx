@@ -5,6 +5,7 @@
 // 비교용 주소: /meet (숫자는 "일", 하루 만나면 1일) · /meet?v=time (숫자는 "번", 부모님 장면에서 시간으로 한 번 더 환산)
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import type React from "react";
 
 /* ---------- 상수 ---------- */
 const FREQ: [number, string][] = [[24, "한 달 2번"], [12, "한 달 1번"], [6, "두 달 1번"], [4, "세 달 1번"], [2, "명절에만"]];
@@ -90,6 +91,8 @@ export default function MeetPage() {
   const [turnFreq, setTurnFreq] = useState(0);
   const [soundOn, setSoundOn] = useState(true);
   const [timeMode, setTimeMode] = useState(false);
+  const [ready, setReady] = useState(false);   // 부모님 장면의 문장이 다 나온 뒤에야 눌러서 넘어갈 수 있다
+  const lastTap = useRef(0);
 
   useEffect(() => {
     try { setTimeMode(new URLSearchParams(window.location.search).get("v") === "time"); } catch {}
@@ -116,16 +119,14 @@ export default function MeetPage() {
   /* 장면 자동 진행 */
   useEffect(() => {
     if (stage === "peers") {
-      snd.beat(beat);
-      const t = setTimeout(() => {
-        if (beat < BEATS.length - 1) setBeat(beat + 1); else setStage("shock");
-      }, 2300);
-      return () => clearTimeout(t);
+      snd.beat(beat);   // 장면은 자동으로 넘어가지 않고, 화면을 누르면 넘어간다
+      return;
     }
     if (stage === "shock") {
       snd.swell();
       const a = setTimeout(() => snd.bell(), 1500);
-      const b = setTimeout(() => setStage("turn"), timeMode ? 11500 : 9500);
+      setReady(false);
+      const b = setTimeout(() => setReady(true), timeMode ? 8200 : 6200);
       return () => { clearTimeout(a); clearTimeout(b); };
     }
     if (stage === "turn") {
@@ -157,14 +158,42 @@ export default function MeetPage() {
     setBeat(0);
     setStage("peers");
   };
-  const skip = () => { if (stage === "peers") setStage("shock"); };
+  // 화면 왼쪽을 누르면 앞 장면, 오른쪽을 누르면 다음 장면 (스토리처럼)
+  const go = (dir: 1 | -1) => {
+    const now = Date.now();
+    if (now - lastTap.current < 500) return;   // 실수로 두 번 눌러 건너뛰는 것 방지
+    if (stage === "peers") {
+      lastTap.current = now;
+      if (dir === 1) { if (beat < BEATS.length - 1) setBeat(beat + 1); else setStage("shock"); }
+      else if (beat > 0) setBeat(beat - 1);
+    } else if (stage === "shock") {
+      if (dir === 1 && ready) { lastTap.current = now; setStage("turn"); }
+      else if (dir === -1) { lastTap.current = now; setBeat(BEATS.length - 1); setStage("peers"); }
+    } else if (stage === "turn" && dir === -1) {
+      lastTap.current = now;
+      setStage("shock");
+    }
+  };
+  const onTap = (e: React.MouseEvent<HTMLElement>) => {
+    if (stage === "intro") return;
+    const r = e.currentTarget.getBoundingClientRect();
+    go(e.clientX - r.left < r.width * 0.35 ? -1 : 1);
+  };
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "ArrowRight") go(1);
+      if (e.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", k);
+    return () => window.removeEventListener("keydown", k);
+  });
   const toggleSound = () => { const v = !soundOn; setSoundOn(v); snd.setOn(v); };
 
   const turnCount = turnFreq * years;
   const b = BEATS[beat];
 
   return (
-    <main className={`meet st-${stage}`} onClick={skip}>
+    <main className={`meet st-${stage}`} onClick={onTap}>
       <style>{CSS}</style>
 
       {stage !== "intro" && (
@@ -225,6 +254,7 @@ export default function MeetPage() {
           <div className="formula">{b.formula}</div>
           <div className="num">{b.n.toLocaleString()}<small>{unit}</small></div>
           <div className="cap">{b.cap} {b.n.toLocaleString()}{unit}</div>
+          <div className="tap">왼쪽은 이전 · 오른쪽은 다음</div>
         </section>
       )}
 
@@ -246,6 +276,7 @@ export default function MeetPage() {
                   한 번에 {HOURS_PER_VISIT}시간씩이면, 모두 합쳐 <b>약 {timeDays}일</b>
                 </div>
               )}
+              {ready && <div className="tap on-cover">왼쪽은 이전 · 오른쪽은 다음</div>}
             </section>
           )}
 
@@ -262,14 +293,9 @@ export default function MeetPage() {
               <div className="lead p3">남은 날은 정해진 숫자가 아니에요<br />찾아뵙는 만큼 달라져요</div>
 
               <div className="below">
-                <div className="chips p4" role="group" aria-label="만나는 횟수 바꿔 보기">
-                  {FREQ.map(([v, l]) => (
-                    <button key={v} className="chip on-dark" aria-pressed={turnFreq === v} onClick={() => setTurnFreq(v)}>{l}</button>
-                  ))}
-                </div>
                 <div className="callout">사랑하는 우리 {who},<br />조금이라도 기억하고 싶다면</div>
-                <Link href="/login" className="cta light">더 늦기 전에 {who} 이야기 담기</Link>
-                <button className="replay" onClick={() => { setStage("intro"); }}>처음부터 다시 보기</button>
+                <Link href="/login" className="cta light" onClick={(e) => e.stopPropagation()}>더 늦기 전에 {who} 이야기 담기</Link>
+                <button className="replay" onClick={(e) => { e.stopPropagation(); setStage("intro"); }}>처음부터 다시 보기</button>
               </div>
             </section>
           )}
@@ -342,6 +368,9 @@ const CSS = `
 .turn .num.p{font-size:min(30vw,128px);animation:none}
 .turn .num.keyed{animation:pop .9s ease both}
 .turn .lead.p3{font-size:20px;line-height:1.55;font-weight:700;animation:fadein 1s ease 4.2s both}
+.tap{position:fixed;left:0;right:0;bottom:max(28px,env(safe-area-inset-bottom));text-align:center;font-size:13px;color:var(--text-muted);animation:fadein 1s ease 1.4s both,blink 2s ease-in-out 2.6s infinite}
+.tap.on-cover{color:rgba(245,240,232,.8);animation:fadein .6s ease both,blink 2s ease-in-out .8s infinite;z-index:5}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
 .below{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:20px;animation:fadein 1s ease 5.4s both}
 .p4{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:100%;max-width:360px}
 .p4 .chip{min-height:36px;min-width:0;font-size:13px;padding:0 12px}
