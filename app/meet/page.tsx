@@ -227,9 +227,11 @@ export default function MeetPage() {
 
 const CSS = `
 .meet{position:relative;max-width:440px;margin:0 auto;min-height:100vh;min-height:100dvh;box-sizing:border-box;overflow:hidden;
-  background:var(--offwhite);color:var(--charcoal);
+  background:var(--ochre-tint);color:var(--charcoal);
+  text-shadow:0 1px 0 rgba(255,255,255,.75),0 2px 8px rgba(47,43,40,.2);
   padding:max(24px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
   display:flex;flex-direction:column}
+.meet button,.meet input{text-shadow:inherit}
 .snd{position:absolute;top:10px;right:12px;z-index:5;height:44px;padding:0 10px;border:0;background:transparent;color:var(--text-muted);font-size:13px;cursor:pointer}
 .st-parent .snd{color:#F5F0E8}
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
@@ -239,39 +241,40 @@ const CSS = `
 .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:360px}
 .chip{min-height:48px;min-width:64px;padding:0 14px;border-radius:8px;font-size:15px;border:1px solid var(--border);background:var(--offwhite);color:var(--charcoal);font-weight:500;cursor:pointer}
 .chip[aria-pressed=true]{border:2px solid var(--ochre-ink);background:var(--ochre-ink);color:#fff;font-weight:700}
+.chip{text-shadow:none}
 .chip.on-dark{background:transparent;border:1px solid rgba(245,240,232,.6);color:#F5F0E8}
 .chip.on-dark[aria-pressed=true]{background:#F5F0E8;border-color:#F5F0E8;color:var(--ochre-ink)}
 .cta{margin-top:22px;display:flex;align-items:center;justify-content:center;width:100%;max-width:360px;height:58px;border-radius:8px;border:0;font-size:18px;font-weight:700;text-decoration:none;cursor:pointer}
-.cta.dark{background:var(--charcoal);color:var(--offwhite)}
+.cta.dark{background:var(--ochre-ink);color:#FFF8EE;text-shadow:0 2px 3px rgba(0,0,0,.35);box-shadow:0 6px 16px rgba(154,78,42,.35)}
 .cta:disabled{opacity:.35;cursor:default}
 .agebox{display:flex;align-items:center;gap:10px}
-.ageinput{width:120px;height:64px;box-sizing:border-box;text-align:center;font-size:32px;font-weight:700;border:2px solid var(--charcoal);border-radius:8px;background:#fff;color:var(--charcoal);font-family:inherit;-moz-appearance:textfield}
+.ageinput{width:120px;height:64px;box-sizing:border-box;text-align:center;font-size:32px;font-weight:700;border:2px solid var(--ochre-ink);border-radius:8px;background:#fff;text-shadow:none;color:var(--charcoal);font-family:inherit;-moz-appearance:textfield}
 .ageinput::-webkit-outer-spin-button,.ageinput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .ageunit{font-size:24px;font-weight:700}
-.cta.light{background:#F5F0E8;color:var(--ochre-ink)}
+.cta.light{background:#F5F0E8;color:var(--ochre-ink);text-shadow:none;box-shadow:0 8px 20px rgba(0,0,0,.25)}
 .who{font-size:22px;font-weight:700}
 .num{font-weight:900;line-height:1;font-size:96px;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
 .num small{font-size:30px;font-weight:700;margin-left:6px;color:var(--ochre-ink)}
 .cap{font-size:15px;color:var(--text-muted)}
 .scene{animation:fadein .8s ease both}
-.scene .num{font-size:72px;animation:rise 1s cubic-bezier(.2,.8,.2,1) .3s both}
+.scene .num{text-shadow:0 3px 0 rgba(255,255,255,.7),0 12px 26px rgba(47,43,40,.28);font-size:72px;animation:rise 1s cubic-bezier(.2,.8,.2,1) .3s both}
 .scene .num small{font-size:26px}
 .scene .who{animation:fadein .8s ease both}
 .scene .cap{animation:fadein .8s ease 1s both}
 .scene.out{animation:fadeout .6s ease both}
 .in{animation:fadein .8s ease both}
-.cover{position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;overflow-y:auto;z-index:4;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
+.cover{text-shadow:0 2px 6px rgba(0,0,0,.4);position:fixed;top:0;left:0;width:100%;height:100vh;height:100dvh;overflow-y:auto;z-index:4;background:var(--ochre-ink);color:#F5F0E8;display:flex;flex-direction:column;
   padding:max(24px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom));
   animation:cover 1.1s cubic-bezier(.7,0,.2,1) both}
 .skipped .cover{animation:none}
-.parentScene{width:100%;max-width:440px;margin:0 auto;flex:1 0 auto;justify-content:center;gap:10px;padding-top:36px}
+.parentScene{width:100%;max-width:440px;margin:0 auto;flex:1 0 auto;justify-content:center;gap:10px;padding-top:18vh}
 .st-parent{background:var(--ochre-ink)}
 .who.p{font-size:22px;font-weight:600;animation:fadein 1s ease .9s both}
 .lead.p{font-size:26px;font-weight:700;animation:fadein 1s ease 2.9s both}
 .num.p{font-size:min(34vw,150px);animation:pop 1.4s ease 1.4s both}
-.num.p small{color:#FFE3BC;font-size:44px;text-shadow:none}
+.num.p small{color:#1F1B19;font-size:44px}
 .cap.p{color:rgba(245,240,232,.8);font-size:14px;line-height:1.7;animation:fadein 1s ease 3.4s both}
-.num.glow{color:#FFE3BC;text-shadow:0 0 36px rgba(255,205,140,.6),0 8px 0 rgba(0,0,0,.18),0 18px 40px rgba(0,0,0,.35)}
+.num.glow{color:#1F1B19;text-shadow:0 0 34px rgba(255,215,160,.7),0 3px 0 rgba(255,236,210,.55),0 16px 36px rgba(0,0,0,.35)}
 .below{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:56px;animation:fadein 1s ease 3.8s both}
 .below .ask{margin:0;font-size:15px;font-weight:500}
 .p4{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;width:100%;max-width:360px}
